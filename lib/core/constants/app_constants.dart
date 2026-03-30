@@ -1,3 +1,5 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 /// AppConstants defines the logic-based constants for Sukli POS.
 class AppConstants {
   // App info
@@ -27,7 +29,7 @@ class AppConstants {
   // Order number prefix
   static const String orderPrefix = 'ORD';
   
-  // Supabase Configuration
-  static const String supabaseUrl = 'https://nszgseyzrnpwgwbjwyfg.supabase.co';
-  static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zemdzZXl6cm5wd2d3Ymp3eWZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQwMTMsImV4cCI6MjA5MDQ0MDAxM30.kWXB7bCde17afEEgcA025JwWbTydfBGKKnFO6NYubKg';
+  // Supabase Configuration (Safely loaded from .env)
+  static String get supabaseUrl => dotenv.get('SUPABASE_URL', fallback: '');
+  static String get supabaseAnonKey => dotenv.get('SUPABASE_ANON_KEY', fallback: '');
 }
