@@ -1,0 +1,90 @@
+name: sukli_pos
+description: Offline-first POS app for Philippine SMBs
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: any
+  riverpod_annotation: any
+
+  # Local Database
+  isar_community: any
+  isar_community_flutter_libs: any
+  path_provider: any
+
+  # Backend
+  supabase_flutter: any
+
+  # Navigation
+  go_router: any
+
+  # UI & Animations
+  flutter_animate: any
+  google_fonts: any
+  cached_network_image: any
+  flutter_svg: any
+  shimmer: any
+  lottie: any
+
+  # Charts
+  fl_chart: any
+
+  # Printing & Export
+  pdf: any
+  printing: any
+  excel: any
+  esc_pos_utils_plus: any
+
+  # Utils
+  intl: ^0.20.2
+  uuid: any
+  shared_preferences: any
+  connectivity_plus: any
+  permission_handler: any
+  image_picker: any
+  crop_your_image: any
+  equatable: any
+  dartz: any
+  logger: any
+  collection: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+  build_runner: any
+  isar_community_generator: any
+  riverpod_generator: any
+  custom_lint: any
+  riverpod_lint: any
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/lottie/
+  fonts:
+    - family: DMSans
+      fonts:
+        - asset: assets/fonts/DMSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/DMSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/DMSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/DMSans-Bold.ttf
+          weight: 700
+    - family: DMSerifDisplay
+      fonts:
+        - asset: assets/fonts/DMSerifDisplay-Regular.ttf
+          weight: 400
