@@ -45,6 +45,7 @@ dependencies:
   esc_pos_utils_plus: any
 
   # Utils
+  crypto: ^3.0.3
   intl: ^0.20.2
   uuid: any
   shared_preferences: any
