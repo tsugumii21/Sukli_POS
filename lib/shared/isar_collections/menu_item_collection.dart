@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 
 part 'menu_item_collection.g.dart';
 
@@ -35,3 +35,4 @@ class MenuItemCollection {
   late bool isSynced;
   late bool isDeleted;
 }
+

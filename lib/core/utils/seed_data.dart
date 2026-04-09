@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:uuid/uuid.dart';
 import 'pin_helper.dart';
 import '../../shared/isar_collections/user_collection.dart';
@@ -142,3 +142,4 @@ class SeedData {
     }
   }
 }
+

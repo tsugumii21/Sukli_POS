@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 
 part 'category_collection.g.dart';
 
@@ -24,3 +24,4 @@ class CategoryCollection {
   late bool isSynced;
   late bool isDeleted;
 }
+

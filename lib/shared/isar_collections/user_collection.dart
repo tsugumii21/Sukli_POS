@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 
 part 'user_collection.g.dart';
 
@@ -29,3 +29,4 @@ class UserCollection {
   late bool isSynced;
   late bool isDeleted;
 }
+

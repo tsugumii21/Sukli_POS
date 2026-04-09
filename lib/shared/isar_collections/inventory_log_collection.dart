@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 
 part 'inventory_log_collection.g.dart';
 
@@ -32,3 +32,4 @@ class InventoryLogCollection {
   late bool isSynced;
   late bool isDeleted;
 }
+

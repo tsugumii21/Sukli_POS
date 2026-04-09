@@ -57,12 +57,12 @@ class SyncService {
     int failed = 0;
 
     try {
-      final pendingItems = await _isar.isar.syncQueueCollections
-          .filter()
-          .statusEqualTo('pending')
-          .and()
-          .retryCountLessThan(AppConstants.maxSyncRetries)
-          .findAll();
+      final pendingItems = (await _isar.isar.syncQueueCollections
+              .filter()
+              .statusEqualTo('pending')
+              .findAll())
+          .where((item) => item.retryCount < AppConstants.maxSyncRetries)
+          .toList();
 
       for (final item in pendingItems) {
         try {

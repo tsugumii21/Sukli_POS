@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import '../../../../core/services/isar_service.dart';
 import '../../../../core/utils/pin_helper.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
@@ -74,3 +74,4 @@ class AuthNotifier extends Notifier<AuthState> {
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(
   AuthNotifier.new,
 );
+
