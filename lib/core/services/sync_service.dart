@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:isar/isar.dart';
-import 'package:uuid/uuid.dart';
-import 'isar_service.dart';
-import 'supabase_service.dart';
-import '../constants/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../shared/isar_collections/sync_queue_collection.dart';
+import '../constants/app_constants.dart';
 import '../constants/supabase_constants.dart';
+import '../errors/app_exception.dart';
+import 'isar_service.dart';
+import 'supabase_service.dart';
+import 'package:uuid/uuid.dart';
 
 class SyncResult {
   final int successCount;
@@ -25,14 +25,18 @@ class SyncResult {
 
 /// SyncService orchestrates the synchronization between Isar and Supabase.
 class SyncService {
-  final IsarService _isarService;
-  final SupabaseService _supabaseService;
+  SyncService._();
+
+  static final SyncService instance = SyncService._();
+
   Timer? _syncTimer;
   bool _isSyncing = false;
 
-  SyncService(this._isarService, this._supabaseService);
+  IsarService get _isar => IsarService.instance;
+  SupabaseService get _supabase => SupabaseService.instance;
 
   void startPeriodicSync() {
+    _syncTimer?.cancel();
     _syncTimer = Timer.periodic(
       const Duration(seconds: AppConstants.syncIntervalSeconds),
       (_) => syncPendingQueue(),
@@ -41,6 +45,7 @@ class SyncService {
 
   void stopPeriodicSync() {
     _syncTimer?.cancel();
+    _syncTimer = null;
   }
 
   /// Pushes pending queue items to Supabase using LWW strategy.
@@ -52,8 +57,7 @@ class SyncService {
     int failed = 0;
 
     try {
-      // 1. Get pending queue items
-      final pendingItems = await _isarService.isar.syncQueueCollections
+      final pendingItems = await _isar.isar.syncQueueCollections
           .filter()
           .statusEqualTo('pending')
           .and()
@@ -62,15 +66,15 @@ class SyncService {
 
       for (final item in pendingItems) {
         try {
-          final payload = jsonDecode(item.payloadJson) as Map<String, dynamic>;
+          final payload =
+              jsonDecode(item.payloadJson) as Map<String, dynamic>;
 
           if (item.operation == 'delete') {
-            await _supabaseService.softDelete(item.tableName, item.recordSyncId);
+            await _supabase.softDelete(item.tableName, item.recordSyncId);
           } else {
-            await _supabaseService.upsertRecord(item.tableName, payload);
+            await _supabase.upsertRecord(item.tableName, payload);
           }
 
-          // Mark completed
           item.status = 'completed';
           item.completedAt = DateTime.now();
           success++;
@@ -84,21 +88,22 @@ class SyncService {
           failed++;
         }
 
-        // Update item in Isar
-        await _isarService.isar.writeTxn(() => _isarService.isar.syncQueueCollections.put(item));
+        await _isar.isar
+            .writeTxn(() => _isar.isar.syncQueueCollections.put(item));
       }
 
       return SyncResult(successCount: success, failedCount: failed);
+    } catch (e) {
+      throw SyncException('syncPendingQueue failed: $e');
     } finally {
       _isSyncing = false;
     }
   }
 
-  /// Pulls latest data from Supabase and updates Isar (Server wins on conflict).
+  /// Pulls latest data from Supabase (Server wins on conflict).
   Future<void> pullFromSupabase() async {
     final prefs = await SharedPreferences.getInstance();
-    
-    // Define tables to pull
+
     final tables = [
       SupabaseConstants.usersTable,
       SupabaseConstants.categoriesTable,
@@ -107,17 +112,18 @@ class SyncService {
 
     for (final table in tables) {
       final lastPullKey = 'last_pull_$table';
-      final lastPullStr = prefs.getString(lastPullKey) ?? DateTime.fromMillisecondsSinceEpoch(0).toIso8601String();
+      final lastPullStr = prefs.getString(lastPullKey) ??
+          DateTime.fromMillisecondsSinceEpoch(0).toIso8601String();
       final lastPull = DateTime.parse(lastPullStr);
 
-      final remoteRecords = await _supabaseService.fetchUpdatedSince(table, lastPull);
-      
+      final remoteRecords =
+          await _supabase.fetchUpdatedSince(table, lastPull);
+
       if (remoteRecords.isNotEmpty) {
-        // Note: Repository-level sync logic will replace these in future parts
-        
-        // Update last pull time to the newest record's updatedAt
+        // Note: Repository-level sync logic will be wired in future parts
         final latestRecord = remoteRecords.last;
-        await prefs.setString(lastPullKey, latestRecord[SupabaseConstants.updatedAt]);
+        await prefs.setString(
+            lastPullKey, latestRecord[SupabaseConstants.updatedAt]);
       }
     }
   }
@@ -140,8 +146,7 @@ class SyncService {
       ..status = 'pending'
       ..createdAt = DateTime.now();
 
-    await _isarService.isar.writeTxn(
-      () => _isarService.isar.syncQueueCollections.put(queueItem),
-    );
+    await _isar.isar
+        .writeTxn(() => _isar.isar.syncQueueCollections.put(queueItem));
   }
 }

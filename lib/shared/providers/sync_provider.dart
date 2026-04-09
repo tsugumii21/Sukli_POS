@@ -1,13 +1,21 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/sync_service.dart';
-import 'isar_provider.dart';
-import 'supabase_provider.dart';
 
-/// Provider for the SyncService orchestrator.
+/// Provider for the SyncService singleton.
 final syncServiceProvider = Provider<SyncService>((ref) {
-  final isarService = ref.watch(isarServiceProvider);
-  final supabaseService = ref.watch(supabaseServiceProvider);
-  return SyncService(isarService, supabaseService);
+  return SyncService.instance;
+});
+
+/// Stream of connectivity status.
+final connectivityProvider = StreamProvider<ConnectivityResult>((ref) {
+  return Connectivity().onConnectivityChanged;
+});
+
+/// Whether the device is currently online.
+final isOnlineProvider = Provider<bool>((ref) {
+  final conn = ref.watch(connectivityProvider).valueOrNull;
+  return conn != null && conn != ConnectivityResult.none;
 });
 
 /// Tracks the result of the last sync operation.

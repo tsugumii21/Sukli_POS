@@ -3,17 +3,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/services/supabase_service.dart';
 
 /// Provider exposing the SupabaseService singleton.
-final supabaseServiceProvider = Provider<SupabaseService>((ref) => SupabaseService());
+final supabaseServiceProvider = Provider<SupabaseService>((ref) {
+  return SupabaseService.instance;
+});
 
 /// Convenience provider for the SupabaseClient.
-final supabaseClientProvider = Provider<SupabaseClient>(
-  (ref) => ref.watch(supabaseServiceProvider).client,
-);
+final supabaseClientProvider = Provider<SupabaseClient>((ref) {
+  return ref.watch(supabaseServiceProvider).client;
+});
 
 /// Auth state stream provider from Supabase.
-final authStateProvider = StreamProvider<AuthState>(
-  (ref) => ref.watch(supabaseServiceProvider).authStateChanges,
-);
+final authStateProvider = StreamProvider<AuthState>((ref) {
+  return ref.watch(supabaseServiceProvider).authStateChanges;
+});
 
 /// Current Supabase User provider.
 final currentUserProvider = Provider<User?>((ref) {

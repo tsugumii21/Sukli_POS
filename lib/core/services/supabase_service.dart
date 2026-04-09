@@ -5,12 +5,15 @@ import '../constants/supabase_constants.dart';
 
 /// SupabaseService handles all cloud interactions and Auth.
 class SupabaseService {
-  static final SupabaseService _instance = SupabaseService._();
   SupabaseService._();
-  factory SupabaseService() => _instance;
 
-  Future<void> initialize() async {
-    // Already initialized in main.dart
+  static final SupabaseService instance = SupabaseService._();
+
+  Future<void> init() async {
+    await Supabase.initialize(
+      url: AppConstants.supabaseUrl,
+      anonKey: AppConstants.supabaseAnonKey,
+    );
   }
 
   SupabaseClient get client => Supabase.instance.client;
@@ -39,7 +42,9 @@ class SupabaseService {
 
   Future<void> upsertRecord(String table, Map<String, dynamic> data) async {
     try {
-      await client.from(table).upsert(data, onConflict: SupabaseConstants.syncId);
+      await client
+          .from(table)
+          .upsert(data, onConflict: SupabaseConstants.syncId);
     } catch (e) {
       throw SyncException('Supabase upsert failed on table $table: $e');
     }
@@ -47,20 +52,25 @@ class SupabaseService {
 
   Future<void> softDelete(String table, String syncId) async {
     try {
-      await client.from(table).update({SupabaseConstants.isDeleted: true}).eq(SupabaseConstants.syncId, syncId);
+      await client
+          .from(table)
+          .update({SupabaseConstants.isDeleted: true}).eq(
+              SupabaseConstants.syncId, syncId);
     } catch (e) {
-      throw SyncException('Supabase soft-delete failed on table $table: $e');
+      throw SyncException(
+          'Supabase soft-delete failed on table $table: $e');
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchUpdatedSince(String table, DateTime since) async {
+  Future<List<Map<String, dynamic>>> fetchUpdatedSince(
+      String table, DateTime since) async {
     try {
       final response = await client
           .from(table)
           .select()
           .gt(SupabaseConstants.updatedAt, since.toIso8601String())
           .order(SupabaseConstants.updatedAt);
-      
+
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       throw SyncException('Supabase fetch failed on table $table: $e');

@@ -12,25 +12,27 @@ import '../errors/app_exception.dart';
 
 /// IsarService manages the local NoSQL database.
 class IsarService {
-  static final IsarService _instance = IsarService._();
   IsarService._();
-  factory IsarService() => _instance;
+
+  static final IsarService instance = IsarService._();
 
   Isar? _isar;
 
   Isar get isar {
     if (_isar == null) {
-      throw const DatabaseException('Isar has not been initialized. Call initialize() first.');
+      throw const DatabaseException(
+        'Isar has not been initialized. Call init() first.',
+      );
     }
     return _isar!;
   }
 
-  Future<void> initialize() async {
+  Future<void> init() async {
     if (_isar != null) return;
 
     try {
       final dir = await getApplicationDocumentsDirectory();
-      
+
       _isar = await Isar.open(
         [
           UserCollectionSchema,
@@ -41,10 +43,10 @@ class IsarService {
           SyncQueueCollectionSchema,
         ],
         directory: dir.path,
-        inspector: true, // Enable Isar Inspector for debugging
+        inspector: true,
       );
 
-      // Check if DB needs seeding
+      // Seed initial data on first launch only
       final prefs = await SharedPreferences.getInstance();
       final isSeeded = prefs.getBool('db_seeded') ?? false;
 
