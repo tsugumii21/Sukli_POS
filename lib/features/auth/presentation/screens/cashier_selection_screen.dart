@@ -74,24 +74,13 @@ class _CashierSelectionScreenState
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.primaryDark
-                          : AppColors.accentLight,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Text(
-                        '₱',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 20,
-                          fontFamily: 'DMSerifDisplay',
-                        ),
-                      ),
+                  // Real logo in top bar
+                  ClipRRect(
+                    borderRadius: AppRadius.smallBR,
+                    child: Image.asset(
+                      'assets/images/sukli_logo_transparent.png',
+                      width: 40,
+                      height: 40,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),

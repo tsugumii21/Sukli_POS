@@ -36,28 +36,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo mark — stylized "S" coin icon
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight.withOpacity(0.15),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.primaryLight.withOpacity(0.4),
-                  width: 1.5,
-                ),
-              ),
-              child: const Center(
-                child: Text(
-                  '₱',
-                  style: TextStyle(
-                    color: AppColors.primaryLightVariant,
-                    fontSize: 44,
-                    fontFamily: 'DMSerifDisplay',
-                  ),
-                ),
-              ),
+            // Real Sukli POS logo
+            Image.asset(
+              'assets/images/sukli_logo_transparent.png',
+              width: 160,
+              height: 160,
             )
                 .animate()
                 .fadeIn(duration: 600.ms, delay: 200.ms)
