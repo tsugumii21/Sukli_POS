@@ -21,6 +21,9 @@ class MenuItemCollection {
   late bool isAvailable;
 
   @Index()
+  late bool isFavorite;
+
+  @Index()
   late bool trackInventory;
 
   double? stockQuantity;

@@ -100,6 +100,7 @@ class SeedData {
             ..name = "Iced Coffee"
             ..basePrice = 65
             ..isAvailable = true
+            ..isFavorite = true
             ..trackInventory = false
             ..sortOrder = 1
             ..variantsJson = [
@@ -117,6 +118,7 @@ class SeedData {
             ..name = "Pork Adobo Rice"
             ..basePrice = 120
             ..isAvailable = true
+            ..isFavorite = true
             ..trackInventory = true
             ..stockQuantity = 50
             ..sortOrder = 1
@@ -130,9 +132,33 @@ class SeedData {
             ..name = "Leche Flan"
             ..basePrice = 55
             ..isAvailable = true
+            ..isFavorite = false
             ..trackInventory = true
             ..stockQuantity = 20
             ..sortOrder = 1
+            ..createdAt = now
+            ..updatedAt = now
+            ..isSynced = false
+            ..isDeleted = false,
+          MenuItemCollection()
+            ..syncId = _uuid.v4()
+            ..categoryId = foodId
+            ..name = "Chicken Fillet Meal"
+            ..description = "Crispy chicken fillet served with rice and gravy"
+            ..basePrice = 85
+            ..isAvailable = true
+            ..isFavorite = true
+            ..trackInventory = true
+            ..stockQuantity = 30
+            ..sortOrder = 2
+            ..variantsJson = [
+              jsonEncode({"name": "Regular", "priceDelta": 0}),
+              jsonEncode({"name": "Large", "priceDelta": 20}),
+            ]
+            ..modifiersJson = [
+              jsonEncode({"groupName": "Add-ons", "name": "Extra Rice", "priceDelta": 20}),
+              jsonEncode({"groupName": "Add-ons", "name": "Drinks", "priceDelta": 35}),
+            ]
             ..createdAt = now
             ..updatedAt = now
             ..isSynced = false

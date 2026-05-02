@@ -53,53 +53,58 @@ const MenuItemCollectionSchema = CollectionSchema(
       name: r'isDeleted',
       type: IsarType.bool,
     ),
-    r'isSynced': PropertySchema(
+    r'isFavorite': PropertySchema(
       id: 7,
+      name: r'isFavorite',
+      type: IsarType.bool,
+    ),
+    r'isSynced': PropertySchema(
+      id: 8,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lowStockThreshold': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'lowStockThreshold',
       type: IsarType.double,
     ),
     r'modifiersJson': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'modifiersJson',
       type: IsarType.stringList,
     ),
     r'name': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'name',
       type: IsarType.string,
     ),
     r'sortOrder': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'sortOrder',
       type: IsarType.long,
     ),
     r'stockQuantity': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'stockQuantity',
       type: IsarType.double,
     ),
     r'syncId': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'syncId',
       type: IsarType.string,
     ),
     r'trackInventory': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'trackInventory',
       type: IsarType.bool,
     ),
     r'updatedAt': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'variantsJson': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'variantsJson',
       type: IsarType.stringList,
     )
@@ -144,6 +149,19 @@ const MenuItemCollectionSchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'isAvailable',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
+    r'isFavorite': IndexSchema(
+      id: 5742774614603939776,
+      name: r'isFavorite',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'isFavorite',
           type: IndexType.value,
           caseSensitive: false,
         )
@@ -222,16 +240,17 @@ void _menuItemCollectionSerialize(
   writer.writeString(offsets[4], object.imageUrl);
   writer.writeBool(offsets[5], object.isAvailable);
   writer.writeBool(offsets[6], object.isDeleted);
-  writer.writeBool(offsets[7], object.isSynced);
-  writer.writeDouble(offsets[8], object.lowStockThreshold);
-  writer.writeStringList(offsets[9], object.modifiersJson);
-  writer.writeString(offsets[10], object.name);
-  writer.writeLong(offsets[11], object.sortOrder);
-  writer.writeDouble(offsets[12], object.stockQuantity);
-  writer.writeString(offsets[13], object.syncId);
-  writer.writeBool(offsets[14], object.trackInventory);
-  writer.writeDateTime(offsets[15], object.updatedAt);
-  writer.writeStringList(offsets[16], object.variantsJson);
+  writer.writeBool(offsets[7], object.isFavorite);
+  writer.writeBool(offsets[8], object.isSynced);
+  writer.writeDouble(offsets[9], object.lowStockThreshold);
+  writer.writeStringList(offsets[10], object.modifiersJson);
+  writer.writeString(offsets[11], object.name);
+  writer.writeLong(offsets[12], object.sortOrder);
+  writer.writeDouble(offsets[13], object.stockQuantity);
+  writer.writeString(offsets[14], object.syncId);
+  writer.writeBool(offsets[15], object.trackInventory);
+  writer.writeDateTime(offsets[16], object.updatedAt);
+  writer.writeStringList(offsets[17], object.variantsJson);
 }
 
 MenuItemCollection _menuItemCollectionDeserialize(
@@ -249,16 +268,17 @@ MenuItemCollection _menuItemCollectionDeserialize(
   object.imageUrl = reader.readStringOrNull(offsets[4]);
   object.isAvailable = reader.readBool(offsets[5]);
   object.isDeleted = reader.readBool(offsets[6]);
-  object.isSynced = reader.readBool(offsets[7]);
-  object.lowStockThreshold = reader.readDoubleOrNull(offsets[8]);
-  object.modifiersJson = reader.readStringList(offsets[9]) ?? [];
-  object.name = reader.readString(offsets[10]);
-  object.sortOrder = reader.readLong(offsets[11]);
-  object.stockQuantity = reader.readDoubleOrNull(offsets[12]);
-  object.syncId = reader.readString(offsets[13]);
-  object.trackInventory = reader.readBool(offsets[14]);
-  object.updatedAt = reader.readDateTime(offsets[15]);
-  object.variantsJson = reader.readStringList(offsets[16]) ?? [];
+  object.isFavorite = reader.readBool(offsets[7]);
+  object.isSynced = reader.readBool(offsets[8]);
+  object.lowStockThreshold = reader.readDoubleOrNull(offsets[9]);
+  object.modifiersJson = reader.readStringList(offsets[10]) ?? [];
+  object.name = reader.readString(offsets[11]);
+  object.sortOrder = reader.readLong(offsets[12]);
+  object.stockQuantity = reader.readDoubleOrNull(offsets[13]);
+  object.syncId = reader.readString(offsets[14]);
+  object.trackInventory = reader.readBool(offsets[15]);
+  object.updatedAt = reader.readDateTime(offsets[16]);
+  object.variantsJson = reader.readStringList(offsets[17]) ?? [];
   return object;
 }
 
@@ -286,22 +306,24 @@ P _menuItemCollectionDeserializeProp<P>(
     case 7:
       return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 9:
-      return (reader.readStringList(offset) ?? []) as P;
-    case 10:
-      return (reader.readString(offset)) as P;
-    case 11:
-      return (reader.readLong(offset)) as P;
-    case 12:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 13:
-      return (reader.readString(offset)) as P;
-    case 14:
       return (reader.readBool(offset)) as P;
+    case 9:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 10:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 11:
+      return (reader.readString(offset)) as P;
+    case 12:
+      return (reader.readLong(offset)) as P;
+    case 13:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 14:
+      return (reader.readString(offset)) as P;
     case 15:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 16:
+      return (reader.readDateTime(offset)) as P;
+    case 17:
       return (reader.readStringList(offset) ?? []) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -390,6 +412,15 @@ extension MenuItemCollectionQueryWhereSort
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'isAvailable'),
+      );
+    });
+  }
+
+  QueryBuilder<MenuItemCollection, MenuItemCollection, QAfterWhere>
+      anyIsFavorite() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'isFavorite'),
       );
     });
   }
@@ -603,6 +634,51 @@ extension MenuItemCollectionQueryWhere
               indexName: r'isAvailable',
               lower: [],
               upper: [isAvailable],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<MenuItemCollection, MenuItemCollection, QAfterWhereClause>
+      isFavoriteEqualTo(bool isFavorite) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'isFavorite',
+        value: [isFavorite],
+      ));
+    });
+  }
+
+  QueryBuilder<MenuItemCollection, MenuItemCollection, QAfterWhereClause>
+      isFavoriteNotEqualTo(bool isFavorite) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isFavorite',
+              lower: [],
+              upper: [isFavorite],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isFavorite',
+              lower: [isFavorite],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isFavorite',
+              lower: [isFavorite],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isFavorite',
+              lower: [],
+              upper: [isFavorite],
               includeUpper: false,
             ));
       }
@@ -1294,6 +1370,16 @@ extension MenuItemCollectionQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isDeleted',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MenuItemCollection, MenuItemCollection, QAfterFilterCondition>
+      isFavoriteEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isFavorite',
         value: value,
       ));
     });
@@ -2429,6 +2515,20 @@ extension MenuItemCollectionQuerySortBy
   }
 
   QueryBuilder<MenuItemCollection, MenuItemCollection, QAfterSortBy>
+      sortByIsFavorite() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFavorite', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MenuItemCollection, MenuItemCollection, QAfterSortBy>
+      sortByIsFavoriteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFavorite', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MenuItemCollection, MenuItemCollection, QAfterSortBy>
       sortByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
@@ -2656,6 +2756,20 @@ extension MenuItemCollectionQuerySortThenBy
   }
 
   QueryBuilder<MenuItemCollection, MenuItemCollection, QAfterSortBy>
+      thenByIsFavorite() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFavorite', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MenuItemCollection, MenuItemCollection, QAfterSortBy>
+      thenByIsFavoriteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFavorite', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MenuItemCollection, MenuItemCollection, QAfterSortBy>
       thenByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
@@ -2820,6 +2934,13 @@ extension MenuItemCollectionQueryWhereDistinct
   }
 
   QueryBuilder<MenuItemCollection, MenuItemCollection, QDistinct>
+      distinctByIsFavorite() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isFavorite');
+    });
+  }
+
+  QueryBuilder<MenuItemCollection, MenuItemCollection, QDistinct>
       distinctByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSynced');
@@ -2943,6 +3064,13 @@ extension MenuItemCollectionQueryProperty
   QueryBuilder<MenuItemCollection, bool, QQueryOperations> isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<MenuItemCollection, bool, QQueryOperations>
+      isFavoriteProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isFavorite');
     });
   }
 

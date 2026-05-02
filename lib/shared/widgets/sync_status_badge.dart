@@ -1,81 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
-import '../providers/sync_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Enum representing the current sync state of the device.
-enum _SyncStatus { synced, syncing, pending, offline }
+/// SyncStatusBadge — Modern connectivity indicator with a pulsing status dot.
+class SyncStatusBadge extends StatelessWidget {
+  const SyncStatusBadge({
+    super.key,
+    required this.isOnline,
+    required this.isSyncing,
+  });
 
-/// SyncStatusBadge — small pill badge showing real-time sync and connectivity status.
-class SyncStatusBadge extends ConsumerWidget {
-  const SyncStatusBadge({super.key, this.pendingCount = 0});
-
-  final int pendingCount;
+  final bool isOnline;
+  final bool isSyncing;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isSyncing = ref.watch(isSyncingProvider);
-    final isOnline = ref.watch(isOnlineProvider);
+  Widget build(BuildContext context) {
+    Color statusColor;
+    String statusText;
 
-    final _SyncStatus status;
     if (!isOnline) {
-      status = _SyncStatus.offline;
+      statusColor = const Color(0xFFC2445B); // Error/Offline
+      statusText = 'Offline';
     } else if (isSyncing) {
-      status = _SyncStatus.syncing;
-    } else if (pendingCount > 0) {
-      status = _SyncStatus.pending;
+      statusColor = const Color(0xFFD4A574); // Warning/Syncing
+      statusText = 'Syncing...';
     } else {
-      status = _SyncStatus.synced;
-    }
-
-    final (dotColor, label) = switch (status) {
-      _SyncStatus.synced  => (AppColors.successLight, 'Synced'),
-      _SyncStatus.syncing => (AppColors.warningLight, 'Syncing...'),
-      _SyncStatus.pending => (AppColors.warningLight, '$pendingCount pending'),
-      _SyncStatus.offline => (AppColors.errorLight, 'Offline'),
-    };
-
-    final bg = isDark ? AppColors.cardDark : AppColors.cardLight;
-    final textColor =
-        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-
-    Widget dot = Container(
-      width: 6,
-      height: 6,
-      decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
-    );
-
-    // Pulsing animation when syncing
-    if (status == _SyncStatus.syncing) {
-      dot = dot
-          .animate(onPlay: (c) => c.repeat())
-          .scaleXY(begin: 1, end: 1.5, duration: 600.ms)
-          .then()
-          .scaleXY(begin: 1.5, end: 1, duration: 600.ms);
+      statusColor = const Color(0xFF7B9971); // Success/Synced
+      statusText = 'Synced';
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: AppRadius.pillBR,
-        boxShadow: AppShadow.level1,
+        color: statusColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(99),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          dot,
-          const SizedBox(width: 5),
+          // Pulsing Dot
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+            ),
+          )
+              .animate(onPlay: (c) => c.repeat(reverse: true))
+              .scaleXY(begin: 0.8, end: 1.2, duration: 800.ms, curve: Curves.easeInOut)
+              .boxShadow(begin: const BoxShadow(blurRadius: 0), end: BoxShadow(blurRadius: 4, color: statusColor.withValues(alpha: 0.4))),
+
+          const SizedBox(width: 8),
+
           Text(
-            label,
-            style: TextStyle(
-              color: textColor,
+            statusText,
+            style: GoogleFonts.inter(
+              color: statusColor,
               fontSize: 11,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'DMSans',
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
             ),
           ),
         ],
