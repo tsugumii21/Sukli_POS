@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../providers/admin_auth_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/pin_pad.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// CashierPinScreen — PIN entry with shake animation on wrong attempt.
 class CashierPinScreen extends ConsumerStatefulWidget {
@@ -105,6 +107,7 @@ class _CashierPinScreenState extends ConsumerState<CashierPinScreen>
           icon: Icon(Icons.arrow_back_ios_new_rounded,
               color: textPrimary, size: 20),
           onPressed: () {
+            HapticFeedback.lightImpact();
             ref.read(authProvider.notifier).clearSelection();
             if (context.canPop()) {
               context.pop();
@@ -134,30 +137,19 @@ class _CashierPinScreenState extends ConsumerState<CashierPinScreen>
                     child: Center(
                       child: Text(
                         cashier.name[0].toUpperCase(),
-                        style: GoogleFonts.dmSans(
-                          color: AppColors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: AppTextStyles.h1(context).copyWith(color: AppColors.white),
                       ),
                     ),
                   ).animate().fadeIn(duration: 400.ms),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     cashier.name,
-                    style: GoogleFonts.dmSans(
-                      color: textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: AppTextStyles.h3(context).copyWith(color: textPrimary),
                   ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
                   const SizedBox(height: 4),
                   Text(
                     'Enter your PIN',
-                    style: GoogleFonts.dmSans(
-                      color: textSecondary,
-                      fontSize: 14,
-                    ),
+                    style: AppTextStyles.body(context).copyWith(color: textSecondary),
                   ).animate().fadeIn(duration: 400.ms, delay: 150.ms),
                 ],
 
@@ -192,12 +184,50 @@ class _CashierPinScreenState extends ConsumerState<CashierPinScreen>
                 if (_hasError)
                   Text(
                     'Incorrect PIN. Try again.',
-                    style: GoogleFonts.dmSans(
-                      color:
-                          isDark ? AppColors.errorDark : AppColors.errorLight,
-                      fontSize: 13,
-                    ),
+                    style: AppTextStyles.body(context).copyWith(color: isDark ? AppColors.errorDark :AppColors.errorLight),
                   ).animate().fadeIn(duration: 200.ms),
+
+                const SizedBox(height: AppSpacing.lg),
+                
+                Center(
+                  child: Builder(
+                    builder: (context) {
+                      final adminAuth = ref.watch(adminAuthProvider);
+                      final isAdminLoggedIn = adminAuth.value != null;
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          if (isAdminLoggedIn) {
+                            context.go(RouteConstants.adminHome);
+                          } else {
+                            context.go(RouteConstants.adminLogin);
+                          }
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isAdminLoggedIn
+                                    ? Icons.arrow_back_rounded
+                                    : Icons.admin_panel_settings_outlined,
+                                size: 16,
+                                color: textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                isAdminLoggedIn ? 'Back to Admin' : 'Switch to Admin',
+                                style: AppTextStyles.body(context).copyWith(color: textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                  ),
+                ),
               ],
             ),
           ),

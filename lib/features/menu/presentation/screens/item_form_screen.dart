@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/services/supabase_service.dart';
@@ -15,6 +14,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/isar_collections/menu_item_collection.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../shared/widgets/destructive_action_dialog.dart';
 import '../providers/category_provider.dart';
 import '../providers/item_provider.dart';
 
@@ -250,7 +250,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content:
-          Text(msg, style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
+          Text(msg, style: AppTextStyles.bodySemiBold(context)),
       backgroundColor: AppColors.errorLight,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -356,11 +356,10 @@ class _StepIndicator extends StatelessWidget {
   final int total;
   final List<String> labels;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
@@ -401,12 +400,11 @@ class _StepIndicator extends StatelessWidget {
                                   color: Colors.white, size: 14)
                               : Text(
                                   '${i + 1}',
-                                  style: GoogleFonts.dmSans(
-                                    color: isActive
+                                  style: AppTextStyles.body(context).copyWith(color: isActive
                                         ? Colors.white
-                                        : (isDark
+                                        :(isDark
                                             ? AppColors.textSecondaryDark
-                                            : AppColors.textSecondaryLight),
+                                            :AppColors.textSecondaryLight),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -430,12 +428,11 @@ class _StepIndicator extends StatelessWidget {
                   if (i < labels.length)
                     Text(
                       labels[i],
-                      style: GoogleFonts.dmSans(
-                        color: isActive
+                      style: AppTextStyles.body(context).copyWith(color: isActive
                             ? _maroon
-                            : (isDark
+                            :(isDark
                                 ? AppColors.textSecondaryDark
-                                : AppColors.textSecondaryLight),
+                                :AppColors.textSecondaryLight),
                         fontSize: 10,
                         fontWeight:
                             isActive ? FontWeight.w700 : FontWeight.w500,
@@ -569,16 +566,14 @@ class _Step1Category extends ConsumerWidget {
           content: TextField(
             controller: ctrl,
             autofocus: true,
-            style: GoogleFonts.dmSans(
-                color: isDark
+            style: AppTextStyles.body(context).copyWith(color: isDark
                     ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight),
+                    :AppColors.textPrimaryLight),
             decoration: InputDecoration(
               hintText: parentId == null ? 'e.g. Beverages' : 'e.g. Coffee',
-              hintStyle: GoogleFonts.dmSans(
-                  color: isDark
+              hintStyle: AppTextStyles.body(context).copyWith(color: isDark
                       ? AppColors.textSecondaryDark
-                      : AppColors.textSecondaryLight),
+                      :AppColors.textSecondaryLight),
             ),
             textCapitalization: TextCapitalization.words,
           ),
@@ -586,7 +581,7 @@ class _Step1Category extends ConsumerWidget {
             TextButton(
               onPressed: () => Navigator.pop(dialogCtx),
               child: Text('Cancel',
-                  style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
+                  style: AppTextStyles.bodySemiBold(context)),
             ),
             TextButton(
               onPressed: () {
@@ -595,8 +590,7 @@ class _Step1Category extends ConsumerWidget {
                 }
               },
               child: Text('Create',
-                  style: GoogleFonts.dmSans(
-                      color: const Color(0xFF8B4049),
+                  style: AppTextStyles.body(context).copyWith(color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                       fontWeight: FontWeight.w700)),
             ),
           ],
@@ -654,34 +648,15 @@ class _CategoryGrid extends ConsumerWidget {
 
   Future<void> _deleteCategory(
       BuildContext context, WidgetRef ref, CategoryWithCount cat) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDestructiveDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Delete "${cat.category.name}"?',
-            style: AppTextStyles.bodySemiBold(context)),
-        content: Text(
-          cat.itemCount > 0
-              ? 'This category has ${cat.itemCount} item(s). '
-                  'Deleting it will leave those items uncategorised.'
-              : 'This category will be permanently removed.',
-          style: GoogleFonts.dmSans(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: Text('Cancel',
-                style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: Text('Delete',
-                style: GoogleFonts.dmSans(
-                    color: AppColors.errorLight, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
+      title: 'Delete "${cat.category.name}"?',
+      message: cat.itemCount > 0
+          ? 'This category has ${cat.itemCount} item(s). '
+              'Deleting it will leave those items uncategorised.'
+          : 'This category will be permanently removed.',
+      confirmLabel: 'Delete',
+      icon: Icons.delete_forever_rounded,
     );
     if (confirmed == true) {
       await ref.read(categoryProvider.notifier).softDelete(cat.category);
@@ -759,10 +734,11 @@ class _CatChip extends StatelessWidget {
   /// When non-null, a small delete icon is shown on the chip.
   final VoidCallback? onDelete;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context) {
+    final _maroon = Theme.of(context).brightness == Brightness.dark
+        ? AppColors.secondaryDark
+        : AppColors.secondaryLight;
     Color bg;
     Color textColor;
     Border? border;
@@ -809,17 +785,12 @@ class _CatChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (emoji != null) ...[
-              Text(emoji!, style: GoogleFonts.dmSans(fontSize: 16)),
+              Text(emoji!, style: AppTextStyles.bodyLarge(context)),
               const SizedBox(width: 6),
             ],
             Text(
               label,
-              style: GoogleFonts.dmSans(
-                color: textColor,
-                fontSize: 14,
-                fontWeight:
-                    isSelected || isCreate ? FontWeight.w700 : FontWeight.w500,
-              ),
+              style: AppTextStyles.body(context).copyWith(color: textColor),
             ),
             if (onDelete != null) ...[
               const SizedBox(width: 4),
@@ -885,7 +856,7 @@ class _Step2BasicInfo extends StatelessWidget {
           content: Text(
             'Image is too large (${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB). '
             'Maximum allowed size is 15 MB.',
-            style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+            style: AppTextStyles.bodySemiBold(context),
           ),
           backgroundColor: AppColors.errorLight,
           behavior: SnackBarBehavior.floating,
@@ -953,7 +924,7 @@ class _Step2BasicInfo extends StatelessWidget {
                                 : Image.network(imageUrl!,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) =>
-                                        _imagePlaceholder(isDark, hintColor)),
+                                        _imagePlaceholder(context, isDark, hintColor)),
                             Positioned(
                               top: 8,
                               right: 8,
@@ -983,16 +954,13 @@ class _Step2BasicInfo extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text('Change',
-                                      style: GoogleFonts.dmSans(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600)),
+                                      style: AppTextStyles.caption(context).copyWith(color: Colors.white)),
                                 ),
                               ),
                             ),
                           ],
                         )
-                      : _imagePlaceholder(isDark, hintColor),
+                      : _imagePlaceholder(context, isDark, hintColor),
                 ),
               ),
             ),
@@ -1032,20 +1000,19 @@ class _Step2BasicInfo extends StatelessWidget {
     );
   }
 
-  Widget _imagePlaceholder(bool isDark, Color hintColor) => Column(
+  Widget _imagePlaceholder(BuildContext context, bool isDark, Color hintColor) => Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.add_photo_alternate_outlined, size: 48, color: hintColor),
           const SizedBox(height: 12),
           Text(
             'Tap to add photo',
-            style: GoogleFonts.dmSans(
-                color: hintColor, fontSize: 14, fontWeight: FontWeight.w600),
+            style: AppTextStyles.bodySemiBold(context).copyWith(color: hintColor),
           ),
           const SizedBox(height: 4),
           Text(
             'from your gallery',
-            style: GoogleFonts.dmSans(color: hintColor, fontSize: 12),
+            style: AppTextStyles.caption(context).copyWith(color: hintColor),
           ),
         ],
       );
@@ -1098,8 +1065,7 @@ class _Step3PricingState extends State<_Step3Pricing> {
             prefixIcon: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text('₱',
-                  style: GoogleFonts.dmSans(
-                      color: textPrimary.withValues(alpha: 0.5),
+                  style: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.5),
                       fontSize: 16,
                       fontWeight: FontWeight.w700)),
             ),
@@ -1127,17 +1093,16 @@ class _Step3PricingState extends State<_Step3Pricing> {
                 },
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: Text('Add Group',
-                    style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
+                    style: AppTextStyles.body(context)),
                 style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF8B4049)),
+                    foregroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight),
               ),
             ],
           ),
           Text(
             'Customer picks ONE option from each group. '
             'The option\'s price is added to the base price.',
-            style: GoogleFonts.dmSans(
-                color: textPrimary.withValues(alpha: 0.5), fontSize: 12),
+            style: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.5), fontSize: 12),
           ),
           const SizedBox(height: AppSpacing.sm),
           ...List.generate(widget.variantGroups.length, (gi) {
@@ -1179,9 +1144,9 @@ class _Step3PricingState extends State<_Step3Pricing> {
                 },
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: Text('Add',
-                    style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
+                    style: AppTextStyles.body(context)),
                 style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF8B4049)),
+                    foregroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight),
               ),
             ],
           ),
@@ -1204,8 +1169,7 @@ class _Step3PricingState extends State<_Step3Pricing> {
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 'No add-ons yet.',
-                style: GoogleFonts.dmSans(
-                    color: textPrimary.withValues(alpha: 0.35), fontSize: 13),
+                style: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.35), fontSize: 13),
               ),
             ),
           const SizedBox(height: AppSpacing.lg),
@@ -1280,14 +1244,10 @@ class _VariantGroupEditorState extends State<_VariantGroupEditor> {
                 child: TextField(
                   controller: _groupNameCtrl,
                   onChanged: (_) => _notify(),
-                  style: GoogleFonts.dmSans(
-                      color: textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700),
+                  style: AppTextStyles.body(context).copyWith(color: textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Group name (e.g. Size, Temperature)',
-                    hintStyle: GoogleFonts.dmSans(
-                        color: textPrimary.withValues(alpha: 0.35),
+                    hintStyle: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.35),
                         fontSize: 13),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -1341,10 +1301,9 @@ class _VariantGroupEditorState extends State<_VariantGroupEditor> {
             },
             icon: const Icon(Icons.add_rounded, size: 16),
             label: Text('Add Option',
-                style: GoogleFonts.dmSans(
-                    fontSize: 13, fontWeight: FontWeight.w600)),
+                style: AppTextStyles.body(context)),
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF8B4049),
+              foregroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
               padding: const EdgeInsets.symmetric(horizontal: 4),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1422,11 +1381,10 @@ class _VariantOptionRowState extends State<_VariantOptionRow> {
             child: TextField(
               controller: _nameCtrl,
               onChanged: (_) => _notify(),
-              style: GoogleFonts.dmSans(color: textPrimary, fontSize: 13),
+              style: AppTextStyles.body(context).copyWith(color: textPrimary),
               decoration: InputDecoration(
                 hintText: 'Option name (e.g. Small)',
-                hintStyle: GoogleFonts.dmSans(
-                    color: textPrimary.withValues(alpha: 0.35), fontSize: 12),
+                hintStyle: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.35), fontSize: 12),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding:
@@ -1445,17 +1403,15 @@ class _VariantOptionRowState extends State<_VariantOptionRow> {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
               ],
-              style: GoogleFonts.dmSans(color: textPrimary, fontSize: 13),
+              style: AppTextStyles.body(context).copyWith(color: textPrimary),
               textAlign: TextAlign.right,
               decoration: InputDecoration(
                 hintText: '0',
-                hintStyle: GoogleFonts.dmSans(
-                    color: textPrimary.withValues(alpha: 0.35), fontSize: 12),
+                hintStyle: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.35), fontSize: 12),
                 border: InputBorder.none,
                 isDense: true,
                 prefixText: '+₱ ',
-                prefixStyle: GoogleFonts.dmSans(
-                    color: textPrimary.withValues(alpha: 0.6), fontSize: 13),
+                prefixStyle: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.6), fontSize: 13),
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               ),
@@ -1545,14 +1501,10 @@ class _ModifierRowState extends State<_ModifierRow> {
                 child: TextField(
                   controller: _groupCtrl,
                   onChanged: (_) => _notify(),
-                  style: GoogleFonts.dmSans(
-                      color: textPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700),
+                  style: AppTextStyles.caption(context).copyWith(color: textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Group (e.g. Add-ons)',
-                    hintStyle: GoogleFonts.dmSans(
-                        color: textPrimary.withValues(alpha: 0.35),
+                    hintStyle: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.35),
                         fontSize: 12),
                     border: InputBorder.none,
                     isDense: true,
@@ -1579,11 +1531,10 @@ class _ModifierRowState extends State<_ModifierRow> {
                 child: TextField(
                   controller: _nameCtrl,
                   onChanged: (_) => _notify(),
-                  style: GoogleFonts.dmSans(color: textPrimary, fontSize: 13),
+                  style: AppTextStyles.body(context).copyWith(color: textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Add-on name',
-                    hintStyle: GoogleFonts.dmSans(
-                        color: textPrimary.withValues(alpha: 0.35),
+                    hintStyle: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.35),
                         fontSize: 12),
                     border: InputBorder.none,
                     isDense: true,
@@ -1603,18 +1554,16 @@ class _ModifierRowState extends State<_ModifierRow> {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
                   ],
-                  style: GoogleFonts.dmSans(color: textPrimary, fontSize: 13),
+                  style: AppTextStyles.body(context).copyWith(color: textPrimary),
                   textAlign: TextAlign.right,
                   decoration: InputDecoration(
                     hintText: '0',
-                    hintStyle: GoogleFonts.dmSans(
-                        color: textPrimary.withValues(alpha: 0.35),
+                    hintStyle: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.35),
                         fontSize: 12),
                     border: InputBorder.none,
                     isDense: true,
                     prefixText: '+₱ ',
-                    prefixStyle: GoogleFonts.dmSans(
-                        color: textPrimary.withValues(alpha: 0.6),
+                    prefixStyle: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.6),
                         fontSize: 13),
                     contentPadding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
@@ -1686,11 +1635,10 @@ class _ToggleRow extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
     final cardBg = isDark ? AppColors.cardDark : AppColors.white;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -1722,13 +1670,10 @@ class _ToggleRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: GoogleFonts.dmSans(
-                        color: textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600)),
+                    style: AppTextStyles.body(context).copyWith(color: textPrimary)),
                 Text(subtitle,
                     style:
-                        GoogleFonts.dmSans(color: textSecondary, fontSize: 11)),
+                        AppTextStyles.label(context).copyWith(color: textSecondary)),
               ],
             ),
           ),
@@ -1780,16 +1725,15 @@ class _BottomNav extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: onPrev,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF8B4049),
+                    foregroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                     side: BorderSide(
-                        color: const Color(0xFF8B4049).withValues(alpha: 0.4)),
+                        color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight.withValues(alpha: 0.4)),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
                   child: Text('Previous',
-                      style: GoogleFonts.dmSans(
-                          fontWeight: FontWeight.w700, fontSize: 15)),
+                      style: AppTextStyles.body(context)),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -1828,22 +1772,14 @@ class _SectionLabel extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.dmSans(
-            color:
-                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
+          style: AppTextStyles.body(context).copyWith(color: isDark ? AppColors.textPrimaryDark :AppColors.textPrimaryLight),
         ),
         if (sub != null)
           Text(
             sub!,
-            style: GoogleFonts.dmSans(
-              color: isDark
+            style: AppTextStyles.label(context).copyWith(color: isDark
                   ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
-              fontSize: 11,
-            ),
+                  :AppColors.textSecondaryLight),
           ),
       ],
     );

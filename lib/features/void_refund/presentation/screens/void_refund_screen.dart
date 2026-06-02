@@ -61,7 +61,6 @@ class _VoidRefundScreenState extends ConsumerState<VoidRefundScreen>
     final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final primary = isDark ? AppColors.primaryDark : AppColors.primaryLight;
     final accent = isDark ? AppColors.accentDark : AppColors.accentLight;
     final border = isDark ? AppColors.borderDark : AppColors.primaryLight;
     final textSecondary =
@@ -133,8 +132,8 @@ class _VoidRefundScreenState extends ConsumerState<VoidRefundScreen>
         ),
       ),
       body: state.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF8B4049)))
+          ? Center(
+              child: CircularProgressIndicator(color: accent))
           : TabBarView(
               controller: _tabCtrl,
               children: [
@@ -223,7 +222,7 @@ class _OrdersTabState extends ConsumerState<_OrdersTab> {
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final textSecondary =
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
-    const maroon = Color(0xFF8B4049);
+    final primaryColor = isDark ? AppColors.accentDark : AppColors.secondaryLight;
 
     if (widget.orders.isEmpty) {
       return _EmptyState(
@@ -240,7 +239,7 @@ class _OrdersTabState extends ConsumerState<_OrdersTab> {
         // ── Sort row (History tab only) ─────────────────────────────────
         if (widget.sortable)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -253,13 +252,13 @@ class _OrdersTabState extends ConsumerState<_OrdersTab> {
                             ? Icons.arrow_downward_rounded
                             : Icons.arrow_upward_rounded,
                         size: 14,
-                        color: maroon,
+                        color: primaryColor,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         _newestFirst ? 'Newest first' : 'Oldest first',
                         style: AppTextStyles.captionMedium(context).copyWith(
-                          color: maroon,
+                          color: primaryColor,
                         ),
                       ),
                     ],
@@ -272,14 +271,14 @@ class _OrdersTabState extends ConsumerState<_OrdersTab> {
         // ── Order list ──────────────────────────────────────────────────
         Expanded(
           child: RefreshIndicator(
-            color: maroon,
+            color: primaryColor,
             backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
             onRefresh: () async {
               // Provider auto-refreshes via watchLazy — force a UI rebuild
               ref.invalidate(voidRefundProvider);
             },
             child: ListView.builder(
-              padding: const EdgeInsets.only(top: 8, bottom: 24),
+              padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: 24),
               itemCount: items.length,
               itemBuilder: (_, i) {
                 return _OrderRow(
@@ -327,7 +326,6 @@ class _OrderRow extends ConsumerWidget {
     final accent = isDark ? AppColors.accentDark : AppColors.accentLight;
     final error = isDark ? AppColors.errorDark : AppColors.errorLight;
     final warning = isDark ? AppColors.warningDark : AppColors.warningLight;
-    final borderCol = isDark ? AppColors.borderDark : AppColors.primaryLight;
 
     Color actionColor;
     if (mode == _TabMode.history) {
@@ -499,8 +497,6 @@ class _OrderRow extends ConsumerWidget {
         final isDark = Theme.of(dialogCtx).brightness == Brightness.dark;
         final dialogBg =
             isDark ? AppColors.surfaceDark : AppColors.backgroundLight;
-        final textPrimary =
-            isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
         final textSecondary =
             isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
@@ -626,9 +622,9 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSecondary =
-        isDark ? AppColors.textSecondaryDark : const Color(0xFF9E9E9E);
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final iconColor =
-        isDark ? AppColors.surfaceDarkElevated : const Color(0xFFE0D0C0);
+        isDark ? AppColors.surfaceDarkElevated : AppColors.primaryLight;
 
     return Center(
       child: Padding(

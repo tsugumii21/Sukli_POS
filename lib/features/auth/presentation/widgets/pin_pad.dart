@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// PinPad — numeric keypad for PIN entry with dot indicators.
 class PinPad extends StatelessWidget {
@@ -64,13 +65,9 @@ class PinPad extends StatelessWidget {
                 isDark: isDark,
                 child: Text(
                   key,
-                  style: GoogleFonts.dmSans(
-                    color: isDark
+                  style: AppTextStyles.h2(context).copyWith(color: isDark
                         ? AppColors.textPrimaryDark
-                        : AppColors.textPrimaryLight,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                  ),
+                        :AppColors.textPrimaryLight),
                 ),
                 onTap: () => onKeyTap(key),
               );
@@ -148,6 +145,7 @@ class _KeyButtonState extends State<_KeyButton> {
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
+        HapticFeedback.lightImpact();
         setState(() => _pressed = false);
         widget.onTap();
       },

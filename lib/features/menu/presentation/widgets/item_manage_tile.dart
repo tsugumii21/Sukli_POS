@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -27,8 +28,6 @@ class ItemManageTile extends ConsumerWidget {
   final VoidCallback onDelete;
   final int animationIndex;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -37,6 +36,7 @@ class ItemManageTile extends ConsumerWidget {
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final textSecondary =
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -55,7 +55,10 @@ class ItemManageTile extends ConsumerWidget {
         color: Colors.transparent,
         borderRadius: AppRadius.largeBR,
         child: InkWell(
-          onTap: onEdit,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onEdit();
+          },
           borderRadius: AppRadius.largeBR,
           splashColor: _maroon.withValues(alpha: 0.06),
           highlightColor: _maroon.withValues(alpha: 0.03),
@@ -117,15 +120,19 @@ class ItemManageTile extends ConsumerWidget {
                         ? const Color(0xFFD4A574)
                         : textSecondary.withValues(alpha: 0.4),
                   ),
-                  onPressed: () =>
-                      ref.read(itemProvider.notifier).toggleFavorite(item),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    ref.read(itemProvider.notifier).toggleFavorite(item);
+                  },
                 ),
 
                 // ── Available switch ──────────────────────────────────
                 Switch.adaptive(
                   value: item.isAvailable,
-                  onChanged: (_) =>
-                      ref.read(itemProvider.notifier).toggleAvailability(item),
+                  onChanged: (_) {
+                    HapticFeedback.lightImpact();
+                    ref.read(itemProvider.notifier).toggleAvailability(item);
+                  },
                   activeThumbColor: _maroon,
                   activeTrackColor: _maroon.withValues(alpha: 0.3),
                   inactiveThumbColor: Colors.grey.shade400,
@@ -138,7 +145,10 @@ class ItemManageTile extends ConsumerWidget {
                   visualDensity: VisualDensity.compact,
                   icon: Icon(Icons.delete_outline_rounded,
                       size: 20, color: AppColors.errorLight),
-                  onPressed: onDelete,
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    onDelete();
+                  },
                 ),
               ],
             ),
@@ -146,9 +156,9 @@ class ItemManageTile extends ConsumerWidget {
         ),
       ),
     )
-        .animate(delay: Duration(milliseconds: animationIndex * 35))
-        .fadeIn(duration: 300.ms)
-        .slideY(begin: 0.06, end: 0);
+        .animate(delay: Duration(milliseconds: (animationIndex * 40).clamp(0, 400)))
+        .fadeIn(duration: AppDuration.medium)
+        .slideY(begin: 0.08, end: 0, duration: AppDuration.medium, curve: AppCurve.standard);
   }
 }
 

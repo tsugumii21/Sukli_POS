@@ -65,4 +65,42 @@ class AppColors {
   static Color overlayDark = const Color(0xFFFAF6F1).withValues(alpha: 0.08);
   static Color scrimLight = const Color(0xFF3E2723).withValues(alpha: 0.4);
   static Color scrimDark = const Color(0xFF1A0B0D).withValues(alpha: 0.6);
+
+  // --- SEMANTIC RESOLVERS ---
+
+  static bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  static Color background(BuildContext context) =>
+      _isDark(context) ? backgroundDark : backgroundLight;
+
+  static Color surface(BuildContext context) =>
+      _isDark(context) ? surfaceDark : surfaceLight;
+
+  static Color card(BuildContext context) =>
+      _isDark(context) ? cardDark : cardLight;
+
+  static Color primary(BuildContext context) =>
+      _isDark(context) ? primaryDark : primaryLight;
+
+  static Color secondary(BuildContext context) =>
+      _isDark(context) ? secondaryDark : secondaryLight;
+
+  static Color accent(BuildContext context) =>
+      _isDark(context) ? accentDark : accentLight;
+
+  static Color textPrimary(BuildContext context) =>
+      _isDark(context) ? textPrimaryDark : textPrimaryLight;
+
+  static Color textSecondary(BuildContext context) =>
+      _isDark(context) ? textSecondaryDark : textSecondaryLight;
+
+  static Color success(BuildContext context) =>
+      _isDark(context) ? successDark : successLight;
+
+  static Color warning(BuildContext context) =>
+      _isDark(context) ? warningDark : warningLight;
+
+  static Color error(BuildContext context) =>
+      _isDark(context) ? errorDark : errorLight;
 }

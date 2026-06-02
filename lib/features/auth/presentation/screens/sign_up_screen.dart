@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:uuid/uuid.dart';
@@ -18,6 +17,7 @@ import '../../../../shared/isar_collections/store_collection.dart';
 import '../../../../shared/isar_collections/sync_queue_collection.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// SignUpScreen — Store creation and admin account registration.
 class SignUpScreen extends StatefulWidget {
@@ -231,11 +231,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         title: Text(
           'Create Your Store',
-          style: GoogleFonts.dmSans(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: textPrimary,
-          ),
+          style: AppTextStyles.priceSmall(context).copyWith(color: textPrimary),
         ),
       ),
       body: SafeArea(
@@ -251,19 +247,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 // Header text
                 Text(
                   'Store Setup',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: textPrimary,
-                  ),
+                  style: AppTextStyles.h2(context).copyWith(color: textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Fill in your details to get started.',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 14,
-                    color: textSecondary,
-                  ),
+                  style: AppTextStyles.body(context).copyWith(color: textSecondary),
                 ),
 
                 const SizedBox(height: 28),
@@ -308,10 +297,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     const SizedBox(height: 6),
                                     Text(
                                       'Add Logo',
-                                      style: GoogleFonts.dmSans(
-                                        fontSize: 12,
-                                        color: textSecondary,
-                                      ),
+                                      style: AppTextStyles.caption(context).copyWith(color: textSecondary),
                                     ),
                                   ],
                                 )
@@ -459,10 +445,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         Expanded(
                           child: Text(
                             _errorMessage!,
-                            style: GoogleFonts.dmSans(
-                              fontSize: 13,
-                              color: AppColors.errorLight,
-                            ),
+                            style: AppTextStyles.body(context).copyWith(color: AppColors.errorLight),
                           ),
                         ),
                       ],
@@ -476,10 +459,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Center(
                   child: Text(
                     'By continuing you agree to our Terms of Service.',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      color: textSecondary,
-                    ),
+                    style: AppTextStyles.caption(context).copyWith(color: textSecondary),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -494,26 +474,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     onPressed: _isLoading ? null : _onSubmit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: accent,
+                      foregroundColor: isDark ? AppColors.primaryDark : Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: isDark ? AppColors.primaryDark : Colors.white,
                             ),
                           )
                         : Text(
                             'Create Store Account',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                            style: AppTextStyles.bodySemiBold(context).copyWith(
+                              color: isDark ? AppColors.primaryDark : Colors.white,
                             ),
                           ),
                   ),
@@ -526,11 +505,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     onTap: () => context.push(RouteConstants.adminLogin),
                     child: Text(
                       'I already have a store account',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: accent,
-                      ),
+                      style: AppTextStyles.body(context).copyWith(color: accent),
                     ),
                   ),
                 ),
@@ -563,12 +538,7 @@ class _SignUpField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.dmSans(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: textSecondary,
-            letterSpacing: 1.1,
-          ),
+          style: AppTextStyles.label(context).copyWith(color: textSecondary),
         ),
         const SizedBox(height: 6),
         child,

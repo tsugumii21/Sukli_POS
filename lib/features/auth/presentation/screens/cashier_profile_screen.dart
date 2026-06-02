@@ -1,3 +1,4 @@
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
@@ -107,7 +107,7 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
         body: Center(
           child: Text(
             'No cashier logged in.',
-            style: GoogleFonts.dmSans(color: textSecondary),
+            style: AppTextStyles.body(context).copyWith(color: textSecondary),
           ),
         ),
       );
@@ -200,11 +200,7 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
                         cashier.pinHash == null
                             ? 'No PIN set. Set one below.'
                             : 'Enter your current PIN to set a new one.',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 12,
-                          color: textSecondary,
-                          height: 1.5,
-                        ),
+                        style: AppTextStyles.caption(context).copyWith(color: textSecondary),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       AppCard(
@@ -275,11 +271,7 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
                                     const SizedBox(width: 10),
                                     Text(
                                       'Changes Saved!',
-                                      style: GoogleFonts.dmSans(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 16,
-                                      ),
+                                      style: AppTextStyles.bodyLarge(context).copyWith(color: Colors.white),
                                     ),
                                   ],
                                 ),
@@ -319,11 +311,7 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
                                         )
                                       : Text(
                                           'Save Changes',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: 0.1,
-                                          ),
+                                          style: AppTextStyles.bodyLarge(context),
                                         ),
                                 ),
                               ),
@@ -367,20 +355,13 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
                           ),
                           title: Text(
                             isDarkMode ? 'Dark Mode' : 'Light Mode',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: textPrimary,
-                            ),
+                            style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
                           ),
                           subtitle: Text(
                             isDarkMode
                                 ? 'Switch to light theme'
                                 : 'Switch to dark theme',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 11,
-                              color: textSecondary,
-                            ),
+                            style: AppTextStyles.label(context).copyWith(color: textSecondary),
                           ),
                           trailing: Switch.adaptive(
                             value: isDarkMode,
@@ -395,35 +376,7 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
 
                       const SizedBox(height: AppSpacing.xl),
 
-                      // ── Logout ───────────────────────────────────────
-                      Center(
-                        child: TextButton.icon(
-                          onPressed: () => _confirmLogout(context),
-                          icon: const Icon(
-                            Icons.power_settings_new_rounded,
-                            color: AppColors.errorLight,
-                            size: 20,
-                          ),
-                          label: Text(
-                            'Logout',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.errorLight,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.errorLight,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg,
-                              vertical: AppSpacing.sm,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: AppRadius.pillBR,
-                            ),
-                          ),
-                        ),
-                      ).animate().fadeIn(delay: 230.ms, duration: 320.ms),
+
                     ],
                   ),
                 ),
@@ -459,12 +412,7 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
       ),
       title: Text(
         'My Profile',
-        style: GoogleFonts.dmSans(
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
-          color: textPrimary,
-          letterSpacing: -0.3,
-        ),
+        style: AppTextStyles.h3(context).copyWith(color: textPrimary),
       ),
     );
   }
@@ -487,7 +435,7 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Could not pick image: ${e.message}',
-            style: GoogleFonts.dmSans()),
+            style: AppTextStyles.body(context)),
         backgroundColor: AppColors.secondaryLight,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.smallBR),
@@ -595,47 +543,7 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
     }
   }
 
-  // ── Logout ───────────────────────────────────────────────────────────────────
 
-  void _confirmLogout(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.largeBR),
-        title: Text(
-          'Logout',
-          style: GoogleFonts.dmSans(fontWeight: FontWeight.w700),
-        ),
-        content: Text(
-          'Are you sure you want to logout?',
-          style: GoogleFonts.dmSans(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.dmSans(color: Colors.grey.shade600),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref.read(authProvider.notifier).logout();
-              context.go(RouteConstants.cashierSelect);
-            },
-            child: Text(
-              'Logout',
-              style: GoogleFonts.dmSans(
-                color: AppColors.errorLight,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -643,7 +551,7 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: GoogleFonts.dmSans()),
+        content: Text(message, style: AppTextStyles.body(context)),
         backgroundColor: AppColors.secondaryLight,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.smallBR),
@@ -721,11 +629,7 @@ class _HeroHeader extends StatelessWidget {
         backgroundColor: Colors.white.withAlpha(30),
         child: Text(
           initial,
-          style: GoogleFonts.dmSans(
-            fontSize: 36,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
+          style: AppTextStyles.h2(context).copyWith(color: Colors.white),
         ),
       );
     }
@@ -841,12 +745,7 @@ class _SectionLabel extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label.toUpperCase(),
-          style: GoogleFonts.dmSans(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: textSecondary,
-            letterSpacing: 1.2,
-          ),
+          style: AppTextStyles.label(context).copyWith(color: textSecondary),
         ),
       ],
     );
@@ -915,22 +814,13 @@ class _EditableRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 11,
-                    color: textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: AppTextStyles.label(context).copyWith(color: textSecondary),
                 ),
                 TextFormField(
                   controller: controller,
                   validator: validator,
                   textInputAction: TextInputAction.done,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 14,
-                    color: textPrimary,
-                    fontWeight: FontWeight.w600,
-                    height: 1.4,
-                  ),
+                  style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
                   decoration: InputDecoration(
                     isDense: true,
                     contentPadding: const EdgeInsets.only(top: 4),
@@ -996,20 +886,12 @@ class _ReadOnlyRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 11,
-                    color: textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: AppTextStyles.label(context).copyWith(color: textSecondary),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 14,
-                    color: textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
                 ),
               ],
             ),
@@ -1067,11 +949,7 @@ class _RoleRow extends StatelessWidget {
             children: [
               Text(
                 'Role',
-                style: GoogleFonts.dmSans(
-                  fontSize: 11,
-                  color: textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTextStyles.label(context).copyWith(color: textSecondary),
               ),
               const SizedBox(height: 4),
               Container(
@@ -1083,11 +961,7 @@ class _RoleRow extends StatelessWidget {
                 ),
                 child: Text(
                   _capitalize(role),
-                  style: GoogleFonts.dmSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
+                  style: AppTextStyles.caption(context).copyWith(color: Colors.white),
                 ),
               ),
             ],
@@ -1161,11 +1035,7 @@ class _PinInputRowState extends State<_PinInputRow> {
         children: [
           Text(
             widget.label,
-            style: GoogleFonts.dmSans(
-              fontSize: 11,
-              color: textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
+            style: AppTextStyles.label(context).copyWith(color: textSecondary),
           ),
           const SizedBox(height: 10),
           Row(
@@ -1215,11 +1085,7 @@ class _PinInputRowState extends State<_PinInputRow> {
                                         )
                                       : Text(
                                           text[i],
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.accentLight,
-                                          ),
+                                          style: AppTextStyles.h3(context).copyWith(color: AppColors.accentLight),
                                         ))
                                   : null,
                             ),

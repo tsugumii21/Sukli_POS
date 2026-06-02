@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -21,11 +22,10 @@ class CategoryTile extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
     final cardBg = isDark ? AppColors.cardDark : AppColors.white;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -196,7 +196,10 @@ class _IconBtn extends StatelessWidget {
         icon: Icon(icon, size: 20),
         color: color,
         visualDensity: VisualDensity.compact,
-        onPressed: onPressed,
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          onPressed();
+        },
         tooltip: '',
       );
 }

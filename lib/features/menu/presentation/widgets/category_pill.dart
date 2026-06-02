@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// CategoryPill — Horizontal filter chip for menu categories.
 /// No emoji is rendered; category name text only.
@@ -27,8 +28,14 @@ class CategoryPill extends StatelessWidget {
     final unselectedText =
         isDark ? AppColors.textSecondaryDark : AppColors.textPrimaryLight;
 
-    return GestureDetector(
-      onTap: onTap,
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(99),
+      splashColor: isDark ? AppColors.accentDark.withValues(alpha: 0.08) : AppColors.accentLight.withValues(alpha: 0.08),
+      highlightColor: isDark ? AppColors.accentDark.withValues(alpha: 0.04) : AppColors.accentLight.withValues(alpha: 0.04),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
@@ -51,11 +58,7 @@ class CategoryPill extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.dmSans(
-            color: isSelected ? selectedText : unselectedText,
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-          ),
+          style: AppTextStyles.body(context).copyWith(color: isSelected ? selectedText :unselectedText),
         ),
       ),
     );

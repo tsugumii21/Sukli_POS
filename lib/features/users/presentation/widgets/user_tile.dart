@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
 import '../providers/users_provider.dart';
 
@@ -21,41 +22,35 @@ class UserTile extends ConsumerWidget {
   final VoidCallback onTap;
   final int animationIndex;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? AppColors.cardDark : AppColors.white;
-    final textPrimary =
-        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final textSecondary =
-        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
     final initial = user.name.isNotEmpty ? user.name[0].toUpperCase() : '?';
     final isCashier = user.role == 'cashier';
+    
+    final primaryColor = isDark ? AppColors.accentDark : AppColors.secondaryLight;
+    final secondaryColor = isDark ? AppColors.accentDarkLight : AppColors.accentLight;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: AppRadius.largeBR,
+        boxShadow: AppShadow.level1,
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.largeBR,
         child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          splashColor: _maroon.withValues(alpha: 0.06),
-          highlightColor: _maroon.withValues(alpha: 0.03),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          borderRadius: AppRadius.largeBR,
+          splashColor: primaryColor.withValues(alpha: 0.06),
+          highlightColor: primaryColor.withValues(alpha: 0.03),
           child: Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md, vertical: AppSpacing.sm),
@@ -63,34 +58,24 @@ class UserTile extends ConsumerWidget {
               children: [
                 // ── Avatar ────────────────────────────────────────────────
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 48, height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isCashier
-                        ? _maroon.withValues(alpha: 0.1)
-                        : (isDark
-                            ? AppColors.accentDark.withValues(alpha: 0.15)
-                            : AppColors.accentLight.withValues(alpha: 0.12)),
+                        ? primaryColor.withValues(alpha: 0.1)
+                        : secondaryColor.withValues(alpha: 0.12),
                     border: Border.all(
                       color: isCashier
-                          ? _maroon.withValues(alpha: 0.2)
-                          : (isDark
-                              ? AppColors.accentDark.withValues(alpha: 0.3)
-                              : AppColors.accentLight.withValues(alpha: 0.25)),
+                          ? primaryColor.withValues(alpha: 0.2)
+                          : secondaryColor.withValues(alpha: 0.25),
                       width: 1.5,
                     ),
                   ),
                   child: Center(
                     child: Text(
                       initial,
-                      style: GoogleFonts.dmSans(
-                        color: isCashier
-                            ? _maroon
-                            : (isDark
-                                ? AppColors.accentDarkLight
-                                : AppColors.accentLight),
-                        fontSize: 17,
+                      style: AppTextStyles.bodyLarge(context).copyWith(
+                        color: isCashier ? primaryColor : secondaryColor,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -107,10 +92,8 @@ class UserTile extends ConsumerWidget {
                         user.name,
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
-                        style: GoogleFonts.dmSans(
-                          color: textPrimary,
+                        style: AppTextStyles.bodySemiBold(context).copyWith(
                           fontSize: 15,
-                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -118,10 +101,7 @@ class UserTile extends ConsumerWidget {
                         user.email,
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
-                        style: GoogleFonts.dmSans(
-                          color: textSecondary,
-                          fontSize: 12,
-                        ),
+                        style: AppTextStyles.captionSecondary(context),
                       ),
                     ],
                   ),
@@ -140,9 +120,9 @@ class UserTile extends ConsumerWidget {
         ),
       ),
     )
-        .animate(delay: Duration(milliseconds: animationIndex * 40))
-        .fadeIn(duration: 300.ms)
-        .slideY(begin: 0.06, end: 0);
+        .animate(delay: Duration(milliseconds: (animationIndex * 40).clamp(0, 400)))
+        .fadeIn(duration: AppDuration.medium)
+        .slideY(begin: 0.08, end: 0, duration: AppDuration.medium, curve: AppCurve.standard);
   }
 }
 
@@ -157,37 +137,34 @@ class _RoleChip extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isAdmin = role == 'admin';
 
+    final primaryColor = isDark ? AppColors.accentDark : AppColors.secondaryLight;
+
     final bg = isAdmin
-        ? (isDark
-            ? const Color(0xFF8B4049).withValues(alpha: 0.25)
-            : const Color(0xFF8B4049).withValues(alpha: 0.1))
+        ? primaryColor.withValues(alpha: isDark ? 0.25 : 0.1)
         : (isDark
             ? AppColors.cardLight.withValues(alpha: 0.15)
             : AppColors.cardLight);
 
     final textColor = isAdmin
-        ? const Color(0xFF8B4049)
-        : (isDark ? AppColors.textSecondaryDark : const Color(0xFF6B4B3E));
+        ? primaryColor
+        : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadius.pillBR,
         border: Border.all(
           color: isAdmin
-              ? const Color(0xFF8B4049).withValues(alpha: 0.3)
+              ? primaryColor.withValues(alpha: 0.3)
               : AppColors.cardLight.withValues(alpha: isDark ? 0.2 : 0.5),
           width: 1,
         ),
       ),
       child: Text(
         isAdmin ? 'Admin' : 'Cashier',
-        style: GoogleFonts.dmSans(
+        style: AppTextStyles.label(context).copyWith(
           color: textColor,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.2,
         ),
       ),
     );
@@ -202,14 +179,20 @@ class _ActiveToggle extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isActive = user.status == 'active';
+    final activeColor = isDark ? AppColors.accentDark : AppColors.secondaryLight;
+
     return Switch.adaptive(
       value: isActive,
-      onChanged: (_) => ref.read(usersProvider.notifier).toggleStatus(user),
-      activeThumbColor: const Color(0xFF8B4049),
-      activeTrackColor: const Color(0xFF8B4049).withValues(alpha: 0.3),
-      inactiveThumbColor: Colors.grey.shade400,
-      inactiveTrackColor: Colors.grey.withValues(alpha: 0.15),
+      onChanged: (_) {
+        HapticFeedback.lightImpact();
+        ref.read(usersProvider.notifier).toggleStatus(user);
+      },
+      activeThumbColor: activeColor,
+      activeTrackColor: activeColor.withValues(alpha: 0.3),
+      inactiveThumbColor: isDark ? AppColors.textDisabledDark : Colors.grey.shade400,
+      inactiveTrackColor: (isDark ? AppColors.borderDark : Colors.grey).withValues(alpha: 0.15),
     );
   }
 }

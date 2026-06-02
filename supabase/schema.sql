@@ -38,6 +38,7 @@ CREATE TABLE users (
 CREATE TABLE categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   sync_id TEXT UNIQUE NOT NULL,
+  parent_id TEXT REFERENCES categories(sync_id),
   name TEXT NOT NULL,
   description TEXT,
   icon_emoji TEXT,
@@ -58,11 +59,13 @@ CREATE TABLE menu_items (
   base_price NUMERIC(10,2) NOT NULL,
   image_url TEXT,
   is_available BOOLEAN NOT NULL DEFAULT TRUE,
+  is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
   track_inventory BOOLEAN NOT NULL DEFAULT FALSE,
   stock_quantity NUMERIC(10,2),
   low_stock_threshold NUMERIC(10,2),
   sort_order INTEGER NOT NULL DEFAULT 0,
   variants_json JSONB DEFAULT '[]',
+  variant_groups_json JSONB DEFAULT '[]',
   modifiers_json JSONB DEFAULT '[]',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -91,6 +94,12 @@ CREATE TABLE orders (
   refund_reason TEXT,
   voided_by_id TEXT,
   voided_at TIMESTAMPTZ,
+  voided_by_name TEXT,
+  is_partial_refund BOOLEAN NOT NULL DEFAULT FALSE,
+  refund_amount NUMERIC(10,2),
+  refunded_at TIMESTAMPTZ,
+  refunded_by_id TEXT,
+  refunded_by_name TEXT,
   ordered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -153,11 +162,11 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_logs ENABLE ROW LEVEL SECURITY;
 
 -- Read Policy
-CREATE POLICY "Allow authenticated read" ON users FOR SELECT TO authenticated USING (is_deleted = FALSE);
-CREATE POLICY "Allow authenticated read" ON categories FOR SELECT TO authenticated USING (is_deleted = FALSE);
-CREATE POLICY "Allow authenticated read" ON menu_items FOR SELECT TO authenticated USING (is_deleted = FALSE);
-CREATE POLICY "Allow authenticated read" ON orders FOR SELECT TO authenticated USING (is_deleted = FALSE);
-CREATE POLICY "Allow authenticated read" ON inventory_logs FOR SELECT TO authenticated USING (is_deleted = FALSE);
+CREATE POLICY "Allow authenticated read" ON users FOR SELECT TO authenticated USING (TRUE);
+CREATE POLICY "Allow authenticated read" ON categories FOR SELECT TO authenticated USING (TRUE);
+CREATE POLICY "Allow authenticated read" ON menu_items FOR SELECT TO authenticated USING (TRUE);
+CREATE POLICY "Allow authenticated read" ON orders FOR SELECT TO authenticated USING (TRUE);
+CREATE POLICY "Allow authenticated read" ON inventory_logs FOR SELECT TO authenticated USING (TRUE);
 
 -- Insert Policy
 CREATE POLICY "Allow authenticated insert" ON users FOR INSERT TO authenticated WITH CHECK (TRUE);
@@ -206,11 +215,40 @@ ALTER TABLE inventory_logs ADD COLUMN store_id TEXT REFERENCES stores(sync_id);
 -- RLS for stores
 ALTER TABLE stores ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow authenticated read" ON stores
-  FOR SELECT TO authenticated USING (is_deleted = FALSE);
+  FOR SELECT TO authenticated USING (TRUE);
 CREATE POLICY "Allow authenticated insert" ON stores
   FOR INSERT TO authenticated WITH CHECK (TRUE);
 CREATE POLICY "Allow authenticated update" ON stores
   FOR UPDATE TO authenticated USING (TRUE);
+
+-- *** ANON ROLE POLICIES (development / offline-first sync) ***
+-- These allow the anon key to push sync queue records when no
+-- authenticated session exists (e.g. app boots before user logs in).
+-- IMPORTANT: Remove or restrict these for production deployments.
+
+-- Anon SELECT
+CREATE POLICY "Allow anon read" ON stores FOR SELECT TO anon USING (TRUE);
+CREATE POLICY "Allow anon read" ON users FOR SELECT TO anon USING (TRUE);
+CREATE POLICY "Allow anon read" ON categories FOR SELECT TO anon USING (TRUE);
+CREATE POLICY "Allow anon read" ON menu_items FOR SELECT TO anon USING (TRUE);
+CREATE POLICY "Allow anon read" ON orders FOR SELECT TO anon USING (TRUE);
+CREATE POLICY "Allow anon read" ON inventory_logs FOR SELECT TO anon USING (TRUE);
+
+-- Anon INSERT
+CREATE POLICY "Allow anon insert" ON stores FOR INSERT TO anon WITH CHECK (TRUE);
+CREATE POLICY "Allow anon insert" ON users FOR INSERT TO anon WITH CHECK (TRUE);
+CREATE POLICY "Allow anon insert" ON categories FOR INSERT TO anon WITH CHECK (TRUE);
+CREATE POLICY "Allow anon insert" ON menu_items FOR INSERT TO anon WITH CHECK (TRUE);
+CREATE POLICY "Allow anon insert" ON orders FOR INSERT TO anon WITH CHECK (TRUE);
+CREATE POLICY "Allow anon insert" ON inventory_logs FOR INSERT TO anon WITH CHECK (TRUE);
+
+-- Anon UPDATE
+CREATE POLICY "Allow anon update" ON stores FOR UPDATE TO anon USING (TRUE);
+CREATE POLICY "Allow anon update" ON users FOR UPDATE TO anon USING (TRUE);
+CREATE POLICY "Allow anon update" ON categories FOR UPDATE TO anon USING (TRUE);
+CREATE POLICY "Allow anon update" ON menu_items FOR UPDATE TO anon USING (TRUE);
+CREATE POLICY "Allow anon update" ON orders FOR UPDATE TO anon USING (TRUE);
+CREATE POLICY "Allow anon update" ON inventory_logs FOR UPDATE TO anon USING (TRUE);
 
 -- Storage bucket for store logos and avatars
 INSERT INTO storage.buckets (id, name, public)
@@ -224,3 +262,4 @@ CREATE POLICY "Public read store assets"
 CREATE POLICY "Auth upload store assets"
   ON storage.objects FOR INSERT
   TO authenticated WITH CHECK (bucket_id = 'store-assets');
+

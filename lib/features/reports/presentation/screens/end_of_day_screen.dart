@@ -64,6 +64,7 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
           icon: Icon(Icons.arrow_back_ios_new_rounded,
               color: textPrimary, size: 20),
           onPressed: () {
+            HapticFeedback.lightImpact();
             if (context.canPop()) {
               context.pop();
             } else {
@@ -103,8 +104,10 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
               child: ElevatedButton.icon(
                 onPressed: s.isLoading
                     ? null
-                    : () =>
-                        ref.read(endOfDayProvider.notifier).generateReport(),
+                    : () {
+                        HapticFeedback.lightImpact();
+                        ref.read(endOfDayProvider.notifier).generateReport();
+                      },
                 icon: s.isLoading
                     ? const SizedBox(
                         width: 18,
@@ -181,7 +184,9 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
                       style: AppTextStyles.caption(ctx).copyWith(color: ts)),
                   const SizedBox(width: AppSpacing.sm),
                   Text(CurrencyFormatter.format(p.total),
-                      style: AppTextStyles.bodySemiBold(ctx)),
+                      style: AppTextStyles.bodySemiBold(ctx).copyWith(
+                        fontFeatures: [const FontFeature.tabularFigures()],
+                      )),
                 ]),
               )),
         ],
@@ -224,7 +229,9 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
                     style: AppTextStyles.caption(ctx).copyWith(color: ts)),
                 const SizedBox(width: AppSpacing.sm),
                 Text(CurrencyFormatter.format(i.revenue),
-                    style: AppTextStyles.bodySemiBold(ctx)),
+                    style: AppTextStyles.bodySemiBold(ctx).copyWith(
+                      fontFeatures: [const FontFeature.tabularFigures()],
+                    )),
               ]),
             );
           }),
@@ -253,7 +260,9 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
                       style: AppTextStyles.caption(ctx).copyWith(color: ts)),
                   const SizedBox(width: AppSpacing.sm),
                   Text(CurrencyFormatter.format(c.totalRevenue),
-                      style: AppTextStyles.bodySemiBold(ctx)),
+                      style: AppTextStyles.bodySemiBold(ctx).copyWith(
+                        fontFeatures: [const FontFeature.tabularFigures()],
+                      )),
                 ]),
               )),
       ]),
@@ -282,8 +291,10 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
                 style: AppTextStyles.bodySemiBold(ctx)
                     .copyWith(color: AppColors.errorLight)),
             Text(CurrencyFormatter.format(vr.totalLoss),
-                style: AppTextStyles.bodySemiBold(ctx)
-                    .copyWith(color: AppColors.errorLight)),
+                style: AppTextStyles.bodySemiBold(ctx).copyWith(
+                  color: AppColors.errorLight,
+                  fontFeatures: [const FontFeature.tabularFigures()],
+                )),
           ]),
         ],
       ]),
@@ -307,7 +318,9 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text('Expected Cash', style: AppTextStyles.body(ctx)),
           Text(CurrencyFormatter.format(recon.expectedCash),
-              style: AppTextStyles.bodySemiBold(ctx)),
+              style: AppTextStyles.bodySemiBold(ctx).copyWith(
+                fontFeatures: [const FontFeature.tabularFigures()],
+              )),
         ]),
         const SizedBox(height: AppSpacing.sm),
         TextField(
@@ -329,8 +342,9 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
           ),
           onChanged: (v) {
             final amount = double.tryParse(v.replaceAll(',', ''));
-            if (amount != null)
+            if (amount != null) {
               ref.read(endOfDayProvider.notifier).setActualCash(amount);
+            }
           },
         ),
         if (recon.actualCash != null) ...[
@@ -341,7 +355,10 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
                     AppTextStyles.bodySemiBold(ctx).copyWith(color: diffColor)),
             Text(
               '${diff >= 0 ? '+' : ''}${CurrencyFormatter.format(diff)}',
-              style: AppTextStyles.bodySemiBold(ctx).copyWith(color: diffColor),
+              style: AppTextStyles.bodySemiBold(ctx).copyWith(
+                color: diffColor,
+                fontFeatures: [const FontFeature.tabularFigures()],
+              ),
             ),
           ]),
         ],
@@ -370,7 +387,12 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
           child: SizedBox(
             height: 44,
             child: ElevatedButton.icon(
-              onPressed: s.isDayClosed ? null : () => _saveAndClose(ctx),
+              onPressed: s.isDayClosed
+                  ? null
+                  : () {
+                      HapticFeedback.lightImpact();
+                      _saveAndClose(ctx);
+                    },
               icon: Icon(
                   s.isDayClosed ? Icons.check_circle : Icons.lock_rounded,
                   color: Colors.white,
@@ -396,7 +418,10 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
     final ts =
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
         height: 44,
         width: 56,
@@ -449,9 +474,20 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(children: [
         Expanded(child: Text(label, style: AppTextStyles.body(ctx))),
-        Text(count, style: AppTextStyles.caption(ctx).copyWith(color: ts)),
+        Text(
+          count,
+          style: AppTextStyles.caption(ctx).copyWith(
+            color: ts,
+            fontFeatures: [const FontFeature.tabularFigures()],
+          ),
+        ),
         const SizedBox(width: AppSpacing.sm),
-        Text(amount, style: AppTextStyles.bodySemiBold(ctx)),
+        Text(
+          amount,
+          style: AppTextStyles.bodySemiBold(ctx).copyWith(
+            fontFeatures: [const FontFeature.tabularFigures()],
+          ),
+        ),
       ]),
     );
   }
@@ -557,10 +593,16 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
             style: AppTextStyles.body(c)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(c, false),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.pop(c, false);
+              },
               child: const Text('Cancel')),
           ElevatedButton(
-              onPressed: () => Navigator.pop(c, true),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.pop(c, true);
+              },
               child: const Text('Close Day')),
         ],
       ),
@@ -571,24 +613,24 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
     final key = 'eod_closed_${DateFormat('yyyy-MM-dd').format(DateTime.now())}';
     await prefs.setBool(key, true);
 
+    if (!ctx.mounted) return;
     ref.read(endOfDayProvider.notifier).closeDayConfirmed();
 
     // Export PDF
     await _savePdf(ctx, ref.read(endOfDayProvider));
 
-    if (ctx.mounted) {
-      ScaffoldMessenger.of(ctx).showSnackBar(
-        SnackBar(
-          content: Text('Day closed & report saved',
-              style: AppTextStyles.bodySemiBold(ctx)
-                  .copyWith(color: Colors.white)),
-          backgroundColor: AppColors.successLight,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.mediumBR),
-        ),
-      );
-    }
-  }
+    if (!ctx.mounted) return;
+    ScaffoldMessenger.of(ctx).showSnackBar(
+      SnackBar(
+        content: Text('Day closed & report saved',
+            style: AppTextStyles.bodySemiBold(ctx)
+                .copyWith(color: Colors.white)),
+      backgroundColor: AppColors.successLight,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.mediumBR),
+    ),
+  );
+}
 
   // ── PDF Generation ────────────────────────────────────────────────────
   Future<String?> _savePdf(BuildContext ctx, EndOfDayState s) async {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:isar_community/isar.dart';
 
 import '../../../../core/constants/route_constants.dart';
@@ -10,9 +10,12 @@ import '../../../../core/services/isar_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/isar_collections/category_collection.dart';
+import '../../../../shared/isar_collections/store_collection.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../shared/widgets/app_button.dart';
 import '../providers/admin_auth_provider.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 class AdminLoginScreen extends ConsumerStatefulWidget {
   const AdminLoginScreen({super.key});
@@ -50,13 +53,26 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
 
       if (success && mounted) {
         final isar = IsarService.instance.isar;
+        
+        // Direct query to Isar for the active store to avoid Riverpod async provider lags
+        final activeStore = await isar.storeCollections
+            .filter()
+            .isDeletedEqualTo(false)
+            .isActiveEqualTo(true)
+            .findFirst();
+        final storeId = activeStore?.syncId ?? '';
+
         final cashierCount = await isar.userCollections
             .filter()
+            .storeIdEqualTo(storeId)
+            .and()
             .roleEqualTo('cashier')
             .isDeletedEqualTo(false)
             .count();
         final categoryCount = await isar.categoryCollections
             .filter()
+            .storeIdEqualTo(storeId)
+            .and()
             .isDeletedEqualTo(false)
             .count();
 
@@ -91,11 +107,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
             Expanded(
               child: Text(
                 'Invalid login credentials. Please try again.',
-                style: GoogleFonts.dmSans(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTextStyles.bodyMedium(context).copyWith(color: Colors.white),
               ),
             ),
           ],
@@ -127,7 +139,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           children: [
             // ── TOP HEADER ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
               child: Row(
                 children: [
                   GestureDetector(
@@ -139,11 +151,10 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                       }
                     },
                     child: Container(
-                      width: 44,
-                      height: 44,
+                      width: 48, height: 48,
                       decoration: BoxDecoration(
                         color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.mediumBR,
                         border: Border.all(
                             color: textSecondary.withValues(alpha: 0.2)),
                       ),
@@ -163,7 +174,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
               height: 80,
               decoration: BoxDecoration(
                 color: isDark ? AppColors.cardDark : AppColors.cardLight,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppRadius.largeBR,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
@@ -172,34 +183,25 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                   ),
                 ],
               ),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Image.asset(
                 'assets/images/sukli_logo.png',
                 fit: BoxFit.contain,
               ),
             ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
 
             Text(
               'Admin Portal',
-              style: GoogleFonts.dmSans(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: textPrimary,
-                letterSpacing: -0.5,
-              ),
+              style: AppTextStyles.h2(context).copyWith(color: textPrimary),
             ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2, end: 0),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.xs),
 
             Text(
               'Sign in to manage your store',
-              style: GoogleFonts.dmSans(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: textSecondary,
-              ),
+              style: AppTextStyles.bodyMedium(context).copyWith(color: textSecondary),
             ).animate().fadeIn(delay: 200.ms),
 
             const Spacer(flex: 2),
@@ -207,7 +209,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
             // ── BOTTOM SHEET FORM ──
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(32, 40, 32, 0),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl + AppSpacing.xs, AppSpacing.xl, 0),
               decoration: BoxDecoration(
                 color: cardBg,
                 borderRadius: const BorderRadius.only(
@@ -238,15 +240,17 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                         textInputAction: TextInputAction.next,
                         onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty)
+                          if (value == null || value.trim().isEmpty) {
                             return 'Email is required';
-                          if (!value.contains('@'))
+                          }
+                          if (!value.contains('@')) {
                             return 'Enter a valid email';
+                          }
                           return null;
                         },
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.md),
 
                       AppTextField(
                         label: 'Password',
@@ -269,77 +273,55 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                               () => _obscurePassword = !_obscurePassword),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty)
+                          if (value == null || value.isEmpty) {
                             return 'Password is required';
+                          }
                           return null;
                         },
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(height: AppSpacing.xl),
 
-                      SizedBox(
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: accent,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
-                                )
-                              : Text(
-                                  'Sign In',
-                                  style: GoogleFonts.dmSans(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                        ),
+                      AppPrimaryButton(
+                        label: 'Sign In',
+                        onPressed: isLoading ? null : _login,
+                        isLoading: isLoading,
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSpacing.lg),
 
-                      Text.rich(
-                        TextSpan(
-                          text: "Don't have a store? ",
-                          style: GoogleFonts.dmSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: textSecondary,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Don't have a store? ",
+                            style: AppTextStyles.bodyMedium(context).copyWith(color: textSecondary),
                           ),
-                          children: [
-                            WidgetSpan(
-                              child: GestureDetector(
-                                onTap: () =>
-                                    context.push(RouteConstants.signup),
-                                child: Text(
-                                  'Sign Up',
-                                  style: GoogleFonts.dmSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: accent,
-                                  ),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              context.push(RouteConstants.signup);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xs + 4),
+                              child: Text(
+                                'Sign Up',
+                                style: AppTextStyles.body(context).copyWith(
+                                  color: accent,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                        textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
+
+
 
                       // Extra padding for safe area
                       SizedBox(
-                          height: MediaQuery.of(context).padding.bottom + 24),
+                          height: MediaQuery.of(context).padding.bottom + AppSpacing.lg),
                     ],
                   ),
                 ),

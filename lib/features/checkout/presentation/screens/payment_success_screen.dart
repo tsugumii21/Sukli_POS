@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/route_constants.dart';
@@ -15,17 +14,17 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/utils/order_number_helper.dart';
 
 /// PaymentSuccessScreen — celebrates a completed payment with an animated
 /// checkmark, an order summary card, and print/navigation actions.
 class PaymentSuccessScreen extends ConsumerWidget {
   const PaymentSuccessScreen({super.key});
 
-  static const _maroon = Color(0xFF8B4049);
-  static const _maroonDeep = Color(0xFF6B2C33);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final maroon = Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight;
     final checkout = ref.watch(checkoutProvider);
     final order = checkout.completedOrder;
 
@@ -37,7 +36,7 @@ class PaymentSuccessScreen extends ConsumerWidget {
         if (!didPop) context.go(RouteConstants.cashierHome);
       },
       child: Scaffold(
-        backgroundColor: _maroon,
+        backgroundColor: maroon,
         body: order == null
             ? _buildFallback(context)
             : _buildSuccess(context, ref, order),
@@ -58,17 +57,14 @@ class PaymentSuccessScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               'No order data found.',
-              style: GoogleFonts.dmSans(color: Colors.white70, fontSize: 16),
+              style: AppTextStyles.bodyLarge(context).copyWith(color: Colors.white70),
             ),
             const SizedBox(height: 24),
             TextButton(
               onPressed: () => context.go(RouteConstants.cashierHome),
               child: Text(
                 'Back to Home',
-                style: GoogleFonts.dmSans(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AppTextStyles.body(context).copyWith(color: Colors.white),
               ),
             ),
           ],
@@ -116,11 +112,21 @@ class PaymentSuccessScreen extends ConsumerWidget {
 
                   // Order number + timestamp
                   Text(
-                    '${order.orderNumber}  •  ${DateFormat('hh:mm a').format(order.orderedAt)}',
+                    '${OrderNumberHelper.toShort(order.orderNumber as String)}  •  ${DateFormat('hh:mm a').format(order.orderedAt)}',
                     style: AppTextStyles.caption(context).copyWith(
                       color: Colors.white.withValues(alpha: 0.75),
                     ),
                   ).animate().fadeIn(duration: 400.ms, delay: 650.ms),
+
+                  SizedBox(height: AppSpacing.md),
+
+                  // Total paid — hero number
+                  Text(
+                    CurrencyFormatter.format(order.totalAmount as double),
+                    style: AppTextStyles.priceDisplay(context, color: Colors.white).copyWith(
+                      fontSize: 40,
+                    ),
+                  ).animate().fadeIn(duration: 400.ms, delay: 700.ms),
 
                   SizedBox(height: AppSpacing.xl),
 
@@ -237,6 +243,9 @@ class PaymentSuccessScreen extends ConsumerWidget {
   // ── Bottom buttons ────────────────────────────────────────────────────────
 
   Widget _buildButtons(BuildContext context, WidgetRef ref, dynamic order) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
+    final maroonDeep = isDark ? AppColors.accentDark : AppColors.accentLight;
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.md,
@@ -245,7 +254,7 @@ class PaymentSuccessScreen extends ConsumerWidget {
         AppSpacing.md + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
-        color: _maroonDeep.withValues(alpha: 0.5),
+        color: maroonDeep.withValues(alpha: 0.5),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -258,7 +267,7 @@ class PaymentSuccessScreen extends ConsumerWidget {
               onPressed: () => _onPrintReceipt(context, ref, order),
               style: OutlinedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: _maroon,
+                foregroundColor: maroon,
                 side: BorderSide.none,
                 shape: RoundedRectangleBorder(
                   borderRadius: AppRadius.largeBR,
@@ -268,7 +277,7 @@ class PaymentSuccessScreen extends ConsumerWidget {
               label: Text(
                 'Print Receipt',
                 style: AppTextStyles.bodySemiBold(context)
-                    .copyWith(color: _maroon),
+                    .copyWith(color: maroon),
               ),
             ),
           ),
@@ -392,7 +401,7 @@ class _OrderSummaryCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: AppRadius.largeBR,
         boxShadow: [
           BoxShadow(
@@ -408,20 +417,19 @@ class _OrderSummaryCard extends StatelessWidget {
           // Card header
           Container(
             padding: EdgeInsets.all(AppSpacing.md),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF0E8DC),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark ? AppColors.cardDark : AppColors.cardLight,
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.receipt_rounded,
-                    color: Color(0xFF8B4049), size: 20),
+                Icon(Icons.receipt_rounded,
+                    color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     order.orderNumber as String,
-                    style: AppTextStyles.bodySemiBold(context)
-                        .copyWith(color: AppColors.textPrimaryLight),
+                    style: AppTextStyles.bodySemiBold(context),
                   ),
                 ),
                 Container(
@@ -430,13 +438,13 @@ class _OrderSummaryCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.successLight.withValues(alpha: 0.20),
+                    color: AppColors.success(context).withValues(alpha: 0.20),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     'Completed',
                     style: AppTextStyles.captionMedium(context)
-                        .copyWith(color: AppColors.successLight),
+                        .copyWith(color: AppColors.success(context)),
                   ),
                 ),
               ],
@@ -452,25 +460,25 @@ class _OrderSummaryCard extends StatelessWidget {
                 Row(
                   children: [
                     const Icon(Icons.person_outline_rounded,
-                        size: 14, color: Color(0xFF5D4037)),
+                        size: 14, color: Colors.grey),
                     const SizedBox(width: 6),
                     Text(
                       order.cashierName as String,
                       style: AppTextStyles.caption(context)
-                          .copyWith(color: AppColors.textSecondaryLight),
+                          .copyWith(color: AppColors.textSecondary(context)),
                     ),
                     const Spacer(),
                     Text(
                       DateFormat('MMM dd  hh:mm a')
                           .format(order.orderedAt as DateTime),
                       style: AppTextStyles.caption(context)
-                          .copyWith(color: AppColors.textSecondaryLight),
+                          .copyWith(color: AppColors.textSecondary(context)),
                     ),
                   ],
                 ),
 
                 SizedBox(height: AppSpacing.sm),
-                const Divider(height: 1, color: Color(0xFFE8D5C4)),
+                Divider(height: 1, color: Theme.of(context).brightness == Brightness.dark ? AppColors.accentDark : AppColors.primaryLightVariant),
                 SizedBox(height: AppSpacing.sm),
 
                 // Items
@@ -495,36 +503,33 @@ class _OrderSummaryCard extends StatelessWidget {
                             children: [
                               Text(
                                 '$name${variant != null ? ' ($variant)' : ''}',
-                                style: AppTextStyles.bodySemiBold(context)
-                                    .copyWith(
-                                        color: AppColors.textPrimaryLight),
+                                style: AppTextStyles.bodySemiBold(context),
                               ),
                               if (mods.isNotEmpty)
                                 Text(
                                   mods.join(' · '),
                                   style: AppTextStyles.caption(context)
-                                      .copyWith(
-                                          color: AppColors.textSecondaryLight),
+                                      .copyWith(color: AppColors.textSecondary(context)),
                                 ),
                               Text(
                                 'x$qty',
                                 style: AppTextStyles.caption(context).copyWith(
-                                    color: AppColors.textSecondaryLight),
+                                    color: AppColors.textSecondary(context)),
                               ),
                             ],
                           ),
                         ),
                         Text(
                           CurrencyFormatter.format(subtotal),
-                          style: AppTextStyles.bodyMedium(context)
-                              .copyWith(color: AppColors.accentLight),
-                        ),
+                            style: AppTextStyles.bodyMedium(context)
+                                .copyWith(color: AppColors.accent(context)),
+                          ),
                       ],
                     ),
                   );
                 }),
 
-                const Divider(height: 1, color: Color(0xFFE8D5C4)),
+                Divider(height: 1, color: Theme.of(context).brightness == Brightness.dark ? AppColors.accentDark : AppColors.primaryLightVariant),
                 SizedBox(height: AppSpacing.sm),
 
                 // Totals
@@ -537,17 +542,17 @@ class _OrderSummaryCard extends StatelessWidget {
                     label: 'Discount',
                     value:
                         '−${CurrencyFormatter.format(order.discountAmount as double)}',
-                    valueColor: AppColors.successLight,
+                    valueColor: AppColors.success(context),
                   ),
                 _CardRow(
                   label: 'Total',
                   value: CurrencyFormatter.format(order.totalAmount as double),
                   bold: true,
-                  valueColor: AppColors.accentLight,
+                  valueColor: AppColors.accent(context),
                 ),
 
                 SizedBox(height: AppSpacing.xs),
-                const Divider(height: 1, color: Color(0xFFE8D5C4)),
+                Divider(height: 1, color: Theme.of(context).brightness == Brightness.dark ? AppColors.accentDark : AppColors.primaryLightVariant),
                 SizedBox(height: AppSpacing.sm),
 
                 // Payment
@@ -565,7 +570,7 @@ class _OrderSummaryCard extends StatelessWidget {
                     label: 'Change',
                     value:
                         CurrencyFormatter.format(order.changeAmount as double),
-                    valueColor: AppColors.successLight,
+                    valueColor: AppColors.success(context),
                     bold: true,
                   ),
               ],

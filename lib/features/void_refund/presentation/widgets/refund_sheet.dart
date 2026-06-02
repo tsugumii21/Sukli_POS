@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
+import '../../../../shared/widgets/app_text_field.dart';
 
 /// RefundType distinguishes between full and partial refunds.
 enum RefundType { full, partial }
@@ -46,15 +47,20 @@ class RefundSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.62,
-        minChildSize: 0.45,
-        maxChildSize: 0.95,
-        snap: true,
-        snapSizes: const [0.62, 0.95],
-        builder: (_, scrollCtrl) => RefundSheet(
-          order: order,
-          scrollController: scrollCtrl,
+      builder: (_) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.62,
+          minChildSize: 0.45,
+          maxChildSize: 0.95,
+          snap: true,
+          snapSizes: const [0.62, 0.95],
+          builder: (_, scrollCtrl) => RefundSheet(
+            order: order,
+            scrollController: scrollCtrl,
+          ),
         ),
       ),
     );
@@ -137,8 +143,7 @@ class _RefundSheetState extends State<RefundSheet> {
             Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 48, height: 48,
                   decoration: BoxDecoration(
                     color: accent.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
@@ -247,7 +252,7 @@ class _RefundSheetState extends State<RefundSheet> {
                           _SectionLabel(
                               label: 'REFUND AMOUNT',
                               textSecondary: textSecondary),
-                          TextFormField(
+                          AppTextField(
                             controller: _amountCtrl,
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
@@ -255,24 +260,7 @@ class _RefundSheetState extends State<RefundSheet> {
                               FilteringTextInputFormatter.allow(
                                   RegExp(r'[\d.]'))
                             ],
-                            style: AppTextStyles.body(context)
-                                .copyWith(color: textPrimary),
-                            decoration: InputDecoration(
-                              prefixText: '₱ ',
-                              prefixStyle: AppTextStyles.bodyMedium(context)
-                                  .copyWith(color: accent),
-                              hintText: '0.00',
-                              hintStyle: AppTextStyles.body(context)
-                                  .copyWith(color: textSecondary),
-                              filled: true,
-                              fillColor: cardBg,
-                              border: OutlineInputBorder(
-                                borderRadius: AppRadius.mediumBR,
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 14),
-                            ),
+                            hint: '0.00',
                             validator: (v) {
                               if (_type == RefundType.full) return null;
                               final val = double.tryParse(
@@ -297,29 +285,18 @@ class _RefundSheetState extends State<RefundSheet> {
             // ── Reason field ──────────────────────────────────────────
             _SectionLabel(
                 label: 'REASON (REQUIRED)', textSecondary: textSecondary),
-            TextFormField(
+            AppTextField(
               controller: _reasonCtrl,
               maxLines: 3,
-              minLines: 2,
-              style: AppTextStyles.body(context).copyWith(color: textPrimary),
+              hint: 'e.g. Customer received wrong order',
               onChanged: (v) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: 'e.g. Customer received wrong order',
-                hintStyle:
-                    AppTextStyles.body(context).copyWith(color: textSecondary),
-                filled: true,
-                fillColor: cardBg,
-                border: OutlineInputBorder(
-                  borderRadius: AppRadius.mediumBR,
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.all(AppSpacing.md),
-              ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Reason is required' : null,
-            ),
-
-            const SizedBox(height: AppSpacing.lg),
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) {
+                  return 'Reason is required';
+                }
+                return null;
+              },
+            ), const SizedBox(height: AppSpacing.lg),
 
             // ── Summary line ──────────────────────────────────────────
             Container(

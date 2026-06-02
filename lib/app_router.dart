@@ -12,6 +12,7 @@ import 'features/auth/presentation/screens/setup_wizard_screen.dart';
 import 'features/auth/presentation/screens/cashier_selection_screen.dart';
 import 'features/auth/presentation/screens/cashier_pin_screen.dart';
 import 'features/auth/presentation/screens/admin_login_screen.dart';
+import 'features/auth/presentation/screens/switch_to_admin_screen.dart';
 import 'features/auth/presentation/screens/cashier_profile_screen.dart';
 
 // ── Cashier Screens ───────────────────────────────────────────────────────────
@@ -31,6 +32,36 @@ import 'features/reports/presentation/screens/reports_screen.dart';
 import 'features/reports/presentation/screens/end_of_day_screen.dart';
 import 'features/settings/presentation/screens/settings_screen.dart';
 
+/// Helper to build fade + slide route transitions (250ms, Material easing)
+CustomTransitionPage<void> _buildFadeSlideTransitionPage({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 250),
+    reverseTransitionDuration: const Duration(milliseconds: 250),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.0, 0.08),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: const Cubic(0.4, 0.0, 0.2, 1.0), // Material standard ease
+            ),
+          ),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: RouteConstants.splash,
@@ -39,35 +70,66 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Auth (no shell) ─────────────────────────────────────────────────────
       GoRoute(
         path: RouteConstants.splash,
-        builder: (c, s) => const SplashScreen(),
+        pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+          state: s,
+          child: const SplashScreen(),
+        ),
       ),
       GoRoute(
         path: RouteConstants.welcome,
-        builder: (c, s) => const WelcomeScreen(),
+        pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+          state: s,
+          child: const WelcomeScreen(),
+        ),
       ),
       GoRoute(
         path: RouteConstants.signup,
-        builder: (c, s) => const SignUpScreen(),
+        pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+          state: s,
+          child: const SignUpScreen(),
+        ),
       ),
       GoRoute(
         path: RouteConstants.verifyEmail,
-        builder: (c, s) => const VerifyEmailScreen(),
+        pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+          state: s,
+          child: const VerifyEmailScreen(),
+        ),
       ),
       GoRoute(
         path: RouteConstants.setupWizard,
-        builder: (c, s) => const SetupWizardScreen(),
+        pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+          state: s,
+          child: const SetupWizardScreen(),
+        ),
       ),
       GoRoute(
         path: RouteConstants.cashierSelect,
-        builder: (c, s) => const CashierSelectionScreen(),
+        pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+          state: s,
+          child: const CashierSelectionScreen(),
+        ),
       ),
       GoRoute(
         path: RouteConstants.cashierPin,
-        builder: (c, s) => const CashierPinScreen(),
+        pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+          state: s,
+          child: const CashierPinScreen(),
+        ),
       ),
       GoRoute(
         path: RouteConstants.adminLogin,
-        builder: (c, s) => const AdminLoginScreen(),
+        pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+          state: s,
+          child: const AdminLoginScreen(),
+        ),
+      ),
+      GoRoute(
+        path: RouteConstants.switchToAdmin,
+        pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+          state: s,
+          child: const SwitchToAdminScreen(),
+        ),
       ),
 
       // ── Cashier Shell ────────────────────────────────────────────────────────
@@ -76,27 +138,45 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: RouteConstants.cashierHome,
-            builder: (c, s) => const CashierDashboardScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const CashierDashboardScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.newOrder,
-            builder: (c, s) => const NewOrderScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const NewOrderScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.checkout,
-            builder: (c, s) => const CheckoutScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const CheckoutScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.paymentSuccess,
-            builder: (c, s) => const PaymentSuccessScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const PaymentSuccessScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.orderHistory,
-            builder: (c, s) => const OrderHistoryScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const OrderHistoryScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.cashierProfile,
-            builder: (c, s) => const CashierProfileScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const CashierProfileScreen(),
+            ),
           ),
         ],
       ),
@@ -107,35 +187,59 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: RouteConstants.adminHome,
-            builder: (c, s) => const AdminDashboardScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const AdminDashboardScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.adminUsers,
-            builder: (c, s) => const UserManagementScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const UserManagementScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.adminMenuCats,
-            builder: (c, s) => const CategoryManagementScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const CategoryManagementScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.adminMenuItems,
-            builder: (c, s) => const ItemManagementScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const ItemManagementScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.adminVoids,
-            builder: (c, s) => const VoidRefundScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const VoidRefundScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.adminReports,
-            builder: (c, s) => const ReportsScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const ReportsScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.adminEndOfDay,
-            builder: (c, s) => const EndOfDayScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const EndOfDayScreen(),
+            ),
           ),
           GoRoute(
             path: RouteConstants.adminSettings,
-            builder: (c, s) => const SettingsScreen(),
+            pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
+              state: s,
+              child: const SettingsScreen(),
+            ),
           ),
         ],
       ),
@@ -145,7 +249,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
 // ── Shell Scaffolds ───────────────────────────────────────────────────────────
 
-/// Cashier shell — wraps all cashier routes. Navigation bar added in Part 8.
+/// Cashier shell — wraps all cashier routes.
 class CashierShell extends StatelessWidget {
   const CashierShell({super.key, required this.child});
   final Widget child;
@@ -154,7 +258,7 @@ class CashierShell extends StatelessWidget {
   Widget build(BuildContext context) => child;
 }
 
-/// Admin shell — wraps all admin routes. Navigation drawer added in Part 8.
+/// Admin shell — wraps all admin routes.
 class AdminShell extends StatelessWidget {
   const AdminShell({super.key, required this.child});
   final Widget child;

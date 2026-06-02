@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AppPrimaryButton — filled pill button with Plus Jakarta Sans and press animation
@@ -37,7 +38,12 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
-      onTap: widget.isLoading ? null : widget.onPressed,
+      onTap: (widget.isLoading || widget.onPressed == null)
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              widget.onPressed!();
+            },
       child: AnimatedScale(
         scale: _isPressed ? 0.96 : 1.0,
         duration: const Duration(milliseconds: 100),
@@ -80,12 +86,7 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
                         ],
                         Text(
                           widget.label,
-                          style: GoogleFonts.dmSans(
-                            color: AppColors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
+                          style: AppTextStyles.bodyLarge(context).copyWith(color: AppColors.white),
                         ),
                       ],
                     ),
@@ -132,7 +133,12 @@ class _AppSecondaryButtonState extends State<AppSecondaryButton> {
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
-      onTap: widget.isLoading ? null : widget.onPressed,
+      onTap: (widget.isLoading || widget.onPressed == null)
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              widget.onPressed!();
+            },
       child: AnimatedScale(
         scale: _isPressed ? 0.96 : 1.0,
         duration: const Duration(milliseconds: 100),
@@ -165,11 +171,7 @@ class _AppSecondaryButtonState extends State<AppSecondaryButton> {
                         ],
                         Text(
                           widget.label,
-                          style: GoogleFonts.dmSans(
-                            color: color,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: AppTextStyles.bodyLarge(context).copyWith(color: color),
                         ),
                       ],
                     ),
@@ -202,7 +204,12 @@ class AppTextButton extends StatelessWidget {
     final color = isDark ? AppColors.accentDark : AppColors.accentLight;
 
     return TextButton(
-      onPressed: onPressed,
+      onPressed: onPressed == null
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              onPressed!();
+            },
       style: TextButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -210,13 +217,7 @@ class AppTextButton extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.dmSans(
-          color: color,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          decoration: underline ? TextDecoration.underline : null,
-          decorationColor: color,
-        ),
+        style: AppTextStyles.body(context).copyWith(color: color),
       ),
     );
   }

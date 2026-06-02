@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/isar_collections/menu_item_collection.dart';
+import '../../../../shared/widgets/empty_state_widget.dart';
+import '../../../../shared/widgets/shimmer_list.dart';
 import '../../../orders/presentation/providers/order_provider.dart';
 import '../providers/menu_provider.dart';
 import '../widgets/category_pill.dart';
 import '../widgets/item_card.dart';
 import '../widgets/item_customization_modal.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// NewOrderScreen — The heart of the POS.
 /// Category filters → searchable item grid → item customization → cart FAB.
@@ -52,7 +54,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final textSecondary =
         isDark ? AppColors.textSecondaryDark : const Color(0xFF6B6B6B);
-    final accentColor = isDark ? AppColors.accentDark : const Color(0xFF8B4049);
+    final accentColor = isDark ? AppColors.accentDark : Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     showDialog<void>(
       context: context,
@@ -82,22 +84,14 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
               const SizedBox(height: 16),
               Text(
                 'Continue Previous Order?',
-                style: GoogleFonts.dmSans(
-                  color: textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: AppTextStyles.bodyLarge(context).copyWith(color: textPrimary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 'You have ${order.itemCount} item${order.itemCount == 1 ? '' : 's'} '
                 '(${CurrencyFormatter.format(order.total)}) left in your cart.',
-                style: GoogleFonts.dmSans(
-                  color: textSecondary,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
+                style: AppTextStyles.body(context).copyWith(color: textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -106,7 +100,10 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.pop(ctx);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accentColor,
                     foregroundColor: Colors.white,
@@ -116,10 +113,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                   ),
                   child: Text(
                     'Yes, Continue',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: AppTextStyles.body(context),
                   ),
                 ),
               ),
@@ -130,6 +124,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                 height: 50,
                 child: TextButton(
                   onPressed: () {
+                    HapticFeedback.lightImpact();
                     ref.read(orderProvider.notifier).clearCart();
                     Navigator.pop(ctx);
                   },
@@ -140,10 +135,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                   ),
                   child: Text(
                     'No, Start Fresh',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.body(context),
                   ),
                 ),
               ),
@@ -172,6 +164,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
           icon: Icon(Icons.arrow_back_ios_new_rounded,
               color: textPrimary, size: 20),
           onPressed: () {
+            HapticFeedback.lightImpact();
             if (context.canPop()) {
               context.pop();
             } else {
@@ -181,12 +174,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
         ),
         title: Text(
           'New Order',
-          style: GoogleFonts.dmSans(
-            color: textPrimary,
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          ),
+          style: AppTextStyles.h3(context).copyWith(color: textPrimary),
         ),
         centerTitle: false,
         actions: [
@@ -197,7 +185,10 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                 icon: Icon(Icons.shopping_cart_outlined,
                     color: textPrimary, size: 26),
                 onPressed: orderState.isNotEmpty
-                    ? () => _showCartSheet(context)
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        _showCartSheet(context);
+                      }
                     : null,
               ),
               if (orderState.isNotEmpty)
@@ -209,16 +200,12 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                     decoration: BoxDecoration(
                       color: isDark
                           ? AppColors.accentDark
-                          : const Color(0xFF8B4049),
+                          : Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                       shape: BoxShape.circle,
                     ),
                     child: Text(
                       orderState.itemCount.toString(),
-                      style: GoogleFonts.dmSans(
-                        color: AppColors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: AppTextStyles.label(context).copyWith(color: AppColors.white),
                     ),
                   ),
                 ),
@@ -242,24 +229,25 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                 controller: _searchController,
                 onChanged: (v) =>
                     ref.read(menuProvider.notifier).updateSearch(v),
-                style: GoogleFonts.dmSans(color: textPrimary, fontSize: 15),
+                style: AppTextStyles.body(context).copyWith(color: textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Search items...',
-                  hintStyle: GoogleFonts.dmSans(
-                    color: textPrimary.withValues(alpha: 0.35),
+                  hintStyle: AppTextStyles.body(context).copyWith(
+                    color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha:0.35),
                     fontSize: 15,
                   ),
                   prefixIcon: Icon(
                     Icons.search_rounded,
-                    color: textPrimary.withValues(alpha: 0.35),
+                    color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.35),
                     size: 22,
                   ),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           icon: Icon(Icons.close_rounded,
-                              color: textPrimary.withValues(alpha: 0.35),
+                              color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.35),
                               size: 20),
                           onPressed: () {
+                            HapticFeedback.lightImpact();
                             _searchController.clear();
                             ref.read(menuProvider.notifier).updateSearch('');
                           },
@@ -306,26 +294,12 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
           // ── Item Grid ───────────────────────────────────────────────────
           Expanded(
             child: menuState.isLoading
-                ? const Center(child: CircularProgressIndicator.adaptive())
+                ? const ShimmerMenuGrid()
                 : menuState.items.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.search_off_rounded,
-                                size: 48,
-                                color: textPrimary.withValues(alpha: 0.2)),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No items found',
-                              style: GoogleFonts.dmSans(
-                                color: textPrimary.withValues(alpha: 0.4),
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
+                    ? const EmptyStateWidget(
+                        icon: Icons.search_off_rounded,
+                        title: 'No items found',
+                        subtitle: 'Try a different search or category.',
                       )
                     : GridView.builder(
                         padding: const EdgeInsets.symmetric(
@@ -368,20 +342,19 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
               width: double.infinity,
               height: 60,
               child: FloatingActionButton.extended(
-                backgroundColor: const Color(0xFF8B4049),
+                backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                 elevation: 8,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18)),
-                onPressed: () => context.push(RouteConstants.checkout),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  context.push(RouteConstants.checkout);
+                },
                 icon: const Icon(Icons.shopping_cart_checkout_rounded,
                     color: AppColors.white),
                 label: Text(
                   'Checkout  •  ${CurrencyFormatter.format(orderState.total)}',
-                  style: GoogleFonts.dmSans(
-                    color: AppColors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AppTextStyles.bodyLarge(context).copyWith(color: AppColors.white),
                 ),
               ),
             ).animate().fadeIn(duration: 300.ms).slideY(
@@ -441,23 +414,17 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                     children: [
                       Text(
                         'Your Order',
-                        style: GoogleFonts.dmSans(
-                          color: textPrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: AppTextStyles.h3(context).copyWith(color: textPrimary),
                       ),
                       TextButton(
                         onPressed: () {
+                          HapticFeedback.lightImpact();
                           ref.read(orderProvider.notifier).clearCart();
                           Navigator.pop(context);
                         },
                         child: Text(
                           'Clear All',
-                          style: GoogleFonts.dmSans(
-                            color: AppColors.errorLight,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: AppTextStyles.body(context).copyWith(color: AppColors.errorLight),
                         ),
                       ),
                     ],
@@ -486,26 +453,20 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                                   children: [
                                     Text(
                                       cartItem.itemName,
-                                      style: GoogleFonts.dmSans(
-                                        color: textPrimary,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                      style: AppTextStyles.body(context).copyWith(color: textPrimary),
                                     ),
                                     if (cartItem.variantName != null)
                                       Text(
                                         cartItem.variantName!,
-                                        style: GoogleFonts.dmSans(
-                                          color: textPrimary.withValues(
-                                              alpha: 0.5),
+                                        style: AppTextStyles.body(context).copyWith(
+                                          color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.5),
                                           fontSize: 12,
                                         ),
                                       ),
                                     Text(
                                       CurrencyFormatter.format(
                                           cartItem.subtotal),
-                                      style: GoogleFonts.dmSans(
-                                        color: const Color(0xFF8B4049),
+                                      style: AppTextStyles.body(context).copyWith(color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                                         fontWeight: FontWeight.w800,
                                       ),
                                     ),
@@ -527,11 +488,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                                         horizontal: 14),
                                     child: Text(
                                       cartItem.quantity.toString(),
-                                      style: GoogleFonts.dmSans(
-                                        color: textPrimary,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                                      style: AppTextStyles.bodyLarge(context).copyWith(color: textPrimary),
                                     ),
                                   ),
                                   _QtyButton(
@@ -556,6 +513,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                     height: 60,
                     child: ElevatedButton(
                       onPressed: () {
+                        HapticFeedback.lightImpact();
                         Navigator.pop(context);
                         this.context.mounted
                             ? GoRouter.of(this.context)
@@ -563,7 +521,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                             : null;
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8B4049),
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                         foregroundColor: AppColors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(18)),
@@ -571,10 +529,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                       ),
                       child: Text(
                         'Checkout  •  ${CurrencyFormatter.format(order.total)}',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: AppTextStyles.bodyLarge(context),
                       ),
                     ),
                   ),
@@ -598,7 +553,10 @@ class _QtyButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
         width: 36,
         height: 36,
@@ -607,7 +565,7 @@ class _QtyButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
         ),
-        child: Icon(icon, size: 18, color: const Color(0xFF8B4049)),
+        child: Icon(icon, size: 18, color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight),
       ),
     );
   }

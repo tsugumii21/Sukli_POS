@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// AppTextField — themed text input widget for Sukli POS.
 /// Redesigned with Inter for maximum modern readability.
@@ -23,6 +24,7 @@ class AppTextField extends StatelessWidget {
     this.maxLines = 1,
     this.focusNode,
     this.autofocus = false,
+    this.inputFormatters,
   });
 
   final TextEditingController? controller;
@@ -40,6 +42,7 @@ class AppTextField extends StatelessWidget {
   final int maxLines;
   final FocusNode? focusNode;
   final bool autofocus;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   Widget build(BuildContext context) {
@@ -68,11 +71,8 @@ class AppTextField extends StatelessWidget {
         maxLines: obscureText ? 1 : maxLines,
         focusNode: focusNode,
         autofocus: autofocus,
-        style: GoogleFonts.dmSans(
-          color: labelColor,
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-        ),
+        inputFormatters: inputFormatters,
+        style: AppTextStyles.body(context).copyWith(color: labelColor),
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
@@ -84,20 +84,14 @@ class AppTextField extends StatelessWidget {
             horizontal: AppSpacing.lg,
             vertical: 18,
           ),
-          hintStyle: GoogleFonts.dmSans(
-            color: hintColor.withValues(alpha: 0.5),
+          hintStyle: AppTextStyles.body(context).copyWith(color: hintColor.withValues(alpha:0.5),
             fontSize: 15,
           ),
-          labelStyle: GoogleFonts.dmSans(
-            color: labelColor.withValues(alpha: 0.7),
+          labelStyle: AppTextStyles.body(context).copyWith(color: labelColor.withValues(alpha:0.7),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
-          floatingLabelStyle: GoogleFonts.dmSans(
-            color: focusedBorderColor,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
+          floatingLabelStyle: AppTextStyles.body(context).copyWith(color: focusedBorderColor),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(

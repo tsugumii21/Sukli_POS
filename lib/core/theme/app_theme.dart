@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 import 'app_spacing.dart';
 
+
 /// AppTheme generates the Material 3 ThemeData for both light and dark modes.
 /// DM Sans is applied globally via GoogleFonts.dmSansTextTheme so that every
 /// Material widget (AppBar, Button, ListTile, etc.) inherits the correct font
@@ -29,11 +30,7 @@ class AppTheme {
         foregroundColor: AppColors.textPrimaryLight,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.dmSans(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimaryLight,
-        ),
+        titleTextStyle: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w600).copyWith(color: AppColors.textPrimaryLight),
       ),
       cardTheme: CardThemeData(
         color: AppColors.cardLight,
@@ -46,10 +43,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(52),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.pillBR),
-          textStyle: GoogleFonts.dmSans(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -68,10 +62,7 @@ class AppTheme {
         fillColor: AppColors.surfaceLight,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: GoogleFonts.dmSans(
-          fontSize: 14,
-          color: AppColors.textSecondaryLight,
-        ),
+        hintStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w400).copyWith(color: AppColors.textSecondaryLight),
         border: OutlineInputBorder(
           borderRadius: AppRadius.mediumBR,
           borderSide: BorderSide.none,
@@ -90,16 +81,13 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.cardLight,
         selectedColor: AppColors.accentLight,
-        labelStyle: GoogleFonts.dmSans(fontSize: 12),
+        labelStyle: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w400),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         shape: const StadiumBorder(side: BorderSide.none),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimaryLight,
-        contentTextStyle: GoogleFonts.dmSans(
-          fontSize: 14,
-          color: AppColors.textPrimaryDark,
-        ),
+        contentTextStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w400).copyWith(color: AppColors.textPrimaryDark),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surfaceLight,
@@ -129,11 +117,7 @@ class AppTheme {
         foregroundColor: AppColors.textPrimaryDark,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.dmSans(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimaryDark,
-        ),
+        titleTextStyle: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w600).copyWith(color: AppColors.textPrimaryDark),
       ),
       cardTheme: CardThemeData(
         color: AppColors.cardDark,
@@ -146,10 +130,7 @@ class AppTheme {
           foregroundColor: AppColors.primaryDark,
           minimumSize: const Size.fromHeight(52),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.pillBR),
-          textStyle: GoogleFonts.dmSans(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -168,10 +149,7 @@ class AppTheme {
         fillColor: AppColors.surfaceDarkElevated,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: GoogleFonts.dmSans(
-          fontSize: 14,
-          color: AppColors.textSecondaryDark,
-        ),
+        hintStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w400).copyWith(color: AppColors.textSecondaryDark),
         border: OutlineInputBorder(
           borderRadius: AppRadius.mediumBR,
           borderSide: BorderSide.none,
@@ -189,19 +167,13 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceDarkElevated,
         selectedColor: AppColors.accentDark,
-        labelStyle: GoogleFonts.dmSans(
-          fontSize: 12,
-          color: AppColors.textPrimaryDark,
-        ),
+        labelStyle: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w400).copyWith(color: AppColors.textPrimaryDark),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         shape: const StadiumBorder(side: BorderSide.none),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimaryDark,
-        contentTextStyle: GoogleFonts.dmSans(
-          fontSize: 14,
-          color: AppColors.textPrimaryLight,
-        ),
+        contentTextStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w400).copyWith(color: AppColors.textPrimaryLight),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surfaceDark,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/route_constants.dart';
@@ -12,6 +11,9 @@ import '../providers/order_history_provider.dart';
 import '../widgets/order_detail_sheet.dart';
 import '../widgets/order_filter_sheet.dart';
 import '../widgets/order_tile.dart';
+import '../../../../shared/widgets/empty_state_widget.dart';
+import '../../../../shared/widgets/shimmer_list.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OrderHistoryScreen — cashier's paginated, searchable, filterable order list
@@ -58,7 +60,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      ref.read(orderHistoryProvider.notifier).loadMore();
+      ref.read(orderHistoryProvider.notifier).loadNextPage();
     }
   }
 
@@ -73,7 +75,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
         isDark ? AppColors.textSecondaryDark : const Color(0xFF6B6B6B);
     final inputBg =
         isDark ? AppColors.surfaceDarkElevated : AppColors.cardLight;
-    const maroon = Color(0xFF8B4049);
+    final maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     final histState = ref.watch(orderHistoryProvider);
     final hasActiveFilter = histState.filter.isActive;
@@ -86,11 +88,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
         centerTitle: false,
         title: Text(
           'Order History',
-          style: GoogleFonts.dmSans(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: textPrimary,
-          ),
+          style: AppTextStyles.h3(context).copyWith(color: textPrimary),
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded,
@@ -135,7 +133,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                   child: Container(
                     width: 8,
                     height: 8,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: maroon,
                       shape: BoxShape.circle,
                     ),
@@ -159,7 +157,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                     child: Text(
                       o.label,
                       style:
-                          GoogleFonts.dmSans(color: textPrimary, fontSize: 14),
+                          AppTextStyles.body(context).copyWith(color: textPrimary),
                     ),
                   ),
                 )
@@ -179,10 +177,10 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                     child: TextField(
                       controller: _searchController,
                       autofocus: true,
-                      style: GoogleFonts.dmSans(color: textPrimary),
+                      style: AppTextStyles.body(context).copyWith(color: textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Search by order number…',
-                        hintStyle: GoogleFonts.dmSans(color: textSecondary),
+                        hintStyle: AppTextStyles.body(context).copyWith(color: textSecondary),
                         prefixIcon:
                             Icon(Icons.search_rounded, color: textSecondary),
                         suffixIcon: _searchController.text.isNotEmpty
@@ -223,8 +221,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
           // ── Body: loading / empty / list ─────────────────────────────────
           Expanded(
             child: histState.isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF8B4049)))
+                ? const ShimmerOrderList()
                 : RefreshIndicator(
                     color: maroon,
                     backgroundColor: surface,
@@ -236,22 +233,35 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                             controller: _scrollController,
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.only(top: 8, bottom: 24),
-                            itemCount: histState.orders.length +
-                                (histState.isLoadingMore ? 1 : 0),
+                            itemCount: histState.orders.length + 1,
                             itemBuilder: (context, index) {
                               if (index == histState.orders.length) {
-                                return const Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Center(
-                                    child: SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                          color: Color(0xFF8B4049),
-                                          strokeWidth: 2),
+                                if (histState.isLoadingMore) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Center(
+                                      child: SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                            color: maroon,
+                                            strokeWidth: 2),
+                                      ),
                                     ),
-                                  ),
-                                );
+                                  );
+                                }
+                                if (!histState.hasMore && histState.orders.isNotEmpty) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Center(
+                                      child: Text(
+                                        'All ${histState.orders.length} orders loaded',
+                                        style: AppTextStyles.body(context).copyWith(color: textSecondary),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
                               }
                               final order = histState.orders[index];
                               return OrderTile(
@@ -290,7 +300,16 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
 
   Future<void> _handleExport(BuildContext context, String rangeId) async {
     final notifier = ref.read(orderHistoryProvider.notifier);
-    final allCached = ref.read(orderHistoryProvider).orders;
+    
+    // Show a loading snackbar since fetching all might take a moment
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Preparing export...', style: AppTextStyles.body(context)),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    final allFiltered = await notifier.fetchAllForExport();
 
     final now = DateTime.now();
     final List<OrderCollection> toExport;
@@ -310,7 +329,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
         ref.read(orderHistoryProvider.notifier).applyFilter(result);
         return; // user will tap export again after setting range
       }
-      toExport = allCached;
+      toExport = allFiltered;
       sheetLabel = 'Custom';
     } else {
       DateTime start;
@@ -333,7 +352,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
           break;
       }
 
-      toExport = filterByDateRange(allCached, start, end);
+      toExport = filterByDateRange(allFiltered, start, end);
     }
 
     if (!context.mounted) return;
@@ -341,8 +360,8 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('No orders found for this period.',
-              style: GoogleFonts.dmSans()),
-          backgroundColor: const Color(0xFF8B4049),
+              style: AppTextStyles.body(context)),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -362,7 +381,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                   color: Colors.white, strokeWidth: 2)),
           const SizedBox(width: 12),
           Text('Exporting ${toExport.length} orders…',
-              style: GoogleFonts.dmSans()),
+              style: AppTextStyles.body(context)),
         ]),
         duration: const Duration(seconds: 10),
         behavior: SnackBarBehavior.floating,
@@ -380,7 +399,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
         SnackBar(
           content: Text(
             'Saved: $path',
-            style: GoogleFonts.dmSans(),
+            style: AppTextStyles.body(context),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -394,8 +413,8 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Export failed. Please try again.',
-              style: GoogleFonts.dmSans()),
-          backgroundColor: const Color(0xFF8B4049),
+              style: AppTextStyles.body(context)),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -419,7 +438,7 @@ class _ActiveFiltersRow extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textSecondary =
         isDark ? AppColors.textSecondaryDark : const Color(0xFF6B6B6B);
-    const maroon = Color(0xFF8B4049);
+    final maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     final chips = <String>[];
     if (filter.paymentMethod != null) {
@@ -459,10 +478,7 @@ class _ActiveFiltersRow extends ConsumerWidget {
                               color: maroon.withAlpha(100), width: 1),
                         ),
                         child: Text(c,
-                            style: GoogleFonts.dmSans(
-                                fontSize: 12,
-                                color: maroon,
-                                fontWeight: FontWeight.w500)),
+                            style: AppTextStyles.captionMedium(context).copyWith(color: maroon)),
                       ),
                     )
                     .toList(),
@@ -475,8 +491,7 @@ class _ActiveFiltersRow extends ConsumerWidget {
               padding: const EdgeInsets.only(left: 8),
               child: Text(
                 'Clear',
-                style: GoogleFonts.dmSans(
-                    fontSize: 12, color: maroon, fontWeight: FontWeight.w600),
+                style: AppTextStyles.caption(context).copyWith(color: maroon),
               ),
             ),
           ),
@@ -494,41 +509,19 @@ class _ActiveFiltersRow extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary =
-        isDark ? AppColors.textSecondaryDark : const Color(0xFF9E9E9E);
-    final iconColor =
-        isDark ? AppColors.surfaceDarkElevated : const Color(0xFFE0D0C0);
-
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(
           height: MediaQuery.of(context).size.height * 0.5,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.receipt_long_outlined, size: 80, color: iconColor)
-                  .animate()
-                  .scale(begin: const Offset(0.8, 0.8)),
-              const SizedBox(height: 16),
-              Text(
-                'No orders found',
-                style: GoogleFonts.dmSans(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Orders you complete will appear here.',
-                style: GoogleFonts.dmSans(fontSize: 13, color: textSecondary),
-                textAlign: TextAlign.center,
-              ),
-            ],
+          child: const EmptyStateWidget(
+            icon: Icons.receipt_long_outlined,
+            title: 'No orders yet',
+            subtitle: 'Orders will appear here once placed.',
           ),
         ),
       ],

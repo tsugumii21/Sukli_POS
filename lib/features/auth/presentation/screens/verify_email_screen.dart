@@ -78,22 +78,48 @@ class VerifyEmailScreen extends StatelessWidget {
                     children: [
                       _InstructionRow(
                         number: '1',
-                        text: 'Open the email from Sukli POS',
+                        text: 'Open the Sukli email on THIS phone',
                         accent: accent,
                       ),
                       _InstructionRow(
                         number: '2',
-                        text: 'Tap the "Confirm Email" button',
+                        text: 'Tap "Confirm My Account" in the email',
                         accent: accent,
                       ),
                       _InstructionRow(
                         number: '3',
-                        text: 'Come back and sign in below',
+                        text: 'The app will open automatically',
                         accent: accent,
                       ),
                     ],
                   ),
                 ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
+
+                // Note below instructions
+                Container(
+                  margin: const EdgeInsets.only(top: AppSpacing.md),
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.warningLight.withValues(alpha: 0.12),
+                    borderRadius: AppRadius.mediumBR,
+                    border: Border.all(
+                      color: AppColors.warningLight.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline_rounded,
+                        size: 16, color: AppColors.warningLight),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          'Make sure to open the email on your phone, not a computer. The link must be tapped on this device.',
+                          style: AppTextStyles.caption(context).copyWith(color: AppColors.warningLight),
+                        ),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(duration: 500.ms, delay: 500.ms),
 
                 const SizedBox(height: AppSpacing.xl),
 

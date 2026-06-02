@@ -68,14 +68,18 @@ class OrderHistoryState {
   final bool isLoading;
   final bool isLoadingMore;
   final bool hasMore;
+  final int currentPage;
   final OrderFilter filter;
+  final String? errorMessage;
 
   const OrderHistoryState({
     this.orders = const [],
     this.isLoading = false,
     this.isLoadingMore = false,
-    this.hasMore = false,
+    this.hasMore = true,
+    this.currentPage = 0,
     this.filter = const OrderFilter(),
+    this.errorMessage,
   });
 
   OrderHistoryState copyWith({
@@ -83,14 +87,18 @@ class OrderHistoryState {
     bool? isLoading,
     bool? isLoadingMore,
     bool? hasMore,
+    int? currentPage,
     OrderFilter? filter,
+    String? errorMessage,
   }) {
     return OrderHistoryState(
       orders: orders ?? this.orders,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMore: hasMore ?? this.hasMore,
+      currentPage: currentPage ?? this.currentPage,
       filter: filter ?? this.filter,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }
@@ -102,63 +110,141 @@ class OrderHistoryState {
 class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
   static const _pageSize = 20;
 
-  // In-memory cache of all matching orders from Isar (unfiltered by search/
-  // payment/status — only filtered by cashier & date range from Isar itself
-  // since those are indexed). Secondary filters run in-memory.
-  List<OrderCollection> _cached = [];
-  int _displayCount = _pageSize;
-
   @override
   OrderHistoryState build() {
     final storeId = ref.watch(currentStoreIdProvider);
     if (storeId.isEmpty) return const OrderHistoryState(isLoading: false);
 
-    _init(storeId);
+    Future.microtask(() => loadFirstPage());
     return const OrderHistoryState(isLoading: true);
-  }
-
-  void _init(String storeId) {
-    Future.microtask(() => _loadAll(storeId));
   }
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
   Future<void> refresh() async {
+    await loadFirstPage();
+  }
+
+  Future<void> loadFirstPage() async {
     final storeId = ref.read(currentStoreIdProvider);
     if (storeId.isEmpty) return;
 
-    state = state.copyWith(isLoading: true);
-    await _loadAll(storeId);
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      orders: [],
+      currentPage: 0,
+      hasMore: true,
+    );
+
+    try {
+      final orders = await _fetchPage(offset: 0, storeId: storeId);
+      state = state.copyWith(
+        isLoading: false,
+        orders: orders,
+        currentPage: 1,
+        hasMore: orders.length == _pageSize,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to load orders: $e',
+      );
+    }
   }
 
-  void loadMore() {
-    if (state.isLoadingMore || !state.hasMore) return;
+  Future<void> loadNextPage() async {
+    if (state.isLoadingMore || !state.hasMore || state.isLoading) return;
+
+    final storeId = ref.read(currentStoreIdProvider);
+    if (storeId.isEmpty) return;
+
     state = state.copyWith(isLoadingMore: true);
-    _displayCount += _pageSize;
-    _applyAndUpdate();
+
+    try {
+      final offset = state.currentPage * _pageSize;
+      final newOrders = await _fetchPage(offset: offset, storeId: storeId);
+
+      state = state.copyWith(
+        isLoadingMore: false,
+        orders: [...state.orders, ...newOrders],
+        currentPage: state.currentPage + 1,
+        hasMore: newOrders.length == _pageSize,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingMore: false,
+        errorMessage: 'Failed to load more orders: $e',
+      );
+    }
   }
 
   void updateSearch(String query) {
-    _displayCount = _pageSize;
     state = state.copyWith(filter: state.filter.copyWith(searchQuery: query));
-    _applyAndUpdate();
+    loadFirstPage();
   }
 
   void applyFilter(OrderFilter newFilter) {
-    _displayCount = _pageSize;
-    // Merge with current search query so it is preserved
     state = state.copyWith(
       filter: newFilter.copyWith(searchQuery: state.filter.searchQuery),
     );
-    _applyAndUpdate();
+    loadFirstPage();
   }
 
   void clearFilter() {
-    _displayCount = _pageSize;
     state = state.copyWith(
       filter: OrderFilter(searchQuery: state.filter.searchQuery),
     );
-    _applyAndUpdate();
+    loadFirstPage();
+  }
+
+  /// Returns ALL matching orders (ignoring pagination limits) for exporting.
+  Future<List<OrderCollection>> fetchAllForExport() async {
+    final storeId = ref.read(currentStoreIdProvider);
+    if (storeId.isEmpty) return [];
+
+    final db = ref.read(isarProvider);
+    final cashierId = ref.read(authProvider).selectedCashier?.syncId;
+    final f = state.filter;
+
+    var query = db.orderCollections
+        .filter()
+        .storeIdEqualTo(storeId)
+        .isDeletedEqualTo(false);
+
+    if (cashierId != null && cashierId.isNotEmpty) {
+      query = query.cashierIdEqualTo(cashierId);
+    }
+
+    if (f.searchQuery.isNotEmpty) {
+      query = query.orderNumberContains(f.searchQuery, caseSensitive: false);
+    }
+
+    if (f.paymentMethod != null) {
+      query = query.paymentMethodEqualTo(f.paymentMethod!);
+    }
+
+    if (f.status != null) {
+      query = query.statusEqualTo(f.status!);
+    }
+
+    if (f.startDate != null) {
+      query = query.orderedAtGreaterThan(f.startDate!.subtract(const Duration(milliseconds: 1)));
+    }
+    
+    if (f.endDate != null) {
+      final endInclusive = DateTime(
+        f.endDate!.year,
+        f.endDate!.month,
+        f.endDate!.day,
+        23,
+        59,
+        59,
+      );
+      query = query.orderedAtLessThan(endInclusive.add(const Duration(milliseconds: 1)));
+    }
+
+    return query.sortByOrderedAtDesc().findAll();
   }
 
   /// Exports a given list of orders to an Excel file.
@@ -228,85 +314,56 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
 
   // ── Internal helpers ───────────────────────────────────────────────────────
 
-  Future<void> _loadAll(String storeId) async {
-    try {
-      final db = ref.read(isarProvider);
-      final cashierId = ref.read(authProvider).selectedCashier?.syncId;
-
-      // Load ALL non-deleted orders for THIS store.
-      final allOrders = await db.orderCollections
-          .filter()
-          .storeIdEqualTo(storeId)
-          .and()
-          .isDeletedEqualTo(false)
-          .findAll();
-
-      // Narrow to the current cashier's orders. If that produces zero results
-      // fall back to showing all orders so the screen is never silently empty
-      // after a completed payment.
-      List<OrderCollection> fetched;
-      if (cashierId != null && cashierId.isNotEmpty) {
-        final byMe = allOrders.where((o) => o.cashierId == cashierId).toList();
-        fetched = byMe.isNotEmpty ? byMe : allOrders;
-      } else {
-        fetched = allOrders;
-      }
-
-      // Sort by orderedAt descending in memory
-      fetched.sort((a, b) => b.orderedAt.compareTo(a.orderedAt));
-
-      _cached = fetched;
-      _displayCount = _pageSize;
-      _applyAndUpdate(isLoading: false);
-    } catch (_) {
-      state = state.copyWith(isLoading: false);
-    }
-  }
-
-  /// Applies in-memory search / payment / status / date filters and then
-  /// slices the result to [_displayCount] items for display.
-  void _applyAndUpdate({bool isLoading = false}) {
+  Future<List<OrderCollection>> _fetchPage({
+    required int offset,
+    required String storeId,
+  }) async {
+    final db = ref.read(isarProvider);
+    final cashierId = ref.read(authProvider).selectedCashier?.syncId;
     final f = state.filter;
 
-    final filtered = _cached.where((o) {
-      // Search by order number
-      if (f.searchQuery.isNotEmpty &&
-          !o.orderNumber.toLowerCase().contains(f.searchQuery.toLowerCase())) {
-        return false;
-      }
-      // Payment method
-      if (f.paymentMethod != null && o.paymentMethod != f.paymentMethod) {
-        return false;
-      }
-      // Status
-      if (f.status != null && o.status != f.status) return false;
+    var query = db.orderCollections
+        .filter()
+        .storeIdEqualTo(storeId)
+        .isDeletedEqualTo(false);
 
-      // Date range — endDate is inclusive (covers the whole day)
-      if (f.startDate != null && o.orderedAt.isBefore(f.startDate!)) {
-        return false;
-      }
-      if (f.endDate != null) {
-        final endInclusive = DateTime(
-          f.endDate!.year,
-          f.endDate!.month,
-          f.endDate!.day,
-          23,
-          59,
-          59,
-        );
-        if (o.orderedAt.isAfter(endInclusive)) return false;
-      }
-      return true;
-    }).toList();
+    if (cashierId != null && cashierId.isNotEmpty) {
+      query = query.cashierIdEqualTo(cashierId);
+    }
 
-    final page = filtered.take(_displayCount).toList();
+    if (f.searchQuery.isNotEmpty) {
+      query = query.orderNumberContains(f.searchQuery, caseSensitive: false);
+    }
 
-    state = state.copyWith(
-      orders: page,
-      isLoading: isLoading,
-      isLoadingMore: false,
-      hasMore: _displayCount < filtered.length,
-    );
+    if (f.paymentMethod != null) {
+      query = query.paymentMethodEqualTo(f.paymentMethod!);
+    }
+
+    if (f.status != null) {
+      query = query.statusEqualTo(f.status!);
+    }
+
+    if (f.startDate != null) {
+      query = query.orderedAtGreaterThan(f.startDate!.subtract(const Duration(milliseconds: 1)));
+    }
+    
+    if (f.endDate != null) {
+      final endInclusive = DateTime(
+        f.endDate!.year,
+        f.endDate!.month,
+        f.endDate!.day,
+        23,
+        59,
+        59,
+      );
+      query = query.orderedAtLessThan(endInclusive.add(const Duration(milliseconds: 1)));
+    }
+
+    return query
+        .sortByOrderedAtDesc()
+        .offset(offset)
+        .limit(_pageSize)
+        .findAll();
   }
 }
 

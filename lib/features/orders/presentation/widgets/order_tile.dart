@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/utils/order_number_helper.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -33,7 +35,7 @@ class OrderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? AppColors.cardDark : const Color(0xFFF0E8DC);
+    final cardBg = isDark ? AppColors.cardDark : Theme.of(context).brightness == Brightness.dark ? AppColors.cardDark : AppColors.cardLight;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : const Color(0xFF1A1A1A);
     final textSecondary =
@@ -45,8 +47,14 @@ class OrderTile extends StatelessWidget {
     final payLabel = _paymentLabel(order.paymentMethod);
     final timeLabel = _timeLabel(order.orderedAt);
 
-    return GestureDetector(
-      onTap: onTap,
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(16),
+      splashColor: isDark ? AppColors.accentDark.withValues(alpha: 0.08) : AppColors.accentLight.withValues(alpha: 0.08),
+      highlightColor: isDark ? AppColors.accentDark.withValues(alpha: 0.04) : AppColors.accentLight.withValues(alpha: 0.04),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
@@ -72,7 +80,7 @@ class OrderTile extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      order.orderNumber,
+                      OrderNumberHelper.toShort(order.orderNumber),
                       style: AppTextStyles.bodySemiBold(context).copyWith(
                         color: textPrimary,
                         letterSpacing: 0.2,
@@ -112,8 +120,10 @@ class OrderTile extends StatelessWidget {
                   const Spacer(),
                   Text(
                     '₱${order.totalAmount.toStringAsFixed(2)}',
-                    style: AppTextStyles.bodyMedium(context)
-                        .copyWith(color: totalColor),
+                    style: AppTextStyles.bodyMedium(context).copyWith(
+                      color: totalColor,
+                      fontFeatures: [const FontFeature.tabularFigures()],
+                    ),
                   ),
                   const SizedBox(width: 8),
                   // Status badge — aligned with price on the right

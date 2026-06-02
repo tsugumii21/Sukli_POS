@@ -760,7 +760,7 @@ class _CashInputSection extends StatelessWidget {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.successLight.withValues(alpha: 0.12),
+                      color: AppColors.success(context).withValues(alpha: 0.12),
                       borderRadius: AppRadius.mediumBR,
                     ),
                     child: Row(
@@ -769,7 +769,7 @@ class _CashInputSection extends StatelessWidget {
                         Text(
                           'Change',
                           style: GoogleFonts.dmSans(
-                            color: AppColors.successLight,
+                            color: AppColors.success(context),
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -777,8 +777,8 @@ class _CashInputSection extends StatelessWidget {
                         Text(
                           CurrencyFormatter.format(change),
                           style: GoogleFonts.dmSans(
-                            color: AppColors.successLight,
-                            fontSize: 18,
+                            color: AppColors.success(context),
+                            fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -833,7 +833,7 @@ class _BottomActionBar extends StatelessWidget {
               child: Text(
                 errorMessage!,
                 style: GoogleFonts.dmSans(
-                  color: AppColors.errorLight,
+                  color: AppColors.error(context),
                   fontSize: 13,
                 ),
                 textAlign: TextAlign.center,
@@ -869,6 +869,7 @@ class _BottomActionBar extends StatelessWidget {
                       style: GoogleFonts.dmSans(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
+                        color: Colors.white,
                       ),
                     ),
             ),
@@ -882,7 +883,7 @@ class _BottomActionBar extends StatelessWidget {
               child: Text(
                 'Cancel Order',
                 style: GoogleFonts.dmSans(
-                  color: AppColors.errorLight,
+                  color: AppColors.error(context),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),

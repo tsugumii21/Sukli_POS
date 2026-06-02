@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/destructive_action_dialog.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
@@ -34,8 +34,6 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
   bool _isSaving = false;
 
   bool get _isEdit => widget.user != null;
-
-  static const _maroon = Color(0xFF8B4049);
 
   @override
   void initState() {
@@ -103,18 +101,21 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
     final ctrl = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          'Reset PIN',
-          style: GoogleFonts.dmSans(fontWeight: FontWeight.w700),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Enter a new 4-digit PIN for ${widget.user!.name}.',
-              style: GoogleFonts.dmSans(),
-            ),
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final primaryColor = isDark ? AppColors.accentDark : AppColors.secondaryLight;
+        return AlertDialog(
+          title: Text(
+            'Reset PIN',
+            style: AppTextStyles.h3(ctx),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Enter a new 4-digit PIN for ${widget.user!.name}.',
+                style: AppTextStyles.body(ctx),
+              ),
             const SizedBox(height: 16),
             TextField(
               controller: ctrl,
@@ -125,7 +126,7 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
               decoration: InputDecoration(
                 labelText: 'New PIN',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.mediumBR,
                 ),
               ),
             ),
@@ -134,22 +135,21 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.dmSans()),
+            child: Text('Cancel', style: AppTextStyles.bodyMedium(ctx)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
               'Reset',
-              style: GoogleFonts.dmSans(
-                color: _maroon,
-                fontWeight: FontWeight.w700,
+              style: AppTextStyles.bodySemiBold(ctx).copyWith(
+                color: primaryColor,
               ),
             ),
           ),
         ],
-      ),
+      );
+      },
     );
-
     if (confirmed == true && ctrl.text.length == 4 && mounted) {
       try {
         await ref
@@ -169,34 +169,12 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
   // ── Delete confirmation ──────────────────────────────────────────────────
 
   Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDestructiveDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: Text(
-          'Delete User',
-          style: GoogleFonts.dmSans(fontWeight: FontWeight.w700),
-        ),
-        content: Text(
-          'Are you sure you want to delete ${widget.user!.name}? This cannot be undone.',
-          style: GoogleFonts.dmSans(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: Text('Cancel', style: GoogleFonts.dmSans()),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: Text(
-              'Delete',
-              style: GoogleFonts.dmSans(
-                color: AppColors.errorLight,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: 'Delete User',
+      message: 'Are you sure you want to delete ${widget.user!.name}? This cannot be undone.',
+      confirmLabel: 'Delete',
+      icon: Icons.person_remove_rounded,
     );
     if (confirmed == true && mounted) {
       await ref.read(usersProvider.notifier).softDelete(widget.user!);
@@ -207,11 +185,10 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
   void _showSnack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content:
-            Text(msg, style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
+        content: Text(msg, style: AppTextStyles.bodySemiBold(context)),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.mediumBR),
       ),
     );
   }
@@ -224,6 +201,7 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
     final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final primaryColor = isDark ? AppColors.accentDark : AppColors.secondaryLight;
 
     return Scaffold(
       backgroundColor: bg,
@@ -271,17 +249,17 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                         height: 72,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _maroon.withValues(alpha: 0.12),
+                          color: primaryColor.withValues(alpha: 0.12),
                           border: Border.all(
-                            color: _maroon.withValues(alpha: 0.25),
+                            color: primaryColor.withValues(alpha: 0.25),
                             width: 2,
                           ),
                         ),
                         child: Center(
                           child: Text(
                             initial,
-                            style: GoogleFonts.dmSans(
-                              color: _maroon,
+                            style: AppTextStyles.h2(context).copyWith(
+                              color: primaryColor,
                               fontSize: 28,
                               fontWeight: FontWeight.w800,
                             ),
@@ -302,8 +280,9 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                       color: textPrimary.withValues(alpha: 0.4), size: 20),
                   textInputAction: TextInputAction.next,
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty)
+                    if (v == null || v.trim().isEmpty) {
                       return 'Name is required';
+                    }
                     if (v.trim().length < 2) return 'Name is too short';
                     return null;
                   },
@@ -365,15 +344,17 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                     validator: (v) {
                       if (!_isEdit) {
                         if (v == null || v.isEmpty) return 'PIN is required';
-                        if (v.length != 4)
+                        if (v.length != 4) {
                           return 'PIN must be exactly 4 digits';
+                        }
                         if (!RegExp(r'^\d{4}$').hasMatch(v)) {
                           return 'PIN must be digits only';
                         }
                       } else {
                         if (v != null && v.isNotEmpty) {
-                          if (v.length != 4)
+                          if (v.length != 4) {
                             return 'PIN must be exactly 4 digits';
+                          }
                           if (!RegExp(r'^\d{4}$').hasMatch(v)) {
                             return 'PIN must be digits only';
                           }
@@ -401,18 +382,17 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                   OutlinedButton.icon(
                     onPressed: _showResetPinDialog,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: _maroon,
-                      side: BorderSide(color: _maroon.withValues(alpha: 0.4)),
+                      foregroundColor: primaryColor,
+                      side: BorderSide(color: primaryColor.withValues(alpha: 0.4)),
                       padding: const EdgeInsets.symmetric(
                           vertical: 14, horizontal: 20),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                          borderRadius: AppRadius.mediumBR),
                     ),
                     icon: const Icon(Icons.lock_reset_rounded, size: 20),
                     label: Text(
                       'Reset PIN',
-                      style: GoogleFonts.dmSans(
-                        fontWeight: FontWeight.w700,
+                      style: AppTextStyles.bodySemiBold(context).copyWith(
                         fontSize: 15,
                       ),
                     ),
@@ -451,12 +431,10 @@ class _SectionHeader extends StatelessWidget {
     final isDark = Theme.of(ctx).brightness == Brightness.dark;
     return Text(
       label,
-      style: GoogleFonts.dmSans(
+      style: AppTextStyles.label(ctx).copyWith(
         color:
             isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
         fontSize: 12,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.5,
       ),
     );
   }
@@ -520,24 +498,24 @@ class _RoleOption extends StatelessWidget {
   final VoidCallback onTap;
   final Color textColor;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = isDark ? AppColors.accentDark : AppColors.secondaryLight;
+    
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: AppSpacing.md),
         decoration: BoxDecoration(
           color: isSelected
-              ? _maroon.withValues(alpha: isDark ? 0.25 : 0.1)
+              ? primaryColor.withValues(alpha: isDark ? 0.25 : 0.1)
               : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.mediumBR,
           border: Border.all(
             color: isSelected
-                ? _maroon.withValues(alpha: 0.5)
+                ? primaryColor.withValues(alpha: 0.5)
                 : Colors.transparent,
             width: 1.5,
           ),
@@ -547,13 +525,12 @@ class _RoleOption extends StatelessWidget {
           children: [
             Icon(icon,
                 size: 18,
-                color: isSelected ? _maroon : textColor.withValues(alpha: 0.5)),
-            const SizedBox(width: 8),
+                color: isSelected ? primaryColor : textColor.withValues(alpha: 0.5)),
+            const SizedBox(width: AppSpacing.xs),
             Text(
               label,
-              style: GoogleFonts.dmSans(
-                color: isSelected ? _maroon : textColor.withValues(alpha: 0.7),
-                fontSize: 14,
+              style: AppTextStyles.body(context).copyWith(
+                color: isSelected ? primaryColor : textColor.withValues(alpha: 0.7),
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
@@ -571,28 +548,21 @@ class _StatusToggle extends StatelessWidget {
   final bool isActive;
   final ValueChanged<bool> onChanged;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? AppColors.cardDark : AppColors.white;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final primaryColor = isDark ? AppColors.accentDark : AppColors.secondaryLight;
 
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: AppRadius.mediumBR,
+        boxShadow: AppShadow.level1,
       ),
       child: Row(
         children: [
@@ -605,20 +575,19 @@ class _StatusToggle extends StatelessWidget {
           Expanded(
             child: Text(
               isActive ? 'Active' : 'Inactive',
-              style: GoogleFonts.dmSans(
+              style: AppTextStyles.bodySemiBold(context).copyWith(
                 color: textPrimary,
                 fontSize: 15,
-                fontWeight: FontWeight.w600,
               ),
             ),
           ),
           Switch.adaptive(
             value: isActive,
             onChanged: onChanged,
-            activeThumbColor: _maroon,
-            activeTrackColor: _maroon.withValues(alpha: 0.3),
-            inactiveThumbColor: Colors.grey.shade400,
-            inactiveTrackColor: Colors.grey.withValues(alpha: 0.15),
+            activeThumbColor: primaryColor,
+            activeTrackColor: primaryColor.withValues(alpha: 0.3),
+            inactiveThumbColor: isDark ? AppColors.textDisabledDark : Colors.grey.shade400,
+            inactiveTrackColor: (isDark ? AppColors.borderDark : Colors.grey).withValues(alpha: 0.15),
           ),
         ],
       ),

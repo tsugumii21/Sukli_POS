@@ -1,8 +1,9 @@
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
+import 'package:sukli_pos/core/theme/app_colors.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/services/printer_service.dart';
@@ -40,11 +41,11 @@ class OrderDetailSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF2A1215) : const Color(0xFFFAF6F1);
-    final cardBg = isDark ? const Color(0xFF5D2832) : const Color(0xFFF0E8DC);
+    final bg = isDark ? const Color(0xFF2A1215) : Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : AppColors.backgroundLight;
+    final cardBg = isDark ? const Color(0xFF5D2832) : Theme.of(context).brightness == Brightness.dark ? AppColors.cardDark : AppColors.cardLight;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1A1A1A);
     final textSecondary = isDark ? Colors.white70 : const Color(0xFF6B6B6B);
-    const maroon = Color(0xFF8B4049);
+    final maroon = Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     final items = order.orderItemsJson
         .map((raw) => jsonDecode(raw) as Map<String, dynamic>)
@@ -84,17 +85,12 @@ class OrderDetailSheet extends ConsumerWidget {
                     children: [
                       Text(
                         order.orderNumber,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: textPrimary,
-                        ),
+                        style: AppTextStyles.bodyLarge(context).copyWith(color: textPrimary),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         _dateFmt.format(order.orderedAt),
-                        style: GoogleFonts.dmSans(
-                            fontSize: 12, color: textSecondary),
+                        style: AppTextStyles.caption(context).copyWith(color: textSecondary),
                       ),
                     ],
                   ),
@@ -129,12 +125,7 @@ class OrderDetailSheet extends ConsumerWidget {
                   // Items section
                   Text(
                     'Items',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: textSecondary,
-                      letterSpacing: 0.5,
-                    ),
+                    style: AppTextStyles.body(context).copyWith(color: textSecondary),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -164,12 +155,7 @@ class OrderDetailSheet extends ConsumerWidget {
                   // Summary section
                   Text(
                     'Summary',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: textSecondary,
-                      letterSpacing: 0.5,
-                    ),
+                    style: AppTextStyles.body(context).copyWith(color: textSecondary),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -245,11 +231,11 @@ class OrderDetailSheet extends ConsumerWidget {
                       icon: const Icon(Icons.print_rounded, size: 18),
                       label: Text(
                         'Reprint Receipt',
-                        style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                        style: AppTextStyles.bodySemiBold(context),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: maroon,
-                        side: const BorderSide(color: maroon, width: 1.5),
+                        side: BorderSide(color: maroon, width: 1.5),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
@@ -274,10 +260,10 @@ class OrderDetailSheet extends ConsumerWidget {
       SnackBar(
         content: Text(
           success ? 'Receipt printed.' : 'No printer connected. Receipt saved.',
-          style: GoogleFonts.dmSans(),
+          style: AppTextStyles.body(context),
         ),
         backgroundColor:
-            success ? const Color(0xFF2E7D32) : const Color(0xFF8B4049),
+            success ? const Color(0xFF2E7D32) : Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -322,13 +308,10 @@ class _InfoRow extends StatelessWidget {
         Icon(icon, size: 16, color: textSecondary),
         const SizedBox(width: 8),
         Text('$label: ',
-            style: GoogleFonts.dmSans(fontSize: 13, color: textSecondary)),
+            style: AppTextStyles.body(context).copyWith(color: textSecondary)),
         Expanded(
           child: Text(value,
-              style: GoogleFonts.dmSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: textPrimary),
+              style: AppTextStyles.body(context).copyWith(color: textPrimary),
               overflow: TextOverflow.ellipsis),
         ),
       ],
@@ -373,38 +356,29 @@ class _ItemRow extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: GoogleFonts.dmSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: textPrimary),
+                  style: AppTextStyles.body(context).copyWith(color: textPrimary),
                 ),
                 if (variant.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(variant,
-                      style: GoogleFonts.dmSans(
-                          fontSize: 11, color: textSecondary)),
+                      style: AppTextStyles.label(context).copyWith(color: textSecondary)),
                 ],
                 if (modifiers.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(modifiers,
-                      style: GoogleFonts.dmSans(
-                          fontSize: 11, color: textSecondary)),
+                      style: AppTextStyles.label(context).copyWith(color: textSecondary)),
                 ],
                 const SizedBox(height: 4),
                 Text(
                   '₱${unitPrice.toStringAsFixed(2)} × $qty',
-                  style: GoogleFonts.dmSans(fontSize: 12, color: textSecondary),
+                  style: AppTextStyles.caption(context).copyWith(color: textSecondary),
                 ),
               ],
             ),
           ),
           Text(
             '₱${subtotal.toStringAsFixed(2)}',
-            style: GoogleFonts.dmSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: textPrimary,
-            ),
+            style: AppTextStyles.body(context).copyWith(color: textPrimary),
           ),
         ],
       ),
@@ -435,14 +409,9 @@ class _SummaryRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label,
-            style: GoogleFonts.dmSans(
-                fontSize: isBold ? 14 : 13, color: textSecondary)),
+            style: AppTextStyles.body(context).copyWith(color: textSecondary)),
         Text(value,
-            style: GoogleFonts.dmSans(
-              fontSize: isBold ? 15 : 13,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-              color: valueColor ?? textPrimary,
-            )),
+            style: AppTextStyles.body(context).copyWith(color: valueColor ?? textPrimary)),
       ],
     );
   }
@@ -481,11 +450,7 @@ class _StatusChipDetail extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.dmSans(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
+        style: AppTextStyles.caption(context).copyWith(color: color),
       ),
     );
   }

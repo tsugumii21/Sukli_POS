@@ -13,6 +13,7 @@ class RouteConstants {
   // ── Auth ──────────────────────────────────────────────────
   static const String cashierPin = '/cashier/pin';
   static const String adminLogin = '/admin/login';
+  static const String switchToAdmin = '/switch-to-admin';
 
   // ── Cashier Shell ─────────────────────────────────────────
   static const String cashierHome = '/cashier/home';

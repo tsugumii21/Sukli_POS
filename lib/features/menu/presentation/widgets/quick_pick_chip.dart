@@ -26,10 +26,10 @@ class QuickPickChip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? AppColors.cardDark : const Color(0xFFF0E8DC);
+    final cardBg = isDark ? AppColors.cardDark : AppColors.cardLight;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    const maroon = Color(0xFF8B4049);
+    final maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     final hasOptions =
         item.variantsJson.isNotEmpty || item.modifiersJson.isNotEmpty;

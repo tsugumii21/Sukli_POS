@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
+import '../../../../shared/widgets/empty_state_widget.dart';
+import '../../../../shared/widgets/shimmer_list.dart';
 import '../providers/users_provider.dart';
 import '../widgets/user_tile.dart';
 import 'user_form_screen.dart';
@@ -26,8 +28,6 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   bool _showSearch = false;
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
-
-  static const _maroon = Color(0xFF8B4049);
 
   @override
   void dispose() {
@@ -75,19 +75,22 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
       backgroundColor: bg,
       appBar: _buildAppBar(context, textPrimary, isDark),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(),
-        backgroundColor: _maroon,
-        foregroundColor: Colors.white,
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          _openForm();
+        },
+        backgroundColor: isDark ? AppColors.accentDark : AppColors.secondaryLight,
+        foregroundColor: isDark ? AppColors.primaryDark : Colors.white,
         icon: const Icon(Icons.person_add_rounded),
         label: Text(
           'Add User',
-          style:
-              AppTextStyles.bodySemiBold(context).copyWith(color: Colors.white),
+          style: AppTextStyles.bodySemiBold(context).copyWith(
+            color: isDark ? AppColors.primaryDark : Colors.white,
+          ),
         ),
       ).animate().slideY(begin: 0.3, end: 0, duration: 400.ms).fadeIn(),
       body: usersAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator.adaptive()),
+        loading: () => const ShimmerOrderList(),
         error: (e, _) => Center(child: Text('Error loading users: $e')),
         data: (state) => Column(
           children: [
@@ -136,25 +139,26 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           ? TextField(
               controller: _searchCtrl,
               focusNode: _searchFocus,
-              style: GoogleFonts.dmSans(
+              style: AppTextStyles.bodyMedium(context).copyWith(
                   color: textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500),
+                  fontSize: 16),
               decoration: InputDecoration(
                 hintText: 'Search by name or email…',
-                hintStyle: GoogleFonts.dmSans(
+                hintStyle: AppTextStyles.body(context).copyWith(
                   color: textPrimary.withValues(alpha: 0.4),
                   fontSize: 15,
                 ),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                contentPadding: EdgeInsets.zero,
               ),
               onChanged: (q) => ref.read(usersProvider.notifier).setSearch(q),
             )
           : Text(
               'User Management',
-              style: GoogleFonts.dmSans(
-                color: textPrimary,
-                fontSize: 20,
+              style: AppTextStyles.h3(context).copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -178,22 +182,12 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     final users = state.filtered;
 
     if (users.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.people_outline_rounded,
-                size: 64, color: textPrimary.withValues(alpha: 0.2)),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              state.searchQuery.isNotEmpty
-                  ? 'No users match "${state.searchQuery}"'
-                  : 'No users found.',
-              style: AppTextStyles.bodySecondary(context),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+      return EmptyStateWidget(
+        icon: Icons.people_outline_rounded,
+        title: state.searchQuery.isNotEmpty ? 'No users match "${state.searchQuery}"' : 'No users found',
+        subtitle: 'Add cashiers to get started.',
+        actionLabel: 'Add Cashier',
+        onAction: () => _openForm(),
       );
     }
 
@@ -234,8 +228,6 @@ class _FilterChipsRow extends StatelessWidget {
     (UsersFilter.inactive, 'Inactive'),
   ];
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -251,23 +243,27 @@ class _FilterChipsRow extends StatelessWidget {
         children: _filters.map((entry) {
           final (filter, label) = entry;
           final isSelected = selected == filter;
+          final activeColor = isDark ? AppColors.accentDark : AppColors.secondaryLight;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => onChanged(filter),
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onChanged(filter);
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? _maroon
+                      ? activeColor
                       : (isDark ? AppColors.cardDark : AppColors.cardLight),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: AppRadius.pillBR,
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: _maroon.withValues(alpha: 0.3),
+                            color: activeColor.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           )
@@ -276,10 +272,10 @@ class _FilterChipsRow extends StatelessWidget {
                 ),
                 child: Text(
                   label,
-                  style: GoogleFonts.dmSans(
+                  style: AppTextStyles.body(context).copyWith(
                     color: isSelected
-                        ? Colors.white
-                        : textPrimary.withValues(alpha: 0.65),
+                        ? (isDark ? AppColors.primaryDark : Colors.white)
+                        : (isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.65)),
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),

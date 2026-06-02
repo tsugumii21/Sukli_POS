@@ -59,7 +59,7 @@ class SupabaseService {
 
   Future<void> upsertRecord(String table, Map<String, dynamic> record) async {
     try {
-      await client.from(table).upsert(record);
+      await client.from(table).upsert(record, onConflict: 'sync_id');
     } catch (e) {
       throw DatabaseException('Failed to upsert to Supabase: $e');
     }

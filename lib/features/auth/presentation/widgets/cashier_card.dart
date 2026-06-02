@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// CashierCard — displays a single cashier in the selection grid.
 /// Redesigned with Plus Jakarta Sans and Inter for a modern look.
@@ -38,10 +38,13 @@ class _CashierCardState extends State<CashierCard> {
 
     // Modern gradient for avatar
     final avatarGradient = isDark
-        ? const LinearGradient(colors: [Color(0xFF8B4049), Color(0xFF4A1F24)])
-        : const LinearGradient(colors: [Color(0xFF8B4049), Color(0xFF6B2C33)]);
+        ? LinearGradient(colors: [AppColors.secondaryDark, AppColors.primaryDarkVariant])
+        : LinearGradient(colors: [AppColors.secondaryLight, AppColors.accentLight]);
 
-    return GestureDetector(
+    return InkWell(
+      borderRadius: BorderRadius.circular(28),
+      splashColor: isDark ? AppColors.accentDark.withValues(alpha: 0.08) : AppColors.accentLight.withValues(alpha: 0.08),
+      highlightColor: isDark ? AppColors.accentDark.withValues(alpha: 0.04) : AppColors.accentLight.withValues(alpha: 0.04),
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
         setState(() => _isPressed = false);
@@ -82,7 +85,7 @@ class _CashierCardState extends State<CashierCard> {
                         color: Colors.white.withValues(alpha: 0.1), width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF8B4049).withValues(alpha: 0.2),
+                        color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight.withValues(alpha: 0.2),
                         blurRadius: 15,
                         offset: const Offset(0, 4),
                       ),
@@ -91,11 +94,7 @@ class _CashierCardState extends State<CashierCard> {
                   child: Center(
                     child: Text(
                       _initial,
-                      style: GoogleFonts.dmSans(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: AppTextStyles.priceDisplay(context).copyWith(color: Colors.white),
                     ),
                   ),
                 ),
@@ -107,20 +106,14 @@ class _CashierCardState extends State<CashierCard> {
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.dmSans(
-                    color: textPrimary,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                  ),
+                  style: AppTextStyles.bodyLarge(context).copyWith(color: textPrimary),
                 ),
                 const SizedBox(height: 6),
 
                 // Caption: Inter
                 Text(
                   'Tap to login'.toUpperCase(),
-                  style: GoogleFonts.dmSans(
-                    color: textSecondary.withValues(alpha: 0.6),
+                  style: AppTextStyles.body(context).copyWith(color: textSecondary.withValues(alpha:0.6),
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.2,

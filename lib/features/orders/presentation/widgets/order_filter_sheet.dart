@@ -1,5 +1,6 @@
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
+import 'package:sukli_pos/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/order_history_provider.dart';
@@ -65,11 +66,11 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF2A1215) : const Color(0xFFFAF6F1);
-    final cardBg = isDark ? const Color(0xFF3E2723) : const Color(0xFFF9F5F0);
+    final bg = isDark ? const Color(0xFF2A1215) : Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : AppColors.backgroundLight;
+    final cardBg = isDark ? Theme.of(context).brightness == Brightness.dark ? AppColors.surfaceDark : AppColors.textPrimaryLight : const Color(0xFFF9F5F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF1A1A1A);
     final textSecondary = isDark ? Colors.white70 : const Color(0xFF6B6B6B);
-    const maroon = Color(0xFF8B4049);
+    final maroon = Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     return Padding(
       padding:
@@ -102,11 +103,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
                 // Title
                 Text(
                   'Filter Orders',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: textPrimary,
-                  ),
+                  style: AppTextStyles.bodyLarge(context).copyWith(color: textPrimary),
                 ),
                 const SizedBox(height: 20),
 
@@ -133,8 +130,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text('–',
-                          style: GoogleFonts.dmSans(
-                              fontSize: 16, color: textSecondary)),
+                          style: AppTextStyles.bodyLarge(context).copyWith(color: textSecondary)),
                     ),
                     Expanded(
                       child: _DateButton(
@@ -166,8 +162,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
                             size: 14, color: textSecondary),
                         const SizedBox(width: 4),
                         Text('Clear dates',
-                            style: GoogleFonts.dmSans(
-                                fontSize: 12, color: textSecondary)),
+                            style: AppTextStyles.caption(context).copyWith(color: textSecondary)),
                       ],
                     ),
                   ),
@@ -230,7 +225,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
                         onPressed: _clearAll,
                         style: OutlinedButton.styleFrom(
                           foregroundColor: maroon,
-                          side: const BorderSide(color: maroon),
+                          side: BorderSide(color: maroon),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
@@ -238,7 +233,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
                         child: Text(
                           'Clear All',
                           style:
-                              GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                              AppTextStyles.bodySemiBold(context),
                         ),
                       ),
                     ),
@@ -257,7 +252,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
                         child: Text(
                           'Apply Filter',
                           style:
-                              GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                              AppTextStyles.bodySemiBold(context),
                         ),
                       ),
                     ),
@@ -286,8 +281,8 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
       builder: (ctx, child) {
         return Theme(
           data: Theme.of(ctx).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF8B4049),
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
               onPrimary: Colors.white,
             ),
           ),
@@ -350,12 +345,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label.toUpperCase(),
-      style: GoogleFonts.dmSans(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        color: textSecondary,
-        letterSpacing: 0.8,
-      ),
+      style: AppTextStyles.label(context).copyWith(color: textSecondary),
     );
   }
 }
@@ -401,11 +391,7 @@ class _DateButton extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
-                  color: hasValue ? textPrimary : textSecondary,
-                  fontWeight: hasValue ? FontWeight.w600 : FontWeight.w400,
-                ),
+                style: AppTextStyles.caption(context).copyWith(color: hasValue ? textPrimary :textSecondary),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -452,11 +438,7 @@ class _FilterChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.dmSans(
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected ? maroon : textSecondary,
-          ),
+          style: AppTextStyles.body(context).copyWith(color: isSelected ? maroon :textSecondary),
         ),
       ),
     );

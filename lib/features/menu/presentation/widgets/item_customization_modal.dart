@@ -2,13 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/isar_collections/menu_item_collection.dart';
 import '../../../orders/domain/entities/cart_item.dart';
 import '../../../orders/presentation/providers/order_provider.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// Parsed variant from the item's variantsJson (legacy flat format).
 class _Variant {
@@ -70,9 +69,14 @@ class ItemCustomizationModal extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ItemCustomizationModal(
-        item: item,
-        existingCartItem: existingCartItem,
+      builder: (_) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: ItemCustomizationModal(
+          item: item,
+          existingCartItem: existingCartItem,
+        ),
       ),
     );
   }
@@ -296,7 +300,7 @@ class _ItemCustomizationModalState
       SnackBar(
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-        backgroundColor: const Color(0xFF8B4049),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         duration: const Duration(seconds: 2),
         content: Row(
@@ -307,10 +311,7 @@ class _ItemCustomizationModalState
             Expanded(
               child: Text(
                 '${widget.item.name}${variantName != null ? " ($variantName)" : ""} $label!',
-                style: GoogleFonts.dmSans(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppTextStyles.bodySemiBold(context).copyWith(color: AppColors.white),
               ),
             ),
           ],
@@ -407,12 +408,7 @@ class _ItemCustomizationModalState
                           // ── Item Name ─────────────────────────────────
                           Text(
                             widget.item.name,
-                            style: GoogleFonts.dmSans(
-                              color: textPrimary,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
-                            ),
+                            style: AppTextStyles.h2(context).copyWith(color: textPrimary),
                           ).animate().fadeIn(duration: 300.ms),
 
                           if (widget.item.description != null &&
@@ -420,8 +416,7 @@ class _ItemCustomizationModalState
                             const SizedBox(height: 6),
                             Text(
                               widget.item.description!,
-                              style: GoogleFonts.dmSans(
-                                color: textPrimary.withValues(alpha: 0.5),
+                              style: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.5),
                                 fontSize: 14,
                                 height: 1.4,
                               ),
@@ -440,8 +435,7 @@ class _ItemCustomizationModalState
                                 children: [
                                   Text(
                                     group.groupName.toUpperCase(),
-                                    style: GoogleFonts.dmSans(
-                                      color: textPrimary.withValues(alpha: 0.4),
+                                    style: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.4),
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 1.5,
@@ -472,7 +466,7 @@ class _ItemCustomizationModalState
                                                 vertical: 14),
                                             decoration: BoxDecoration(
                                               color: isSelected
-                                                  ? const Color(0xFF8B4049)
+                                                  ? Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight
                                                   : chipBg,
                                               borderRadius:
                                                   BorderRadius.circular(14),
@@ -500,13 +494,9 @@ class _ItemCustomizationModalState
                                               children: [
                                                 Text(
                                                   opt.name,
-                                                  style: GoogleFonts.dmSans(
-                                                    color: isSelected
+                                                  style: AppTextStyles.body(context).copyWith(color: isSelected
                                                         ? AppColors.white
-                                                        : textPrimary,
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
+                                                        :textPrimary),
                                                 ),
                                                 const SizedBox(height: 2),
                                                 Text(
@@ -514,11 +504,10 @@ class _ItemCustomizationModalState
                                                       ? CurrencyFormatter
                                                           .format(price)
                                                       : '+${CurrencyFormatter.format(opt.priceDelta)}',
-                                                  style: GoogleFonts.dmSans(
-                                                    color: isSelected
+                                                  style: AppTextStyles.body(context).copyWith(color: isSelected
                                                         ? AppColors.white
                                                             .withValues(
-                                                                alpha: 0.7)
+                                                                alpha:0.7)
                                                         : textPrimary
                                                             .withValues(
                                                                 alpha: 0.5),
@@ -543,8 +532,7 @@ class _ItemCustomizationModalState
                           else if (_variants.isNotEmpty) ...[
                             Text(
                               'SIZE',
-                              style: GoogleFonts.dmSans(
-                                color: textPrimary.withValues(alpha: 0.4),
+                              style: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.4),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1.5,
@@ -572,7 +560,7 @@ class _ItemCustomizationModalState
                                           vertical: 14),
                                       decoration: BoxDecoration(
                                         color: isSelected
-                                            ? const Color(0xFF8B4049)
+                                            ? Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight
                                             : chipBg,
                                         borderRadius: BorderRadius.circular(14),
                                         border: isSelected
@@ -583,7 +571,7 @@ class _ItemCustomizationModalState
                                         boxShadow: isSelected
                                             ? [
                                                 BoxShadow(
-                                                  color: const Color(0xFF8B4049)
+                                                  color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight
                                                       .withValues(alpha: 0.25),
                                                   blurRadius: 8,
                                                   offset: const Offset(0, 3),
@@ -595,21 +583,16 @@ class _ItemCustomizationModalState
                                         children: [
                                           Text(
                                             v.name,
-                                            style: GoogleFonts.dmSans(
-                                              color: isSelected
+                                            style: AppTextStyles.body(context).copyWith(color: isSelected
                                                   ? AppColors.white
-                                                  : textPrimary,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w700,
-                                            ),
+                                                  :textPrimary),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             CurrencyFormatter.format(price),
-                                            style: GoogleFonts.dmSans(
-                                              color: isSelected
+                                            style: AppTextStyles.body(context).copyWith(color: isSelected
                                                   ? AppColors.white
-                                                      .withValues(alpha: 0.7)
+                                                      .withValues(alpha:0.7)
                                                   : textPrimary.withValues(
                                                       alpha: 0.5),
                                               fontSize: 12,
@@ -640,8 +623,7 @@ class _ItemCustomizationModalState
                           // ── Quantity ───────────────────────────────────
                           Text(
                             'QUANTITY',
-                            style: GoogleFonts.dmSans(
-                              color: textPrimary.withValues(alpha: 0.4),
+                            style: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.4),
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1.5,
@@ -665,7 +647,7 @@ class _ItemCustomizationModalState
                                   icon: Icon(
                                     Icons.remove_rounded,
                                     color: _quantity > 1
-                                        ? const Color(0xFF8B4049)
+                                        ? Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight
                                         : textPrimary.withValues(alpha: 0.2),
                                   ),
                                 ),
@@ -674,18 +656,14 @@ class _ItemCustomizationModalState
                                       horizontal: 20),
                                   child: Text(
                                     '$_quantity',
-                                    style: GoogleFonts.dmSans(
-                                      color: textPrimary,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w800,
-                                    ),
+                                    style: AppTextStyles.h2(context).copyWith(color: textPrimary),
                                   ),
                                 ),
                                 IconButton(
                                   onPressed: () => setState(() => _quantity++),
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.add_rounded,
-                                    color: Color(0xFF8B4049),
+                                    color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                                   ),
                                 ),
                               ],
@@ -697,8 +675,7 @@ class _ItemCustomizationModalState
                           // ── Notes ─────────────────────────────────────
                           Text(
                             'SPECIAL INSTRUCTIONS',
-                            style: GoogleFonts.dmSans(
-                              color: textPrimary.withValues(alpha: 0.4),
+                            style: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.4),
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1.5,
@@ -708,14 +685,10 @@ class _ItemCustomizationModalState
                           TextField(
                             controller: _notesController,
                             maxLines: 2,
-                            style: GoogleFonts.dmSans(
-                              color: textPrimary,
-                              fontSize: 15,
-                            ),
+                            style: AppTextStyles.body(context).copyWith(color: textPrimary),
                             decoration: InputDecoration(
                               hintText: 'e.g. No onions, extra sauce',
-                              hintStyle: GoogleFonts.dmSans(
-                                color: textPrimary.withValues(alpha: 0.3),
+                              hintStyle: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.3),
                                 fontSize: 14,
                               ),
                               filled: true,
@@ -760,16 +733,14 @@ class _ItemCustomizationModalState
                         children: [
                           Text(
                             'Total',
-                            style: GoogleFonts.dmSans(
-                              color: textPrimary.withValues(alpha: 0.5),
+                            style: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.5),
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(
                             CurrencyFormatter.format(_runningTotal),
-                            style: GoogleFonts.dmSans(
-                              color: const Color(0xFF8B4049),
+                            style: AppTextStyles.body(context).copyWith(color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
                             ),
@@ -784,7 +755,7 @@ class _ItemCustomizationModalState
                           child: ElevatedButton(
                             onPressed: _addOrUpdateCart,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF8B4049),
+                              backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                               foregroundColor: AppColors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(18),
@@ -803,10 +774,7 @@ class _ItemCustomizationModalState
                                 const SizedBox(width: 10),
                                 Text(
                                   _isUpdateMode ? 'Update Cart' : 'Add to Cart',
-                                  style: GoogleFonts.dmSans(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                  style: AppTextStyles.bodyLarge(context, color: Colors.white),
                                 ),
                               ],
                             ),
@@ -837,8 +805,7 @@ class _ItemCustomizationModalState
       children: [
         Text(
           groupName.toUpperCase(),
-          style: GoogleFonts.dmSans(
-            color: textPrimary.withValues(alpha: 0.4),
+          style: AppTextStyles.body(context).copyWith(color: textPrimary.withValues(alpha:0.4),
             fontSize: 11,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.5,
@@ -852,12 +819,12 @@ class _ItemCustomizationModalState
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
               color: isChecked
-                  ? const Color(0xFF8B4049).withValues(alpha: 0.08)
+                  ? Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight.withValues(alpha: 0.08)
                   : chipBg,
               borderRadius: BorderRadius.circular(14),
               border: isChecked
                   ? Border.all(
-                      color: const Color(0xFF8B4049).withValues(alpha: 0.2))
+                      color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight.withValues(alpha: 0.2))
                   : Border.all(color: Colors.black.withValues(alpha: 0.04)),
             ),
             child: CheckboxListTile(
@@ -873,21 +840,16 @@ class _ItemCustomizationModalState
               },
               title: Text(
                 mod.name,
-                style: GoogleFonts.dmSans(
-                  color: textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppTextStyles.body(context).copyWith(color: textPrimary),
               ),
               secondary: Text(
                 '+${CurrencyFormatter.format(mod.priceDelta)}',
-                style: GoogleFonts.dmSans(
-                  color: const Color(0xFF8B4049),
+                style: AppTextStyles.body(context).copyWith(color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              activeColor: const Color(0xFF8B4049),
+              activeColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
               checkboxShape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
               ),

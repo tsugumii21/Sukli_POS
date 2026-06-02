@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/utils/order_number_helper.dart';
 import '../../../../shared/providers/sync_provider.dart';
 import '../../../../shared/providers/theme_provider.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/stats_card.dart';
 import '../../../../shared/widgets/sync_status_badge.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -72,7 +73,10 @@ class CashierDashboardScreen extends ConsumerWidget {
                       padding: EdgeInsets.zero,
                       icon: Icon(Icons.menu_rounded,
                           color: textPrimary, size: 28),
-                      onPressed: () => Scaffold.of(context).openDrawer(),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        Scaffold.of(context).openDrawer();
+                      },
                     ),
                   ),
                   // Avatar circle
@@ -105,7 +109,7 @@ class CashierDashboardScreen extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                           style: AppTextStyles.caption(context).copyWith(
-                            color: textPrimary.withValues(alpha: 0.55),
+                            color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.55),
                           ),
                         ),
                         Text(
@@ -152,7 +156,7 @@ class CashierDashboardScreen extends ConsumerWidget {
                         title: "Today's Sales",
                         value: CurrencyFormatter.format(data.todaySales),
                         icon: Icons.payments_outlined,
-                        valueColor: const Color(0xFF8B4049),
+                        valueColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
@@ -182,12 +186,7 @@ class CashierDashboardScreen extends ConsumerWidget {
                 if (data.favorites.isNotEmpty) ...[
                   Text(
                     'Quick Picks',
-                    style: GoogleFonts.dmSans(
-                      color: textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
+                    style: AppTextStyles.h3(context).copyWith(color: textPrimary),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   // Stack adds a right-edge fade so the list naturally trails off.
@@ -218,11 +217,7 @@ class CashierDashboardScreen extends ConsumerWidget {
                               child: Center(
                                 child: Text(
                                   item.name,
-                                  style: GoogleFonts.dmSans(
-                                    color: textPrimary,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
                                 ),
                               ),
                             );
@@ -261,20 +256,14 @@ class CashierDashboardScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'Recent Orders',
-                      style: GoogleFonts.dmSans(
-                        color: textPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
+                      style: AppTextStyles.h3(context).copyWith(color: textPrimary),
                     ),
                     TextButton(
                       onPressed: () =>
                           context.push(RouteConstants.orderHistory),
                       child: Text(
                         'See All',
-                        style: GoogleFonts.dmSans(
-                          color: const Color(0xFF8B4049),
+                        style: AppTextStyles.body(context).copyWith(color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -283,24 +272,18 @@ class CashierDashboardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 if (data.recentOrders.isEmpty)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Text(
-                        'No orders yet today.',
-                        style: GoogleFonts.dmSans(
-                            color: textPrimary.withValues(alpha: 0.4)),
-                      ),
-                    ),
+                  const EmptyStateWidget(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'No orders yet',
+                    subtitle: 'Orders will appear here once placed.',
                   )
                 else
                   ...data.recentOrders.asMap().entries.map((entry) {
                     final idx = entry.key;
                     final order = entry.value;
-                    // Show only the last 4 chars of the order number, e.g. #0004
+                    // Show only the short order number, e.g. #0004
                     final rawNum = order.orderNumber;
-                    final shortNum =
-                        '#${rawNum.length > 4 ? rawNum.substring(rawNum.length - 4) : rawNum}';
+                    final shortNum = OrderNumberHelper.toShort(rawNum);
                     final accentColor = order.status == 'completed'
                         ? AppColors.successDark
                         : order.status == 'voided'
@@ -337,14 +320,14 @@ class CashierDashboardScreen extends ConsumerWidget {
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF8B4049)
+                                          color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight
                                               .withValues(alpha: 0.1),
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                             Icons.receipt_long_rounded,
-                                            color: Color(0xFF8B4049)),
+                                            color: isDark ? AppColors.secondaryDark : AppColors.secondaryLight),
                                       ),
                                       const SizedBox(width: 16),
                                       Expanded(
@@ -354,17 +337,12 @@ class CashierDashboardScreen extends ConsumerWidget {
                                           children: [
                                             Text(
                                               shortNum,
-                                              style: GoogleFonts.dmSans(
-                                                color: textPrimary,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                                              style: AppTextStyles.bodyLarge(context).copyWith(color: textPrimary),
                                             ),
                                             Text(
                                               '${order.orderedAt.hour}:${order.orderedAt.minute.toString().padLeft(2, '0')}',
-                                              style: GoogleFonts.dmSans(
-                                                color: textPrimary.withValues(
-                                                    alpha: 0.5),
+                                              style: AppTextStyles.body(context).copyWith(
+                                                color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.5),
                                                 fontSize: 12,
                                               ),
                                             ),
@@ -374,10 +352,9 @@ class CashierDashboardScreen extends ConsumerWidget {
                                       Text(
                                         CurrencyFormatter.format(
                                             order.totalAmount),
-                                        style: GoogleFonts.dmSans(
+                                        style: AppTextStyles.bodyLarge(context).copyWith(
                                           color: textPrimary,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w800,
+                                          fontFeatures: [const FontFeature.tabularFigures()],
                                         ),
                                       ),
                                     ],
@@ -406,16 +383,17 @@ class _DashboardDrawer extends ConsumerWidget {
   const _DashboardDrawer({required this.cashierName});
   final String cashierName;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
     final drawerBg = isDark ? const Color(0xFF2A1215) : Colors.white;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final itemHoverBg =
-        isDark ? const Color(0xFF3E2723) : const Color(0xFFF9F0F1);
+        isDark ? Theme.of(context).brightness == Brightness.dark ? AppColors.surfaceDark : AppColors.textPrimaryLight : const Color(0xFFF9F0F1);
     final initial = cashierName.isNotEmpty ? cashierName[0].toUpperCase() : '?';
 
     return Drawer(
@@ -433,8 +411,8 @@ class _DashboardDrawer extends ConsumerWidget {
           // ── Profile header ─────────────────────────────────────────────
           Container(
             width: double.infinity,
-            decoration: const BoxDecoration(
-              color: _maroon,
+            decoration: BoxDecoration(
+              color: maroon,
               borderRadius: BorderRadius.only(
                 topRight: Radius.circular(28),
               ),
@@ -463,11 +441,7 @@ class _DashboardDrawer extends ConsumerWidget {
                   child: Center(
                     child: Text(
                       initial,
-                      style: GoogleFonts.dmSans(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: AppTextStyles.h2(context).copyWith(color: Colors.white),
                     ),
                   ),
                 ).animate().scale(
@@ -482,12 +456,7 @@ class _DashboardDrawer extends ConsumerWidget {
                 // Name
                 Text(
                   cashierName,
-                  style: GoogleFonts.dmSans(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                  ),
+                  style: AppTextStyles.h3(context).copyWith(color: Colors.white),
                 ).animate().fadeIn(duration: 350.ms, delay: 80.ms),
 
                 const SizedBox(height: 6),
@@ -502,8 +471,7 @@ class _DashboardDrawer extends ConsumerWidget {
                   ),
                   child: Text(
                     'Cashier',
-                    style: GoogleFonts.dmSans(
-                      color: Colors.white.withValues(alpha: 0.9),
+                    style: AppTextStyles.body(context).copyWith(color: Colors.white.withValues(alpha:0.9),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
@@ -521,8 +489,8 @@ class _DashboardDrawer extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
             child: Text(
               'MENU',
-              style: GoogleFonts.dmSans(
-                color: textPrimary.withValues(alpha: 0.35),
+              style: AppTextStyles.body(context).copyWith(
+                color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.35),
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.4,
@@ -582,18 +550,37 @@ class _DashboardDrawer extends ConsumerWidget {
             hoverBg: itemHoverBg,
           ),
 
-          _NavItem(
-            icon: Icons.power_settings_new_rounded,
-            label: 'Logout',
-            delay: 0,
-            iconColor: AppColors.errorLight,
-            textColor: AppColors.errorLight,
-            hoverBg: AppColors.errorLight.withValues(alpha: 0.07),
+          const Divider(height: 1),
+
+          ListTile(
+            leading: Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.accentLight.withValues(alpha: 0.10),
+                borderRadius: AppRadius.smallBR,
+              ),
+              child: Icon(
+                Icons.admin_panel_settings_outlined,
+                size: 18,
+                color: isDark ? AppColors.accentDark : AppColors.accentLight,
+              ),
+            ),
+            title: Text(
+              'Switch to Admin',
+              style: AppTextStyles.bodySemiBold(context).copyWith(color: isDark ? AppColors.accentDark :AppColors.accentLight),
+            ),
+            subtitle: Text(
+              'Requires admin login',
+              style: AppTextStyles.caption(context).copyWith(color: textSecondary),
+            ),
             onTap: () {
-              ref.read(authProvider.notifier).logout();
-              if (context.mounted) context.go(RouteConstants.cashierSelect);
+              HapticFeedback.lightImpact();
+              Navigator.pop(context); // close drawer first
+              context.push(RouteConstants.switchToAdmin);
             },
           ),
+
+
 
           SizedBox(
             height: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
@@ -612,7 +599,6 @@ class _NavItem extends StatelessWidget {
     required this.onTap,
     required this.hoverBg,
     required this.textColor,
-    this.iconColor,
     this.delay = 0,
   });
 
@@ -621,12 +607,11 @@ class _NavItem extends StatelessWidget {
   final VoidCallback onTap;
   final Color hoverBg;
   final Color textColor;
-  final Color? iconColor;
   final int delay;
 
   @override
   Widget build(BuildContext context) {
-    final ic = iconColor ?? textColor;
+    final ic = textColor;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -634,7 +619,10 @@ class _NavItem extends StatelessWidget {
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
           borderRadius: BorderRadius.circular(14),
           splashColor: ic.withValues(alpha: 0.1),
           highlightColor: hoverBg,
@@ -646,11 +634,7 @@ class _NavItem extends StatelessWidget {
                 const SizedBox(width: 16),
                 Text(
                   label,
-                  style: GoogleFonts.dmSans(
-                    color: textColor,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.body(context).copyWith(color: textColor),
                 ),
               ],
             ),
@@ -684,12 +668,11 @@ class _ThemeToggleTile extends ConsumerWidget {
   final Color textColor;
   final Color hoverBg;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
     final isDark = themeMode == ThemeMode.dark;
+    final maroon = Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -697,7 +680,10 @@ class _ThemeToggleTile extends ConsumerWidget {
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
-          onTap: () => ref.read(themeProvider.notifier).toggle(),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            ref.read(themeProvider.notifier).toggle();
+          },
           borderRadius: BorderRadius.circular(14),
           splashColor: textColor.withValues(alpha: 0.08),
           highlightColor: hoverBg,
@@ -708,26 +694,25 @@ class _ThemeToggleTile extends ConsumerWidget {
                 Icon(
                   isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                   size: 21,
-                  color: isDark ? AppColors.accentDarkLight : _maroon,
+                  color: isDark ? AppColors.accentDarkLight : maroon,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     isDark ? 'Dark Mode' : 'Light Mode',
-                    style: GoogleFonts.dmSans(
-                      color: textColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.body(context).copyWith(color: textColor),
                   ),
                 ),
                 Switch.adaptive(
                   value: isDark,
-                  onChanged: (_) => ref.read(themeProvider.notifier).toggle(),
+                  onChanged: (_) {
+                    HapticFeedback.lightImpact();
+                    ref.read(themeProvider.notifier).toggle();
+                  },
                   activeThumbColor: AppColors.accentDark,
                   activeTrackColor: AppColors.accentDark.withValues(alpha: 0.5),
-                  inactiveThumbColor: _maroon,
-                  inactiveTrackColor: _maroon.withValues(alpha: 0.2),
+                  inactiveThumbColor: maroon,
+                  inactiveTrackColor: maroon.withValues(alpha: 0.2),
                 ),
               ],
             ),
@@ -737,3 +722,4 @@ class _ThemeToggleTile extends ConsumerWidget {
     );
   }
 }
+

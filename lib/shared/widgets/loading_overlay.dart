@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// LoadingOverlay — wraps a screen body with a full-screen loading scrim.
 class LoadingOverlay extends StatelessWidget {
@@ -40,12 +40,9 @@ class LoadingOverlay extends StatelessWidget {
                       const SizedBox(height: AppSpacing.md),
                       Text(
                         message!,
-                        style: GoogleFonts.dmSans(
-                          color: isDark
+                        style: AppTextStyles.body(context).copyWith(color: isDark
                               ? AppColors.textPrimaryDark
-                              : AppColors.textPrimaryLight,
-                          fontSize: 14,
-                        ),
+                              :AppColors.textPrimaryLight),
                       ),
                     ],
                   ],

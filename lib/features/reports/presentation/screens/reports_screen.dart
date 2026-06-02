@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -146,6 +147,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   : AppColors.textPrimaryLight,
               size: 20),
           onPressed: () {
+            HapticFeedback.lightImpact();
             if (context.canPop()) {
               context.pop();
             } else {
@@ -156,7 +158,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.upload_rounded, color: accent),
-            onPressed: () => ExportSheet.show(context, state),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              ExportSheet.show(context, state);
+            },
             tooltip: 'Export',
           ),
           const SizedBox(width: AppSpacing.xs),
@@ -187,7 +192,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     // Date display button
                     Expanded(
                       child: GestureDetector(
-                        onTap: _openDatePicker,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          _openDatePicker();
+                        },
                         child: Container(
                           height: 40,
                           padding: const EdgeInsets.symmetric(
@@ -227,12 +235,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       Padding(
                         padding: const EdgeInsets.only(left: AppSpacing.xs),
                         child: GestureDetector(
-                          onTap: () => setState(() {
-                            _startDate = DateTime.now();
-                            _endDate = null;
-                            _isRangeMode = false;
-                            _updateReportData();
-                          }),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            setState(() {
+                              _startDate = DateTime.now();
+                              _endDate = null;
+                              _isRangeMode = false;
+                              _updateReportData();
+                            });
+                          },
                           child: Container(
                             height: 40,
                             width: 40,
@@ -341,7 +352,10 @@ class _ToggleOption extends StatelessWidget {
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: AnimatedContainer(
         duration: AppDuration.fast,
         height: 40,
@@ -384,11 +398,7 @@ class _KpiGrid extends StatelessWidget {
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
 
-    final highestSale = state.orders.isEmpty
-        ? 0.0
-        : state.orders
-            .map((o) => o.totalAmount)
-            .fold(0.0, (max, v) => v > max ? v : max);
+    final highestSale = state.highestSale;
 
     final cards = [
       _KpiCardData(
@@ -530,7 +540,7 @@ class _RevenueChart extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           SizedBox(
             height: 200,
-            child: state.orders.isEmpty
+            child: state.totalOrders == 0
                 ? Center(
                     child: Text('No data for this period',
                         style: AppTextStyles.captionSecondary(context)),
@@ -749,10 +759,12 @@ class _PaymentDonutChart extends StatelessWidget {
                             Text(p.methodLabel,
                                 style: AppTextStyles.body(context)),
                             const Spacer(),
-                            Text(
+                             Text(
                               CurrencyFormatter.format(p.amount),
-                              style: AppTextStyles.bodyMedium(context)
-                                  .copyWith(color: accent),
+                              style: AppTextStyles.bodyMedium(context).copyWith(
+                                color: accent,
+                                fontFeatures: [const FontFeature.tabularFigures()],
+                              ),
                             ),
                             const SizedBox(width: AppSpacing.sm),
                             SizedBox(
@@ -838,8 +850,9 @@ class _TopItemsChart extends StatelessWidget {
                             showTitles: true,
                             getTitlesWidget: (value, _) {
                               final idx = value.toInt();
-                              if (idx >= topItems.length)
+                              if (idx >= topItems.length) {
                                 return const SizedBox();
+                              }
                               final name = topItems[idx].name;
                               final label = name.length > 8
                                   ? '${name.substring(0, 8)}…'

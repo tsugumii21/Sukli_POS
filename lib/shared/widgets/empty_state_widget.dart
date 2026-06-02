@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import 'app_button.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// EmptyStateWidget — shown when a list or screen has no content yet.
 class EmptyStateWidget extends StatelessWidget {
@@ -42,21 +42,14 @@ class EmptyStateWidget extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.dmSans(
-                color: primaryText,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTextStyles.h3(context).copyWith(color: primaryText),
             ),
             if (subtitle != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Text(
                 subtitle!,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.dmSans(
-                  color: secondaryText,
-                  fontSize: 14,
-                ),
+                style: AppTextStyles.body(context).copyWith(color: secondaryText),
               ),
             ],
             if (actionLabel != null && onAction != null) ...[

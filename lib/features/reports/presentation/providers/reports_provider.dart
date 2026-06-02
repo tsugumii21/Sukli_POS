@@ -1,9 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar_community/isar.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/providers/isar_provider.dart';
 import '../../../../shared/providers/store_provider.dart';
@@ -59,164 +60,60 @@ class ReportState {
   final ReportPeriod period;
   final DateTime? customStart;
   final DateTime? customEnd;
-  final List<OrderCollection> orders;
+
+  final bool isLoading;
+  final double totalSales;
+  final int totalOrders;
+  final double averageOrderValue;
+  final double highestSale;
+  final String topCashierName;
+  final List<PaymentBreakdownItem> paymentBreakdown;
+  final List<TopItem> topItems;
+  final List<FlSpot> revenueSpots;
 
   const ReportState({
     required this.period,
     this.customStart,
     this.customEnd,
-    this.orders = const [],
+    this.isLoading = false,
+    this.totalSales = 0.0,
+    this.totalOrders = 0,
+    this.averageOrderValue = 0.0,
+    this.highestSale = 0.0,
+    this.topCashierName = '—',
+    this.paymentBreakdown = const [],
+    this.topItems = const [],
+    this.revenueSpots = const [FlSpot(0, 0)],
   });
 
   ReportState copyWith({
     ReportPeriod? period,
     DateTime? customStart,
     DateTime? customEnd,
-    List<OrderCollection>? orders,
+    bool? isLoading,
+    double? totalSales,
+    int? totalOrders,
+    double? averageOrderValue,
+    double? highestSale,
+    String? topCashierName,
+    List<PaymentBreakdownItem>? paymentBreakdown,
+    List<TopItem>? topItems,
+    List<FlSpot>? revenueSpots,
   }) {
     return ReportState(
       period: period ?? this.period,
       customStart: customStart ?? this.customStart,
       customEnd: customEnd ?? this.customEnd,
-      orders: orders ?? this.orders,
+      isLoading: isLoading ?? this.isLoading,
+      totalSales: totalSales ?? this.totalSales,
+      totalOrders: totalOrders ?? this.totalOrders,
+      averageOrderValue: averageOrderValue ?? this.averageOrderValue,
+      highestSale: highestSale ?? this.highestSale,
+      topCashierName: topCashierName ?? this.topCashierName,
+      paymentBreakdown: paymentBreakdown ?? this.paymentBreakdown,
+      topItems: topItems ?? this.topItems,
+      revenueSpots: revenueSpots ?? this.revenueSpots,
     );
-  }
-
-  // ── KPI getters ──────────────────────────────────────────────────────────
-
-  double get totalSales => orders.fold(0, (sum, o) => sum + o.totalAmount);
-  int get totalOrders => orders.length;
-  double get averageOrderValue =>
-      totalOrders == 0 ? 0 : totalSales / totalOrders;
-
-  /// Returns the cashier name with the most orders, or '—' if none.
-  String get topCashierName {
-    if (orders.isEmpty) return '—';
-    final counts = <String, int>{};
-    for (final o in orders) {
-      counts[o.cashierName] = (counts[o.cashierName] ?? 0) + 1;
-    }
-    return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
-  }
-
-  // ── Payment breakdown ────────────────────────────────────────────────────
-
-  List<PaymentBreakdownItem> get paymentBreakdown {
-    if (orders.isEmpty) return [];
-    final totals = <String, double>{};
-    for (final o in orders) {
-      final method = o.paymentMethod.toLowerCase();
-      totals[method] = (totals[method] ?? 0) + o.totalAmount;
-    }
-    final grandTotal = totals.values.fold(0.0, (a, b) => a + b);
-    if (grandTotal == 0) return [];
-    return totals.entries
-        .map((e) => PaymentBreakdownItem(
-              method: e.key,
-              amount: e.value,
-              percentage: (e.value / grandTotal) * 100,
-            ))
-        .toList()
-      ..sort((a, b) => b.amount.compareTo(a.amount));
-  }
-
-  // ── Top items ────────────────────────────────────────────────────────────
-
-  /// Parses orderItemsJson and returns top 5 items by revenue.
-  List<TopItem> get topItems {
-    if (orders.isEmpty) return [];
-    final revenue = <String, double>{};
-    final qty = <String, int>{};
-
-    for (final order in orders) {
-      for (final json in order.orderItemsJson) {
-        // Each entry is a JSON-like "name:qty:price" or full JSON.
-        try {
-          final nameMatch = RegExp(r'"name"\s*:\s*"([^"]+)"').firstMatch(json);
-          final priceMatch =
-              RegExp(r'"totalPrice"\s*:\s*([\d.]+)').firstMatch(json);
-          final qtyMatch = RegExp(r'"quantity"\s*:\s*(\d+)').firstMatch(json);
-
-          if (nameMatch == null) continue;
-          final name = nameMatch.group(1)!;
-          final price = double.tryParse(priceMatch?.group(1) ?? '0') ?? 0;
-          final count = int.tryParse(qtyMatch?.group(1) ?? '1') ?? 1;
-
-          revenue[name] = (revenue[name] ?? 0) + price;
-          qty[name] = (qty[name] ?? 0) + count;
-        } catch (_) {
-          continue;
-        }
-      }
-    }
-
-    final items = revenue.entries
-        .map((e) =>
-            TopItem(name: e.key, qtySold: qty[e.key] ?? 0, revenue: e.value))
-        .toList()
-      ..sort((a, b) => b.revenue.compareTo(a.revenue));
-
-    return items.take(5).toList();
-  }
-
-  // ── Revenue chart spots ──────────────────────────────────────────────────
-
-  List<FlSpot> get revenueSpots {
-    if (orders.isEmpty) return [const FlSpot(0, 0)];
-
-    switch (period) {
-      case ReportPeriod.day:
-        return _hourlySpots();
-      case ReportPeriod.week:
-        return _dailySpots(7);
-      case ReportPeriod.month:
-        return _dailySpots(30);
-      case ReportPeriod.year:
-        return _monthlySpots();
-      case ReportPeriod.custom:
-        final start = customStart;
-        final end = customEnd;
-        if (start == null || end == null) return [const FlSpot(0, 0)];
-        final days = end.difference(start).inDays + 1;
-        return days <= 31 ? _dailySpots(days) : _monthlySpots();
-    }
-  }
-
-  List<FlSpot> _hourlySpots() {
-    final buckets = List<double>.filled(24, 0);
-    final now = DateTime.now();
-    for (final o in orders) {
-      if (o.orderedAt.year == now.year &&
-          o.orderedAt.month == now.month &&
-          o.orderedAt.day == now.day) {
-        buckets[o.orderedAt.hour] += o.totalAmount;
-      }
-    }
-    return List.generate(24, (i) => FlSpot(i.toDouble(), buckets[i]));
-  }
-
-  List<FlSpot> _dailySpots(int days) {
-    final buckets = List<double>.filled(days, 0);
-    final now = DateTime.now();
-    final start = now.subtract(Duration(days: days - 1));
-    for (final o in orders) {
-      final diff = o.orderedAt.difference(start).inDays;
-      if (diff >= 0 && diff < days) {
-        buckets[diff] += o.totalAmount;
-      }
-    }
-    return List.generate(days, (i) => FlSpot(i.toDouble(), buckets[i]));
-  }
-
-  List<FlSpot> _monthlySpots() {
-    final buckets = List<double>.filled(12, 0);
-    for (final o in orders) {
-      final month = o.orderedAt.month - 1;
-      if (month >= 0 && month < 12) {
-        buckets[month] += o.totalAmount;
-      }
-    }
-    return List.generate(12, (i) => FlSpot(i.toDouble(), buckets[i]));
   }
 
   // ── Period label ─────────────────────────────────────────────────────────
@@ -292,16 +189,167 @@ class ReportsNotifier extends Notifier<ReportState> {
         break;
     }
 
-    final filteredOrders = await isar.orderCollections
+    state = state.copyWith(isLoading: true);
+
+    final totalOrders = await isar.orderCollections
         .filter()
         .storeIdEqualTo(storeId)
         .and()
         .orderedAtBetween(start, end)
         .and()
         .isDeletedEqualTo(false)
-        .findAll();
+        .count();
 
-    state = state.copyWith(orders: filteredOrders);
+    if (totalOrders == 0) {
+      state = state.copyWith(
+        isLoading: false,
+        totalOrders: 0,
+        totalSales: 0.0,
+        averageOrderValue: 0.0,
+        topCashierName: '—',
+        paymentBreakdown: const [],
+        topItems: const [],
+        revenueSpots: const [FlSpot(0, 0)],
+      );
+      return;
+    }
+
+    double totalSales = 0.0;
+    double highestSale = 0.0;
+    final cashierCounts = <String, int>{};
+    final paymentTotals = <String, double>{};
+    final itemRevenue = <String, double>{};
+    final itemQty = <String, int>{};
+
+    List<double> buckets;
+    final now = DateTime.now();
+    bool isHourly = false;
+    bool isMonthly = false;
+
+    final days = end.difference(start).inDays + 1;
+    if (state.period == ReportPeriod.day) {
+      buckets = List<double>.filled(24, 0);
+      isHourly = true;
+    } else if (state.period == ReportPeriod.week) {
+      buckets = List<double>.filled(7, 0);
+    } else if (state.period == ReportPeriod.month) {
+      buckets = List<double>.filled(30, 0);
+    } else if (state.period == ReportPeriod.year) {
+      buckets = List<double>.filled(12, 0);
+      isMonthly = true;
+    } else {
+      if (days <= 31) {
+        buckets = List<double>.filled(days, 0);
+      } else {
+        buckets = List<double>.filled(12, 0);
+        isMonthly = true;
+      }
+    }
+
+    int offset = 0;
+    const batchSize = AppConstants.reportsBatchSize;
+
+    while (true) {
+      final batch = await isar.orderCollections
+          .filter()
+          .storeIdEqualTo(storeId)
+          .and()
+          .orderedAtBetween(start, end)
+          .and()
+          .isDeletedEqualTo(false)
+          .offset(offset)
+          .limit(batchSize)
+          .findAll();
+
+      if (batch.isEmpty) break;
+
+      for (final o in batch) {
+        totalSales += o.totalAmount;
+        if (o.totalAmount > highestSale) highestSale = o.totalAmount;
+        cashierCounts[o.cashierName] = (cashierCounts[o.cashierName] ?? 0) + 1;
+        
+        final method = o.paymentMethod.toLowerCase();
+        paymentTotals[method] = (paymentTotals[method] ?? 0) + o.totalAmount;
+
+        for (final json in o.orderItemsJson) {
+          try {
+            final nameMatch = RegExp(r'"name"\s*:\s*"([^"]+)"').firstMatch(json);
+            final priceMatch = RegExp(r'"totalPrice"\s*:\s*([\d.]+)').firstMatch(json);
+            final qtyMatch = RegExp(r'"quantity"\s*:\s*(\d+)').firstMatch(json);
+
+            if (nameMatch == null) continue;
+            final name = nameMatch.group(1)!;
+            final price = double.tryParse(priceMatch?.group(1) ?? '0') ?? 0;
+            final count = int.tryParse(qtyMatch?.group(1) ?? '1') ?? 1;
+
+            itemRevenue[name] = (itemRevenue[name] ?? 0) + price;
+            itemQty[name] = (itemQty[name] ?? 0) + count;
+          } catch (_) {
+            continue;
+          }
+        }
+
+        if (isHourly) {
+          if (o.orderedAt.year == now.year &&
+              o.orderedAt.month == now.month &&
+              o.orderedAt.day == now.day) {
+            buckets[o.orderedAt.hour] += o.totalAmount;
+          }
+        } else if (isMonthly) {
+          final month = o.orderedAt.month - 1;
+          if (month >= 0 && month < 12) {
+            buckets[month] += o.totalAmount;
+          }
+        } else {
+          final diff = o.orderedAt.difference(start).inDays;
+          if (diff >= 0 && diff < buckets.length) {
+            buckets[diff] += o.totalAmount;
+          }
+        }
+      }
+
+      offset += batchSize;
+      if (batch.length < batchSize) break;
+    }
+
+    final topCashier = cashierCounts.isEmpty 
+      ? '—' 
+      : cashierCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+
+    final breakdownItems = paymentTotals.entries
+        .map((e) => PaymentBreakdownItem(
+              method: e.key,
+              amount: e.value,
+              percentage: (e.value / totalSales) * 100,
+            ))
+        .toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+
+    final topItemList = itemRevenue.entries
+        .map((e) => TopItem(
+              name: e.key,
+              qtySold: itemQty[e.key] ?? 0,
+              revenue: e.value,
+            ))
+        .toList()
+      ..sort((a, b) => b.revenue.compareTo(a.revenue));
+
+    final spots = List.generate(
+      buckets.length,
+      (i) => FlSpot(i.toDouble(), buckets[i]),
+    );
+
+    state = state.copyWith(
+      isLoading: false,
+      totalOrders: totalOrders,
+      totalSales: totalSales,
+      averageOrderValue: totalSales / totalOrders,
+      highestSale: highestSale,
+      topCashierName: topCashier,
+      paymentBreakdown: breakdownItems,
+      topItems: topItemList.take(5).toList(),
+      revenueSpots: spots,
+    );
   }
 }
 

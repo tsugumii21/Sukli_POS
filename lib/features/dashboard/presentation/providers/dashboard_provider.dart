@@ -3,6 +3,7 @@ import '../../../../core/services/isar_service.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/isar_collections/menu_item_collection.dart';
 import 'package:isar_community/isar.dart';
+import '../../../../shared/providers/store_provider.dart';
 
 /// DashboardData holds all the metrics and lists needed for the Cashier Home Screen.
 class DashboardData {
@@ -41,9 +42,13 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardData>> {
       final startOfDay = DateTime(now.year, now.month, now.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
 
+      final storeId = ref.read(currentStoreIdProvider);
+
       // 1. Today's Totals
       final todayOrders = await _isar.isar.orderCollections
           .filter()
+          .storeIdEqualTo(storeId)
+          .and()
           .orderedAtBetween(startOfDay, endOfDay)
           .and()
           .statusEqualTo('completed')
@@ -55,6 +60,8 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardData>> {
       // 2. Favorites
       final favorites = await _isar.isar.menuItemCollections
           .filter()
+          .storeIdEqualTo(storeId)
+          .and()
           .isFavoriteEqualTo(true)
           .and()
           .isAvailableEqualTo(true)
@@ -65,7 +72,8 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardData>> {
 
       // 3. Recent orders
       final recent = await _isar.isar.orderCollections
-          .where()
+          .filter()
+          .storeIdEqualTo(storeId)
           .sortByOrderedAtDesc()
           .limit(5)
           .findAll();

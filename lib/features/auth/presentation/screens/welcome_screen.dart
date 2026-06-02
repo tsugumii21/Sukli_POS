@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -65,12 +64,7 @@ class WelcomeScreen extends StatelessWidget {
               Text(
                 'Sukli',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.dmSans(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: textPrimary,
-                  letterSpacing: -1.0,
-                ),
+                style: AppTextStyles.h2(context).copyWith(color: textPrimary),
               )
                   .animate(delay: 100.ms)
                   .fadeIn(duration: 500.ms)
@@ -81,12 +75,7 @@ class WelcomeScreen extends StatelessWidget {
               Text(
                 'Point of Sale for everyday retail.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.dmSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: textSecondary,
-                  height: 1.5,
-                ),
+                style: AppTextStyles.bodyMedium(context).copyWith(color: textSecondary),
               ).animate(delay: 200.ms).fadeIn(duration: 500.ms),
 
               const Spacer(flex: 2),
@@ -128,19 +117,12 @@ class WelcomeScreen extends StatelessWidget {
                           children: [
                             Text(
                               e.value.$2,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: textPrimary,
-                              ),
+                              style: AppTextStyles.body(context).copyWith(color: textPrimary),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               e.value.$3,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: textSecondary.withValues(alpha: 0.8),
+                              style: AppTextStyles.body(context).copyWith(color: textSecondary.withValues(alpha:0.8),
                               ),
                             ),
                           ],
@@ -163,7 +145,7 @@ class WelcomeScreen extends StatelessWidget {
                   onPressed: () => context.push(RouteConstants.signup),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accent,
-                    foregroundColor: Colors.white,
+                    foregroundColor: isDark ? AppColors.primaryDark : Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -171,10 +153,8 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   child: Text(
                     'Set Up My Store',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
+                    style: AppTextStyles.bodySemiBold(context).copyWith(
+                      color: isDark ? AppColors.primaryDark : Colors.white,
                     ),
                   ),
                 ),
@@ -183,14 +163,14 @@ class WelcomeScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () => context.push(RouteConstants.adminLogin),
-                child: Text(
-                  'I already have an account',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: accent,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    'I already have an account',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodySemiBold(context).copyWith(color: accent),
                   ),
                 ),
               ).animate(delay: 700.ms).fadeIn(),

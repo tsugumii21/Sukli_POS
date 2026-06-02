@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
+import '../../../../core/services/supabase_service.dart';
+import '../providers/admin_auth_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/cashier_card.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// CashierSelectionScreen — shows a 2-column grid of active cashiers.
 /// Redesigned with Plus Jakarta Sans and Inter for a high-end fintech aesthetic.
@@ -42,6 +45,7 @@ class _CashierSelectionScreenState
   }
 
   void _onCashierTapped(UserCollection cashier) {
+    HapticFeedback.lightImpact();
     ref.read(authProvider.notifier).selectCashier(cashier);
 
     if (cashier.pinHash != null) {
@@ -63,176 +67,211 @@ class _CashierSelectionScreenState
     final textSecondary =
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
-    return Scaffold(
-      backgroundColor: bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Top Bar ────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.lg,
-              ),
-              child: Row(
-                children: [
-                  // Logo in a modern rounded box
-                  Container(
-                    width: 44,
-                    height: 44,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.cardDark : AppColors.cardLight,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Image.asset(
-                      'assets/images/sukli_logo.png',
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Text(
-                    'Sukli',
-                    style: GoogleFonts.dmSans(
-                      color: textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 400.ms),
+    final adminAuth = ref.watch(adminAuthProvider);
+    final isAdminLoggedIn = adminAuth.value != null ||
+        SupabaseService.instance.currentUser != null;
 
-            const SizedBox(height: AppSpacing.md),
-
-            // ── Title ──────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Select Cashier',
-                      style: GoogleFonts.dmSans(
-                        color: textPrimary,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1.0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Choose your profile to start selling',
-                    style: GoogleFonts.dmSans(
-                      color: textSecondary.withValues(alpha: 0.6),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            )
-                .animate()
-                .fadeIn(duration: 400.ms, delay: 100.ms)
-                .slideY(begin: 0.05, end: 0),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── Cashier Grid ───────────────────────────────────────────────
-            Expanded(
-              child: _isLoading
-                  ? Center(
-                      child: CircularProgressIndicator.adaptive(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          isDark ? AppColors.accentDark : AppColors.accentLight,
-                        ),
-                      ),
-                    )
-                  : _cashiers.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No active cashiers found.',
-                            style: GoogleFonts.dmSans(
-                              color: textSecondary,
-                              fontWeight: FontWeight.w500,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (isAdminLoggedIn) {
+          context.go(RouteConstants.adminHome);
+        } else {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(RouteConstants.welcome);
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // ── Top Bar ────────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.lg,
+                ),
+                child: Row(
+                  children: [
+                    if (isAdminLoggedIn) ...[
+                      GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go(RouteConstants.adminHome);
+                          }
+                        },
+                        child: Container(
+                          width: 48, height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: textSecondary.withValues(alpha: 0.2),
                             ),
                           ),
-                        )
-                      : GridView.builder(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
+                          child: Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 18,
+                            color: textPrimary,
                           ),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: AppSpacing.md,
-                            mainAxisSpacing: AppSpacing.md,
-                            childAspectRatio: 0.85,
-                          ),
-                          itemCount: _cashiers.length,
-                          itemBuilder: (context, index) {
-                            final cashier = _cashiers[index];
-                            return CashierCard(
-                              cashier: cashier,
-                              onTap: () => _onCashierTapped(cashier),
-                            )
-                                .animate()
-                                .fadeIn(
-                                  duration: 600.ms,
-                                  delay: Duration(milliseconds: 100 * index),
-                                )
-                                .scaleXY(
-                                  begin: 0.95,
-                                  end: 1.0,
-                                  duration: 600.ms,
-                                  curve: Curves.easeOutBack,
-                                  delay: Duration(milliseconds: 100 * index),
-                                );
-                          },
                         ),
-            ),
-
-            // ── Admin Login Button ─────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Container(
-                decoration: BoxDecoration(
-                  border:
-                      Border.all(color: textSecondary.withValues(alpha: 0.1)),
-                  borderRadius: BorderRadius.circular(16),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                    ] else ...[
+                      // Logo in a modern rounded box
+                      Container(
+                        width: 48, height: 48,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.cardDark : AppColors.cardLight,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Image.asset(
+                          'assets/images/sukli_logo.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                    ],
+                    Text(
+                      'Sukli',
+                      style: AppTextStyles.h3(context).copyWith(color: textPrimary),
+                    ),
+                  ],
                 ),
-                child: TextButton(
-                  onPressed: () => context.push(RouteConstants.adminLogin),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
+              ).animate().fadeIn(duration: 400.ms),
+  
+              const SizedBox(height: AppSpacing.md),
+  
+              // ── Title ──────────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Select Cashier',
+                        style: AppTextStyles.h2(context).copyWith(color: textPrimary),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Choose your profile to start selling',
+                      style: AppTextStyles.body(context).copyWith(
+                        color: isDark ? AppColors.textSecondaryDark : textSecondary.withValues(alpha:0.6),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 100.ms)
+                  .slideY(begin: 0.05, end: 0),
+  
+              const SizedBox(height: AppSpacing.xl),
+  
+              // ── Cashier Grid ───────────────────────────────────────────────
+              Expanded(
+                child: _isLoading
+                    ? Center(
+                        child: CircularProgressIndicator.adaptive(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isDark ? AppColors.accentDark : AppColors.accentLight,
+                          ),
+                        ),
+                      )
+                    : _cashiers.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No active cashiers found.',
+                              style: AppTextStyles.bodyMedium(context).copyWith(color: textSecondary),
+                            ),
+                          )
+                        : GridView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                            ),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: AppSpacing.md,
+                              mainAxisSpacing: AppSpacing.md,
+                              childAspectRatio: 0.85,
+                            ),
+                            itemCount: _cashiers.length,
+                            itemBuilder: (context, index) {
+                              final cashier = _cashiers[index];
+                              return CashierCard(
+                                cashier: cashier,
+                                onTap: () => _onCashierTapped(cashier),
+                              )
+                                  .animate()
+                                  .fadeIn(
+                                    duration: 600.ms,
+                                    delay: Duration(milliseconds: 100 * index),
+                                  )
+                                  .scaleXY(
+                                    begin: 0.95,
+                                    end: 1.0,
+                                    duration: 600.ms,
+                                    curve: Curves.easeOutBack,
+                                    delay: Duration(milliseconds: 100 * index),
+                                  );
+                            },
+                          ),
+              ),
+  
+              const SizedBox(height: AppSpacing.lg),
+              
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    if (isAdminLoggedIn) {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go(RouteConstants.adminHome);
+                      }
+                    } else {
+                      context.push(RouteConstants.adminLogin);
+                    }
+                  },
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.admin_panel_settings_outlined,
-                          size: 18, color: textSecondary),
-                      const SizedBox(width: 8),
+                      Icon(
+                        isAdminLoggedIn
+                            ? Icons.arrow_back_rounded
+                            : Icons.admin_panel_settings_outlined,
+                        size: 16,
+                        color: textSecondary,
+                      ),
+                      const SizedBox(width: 6),
                       Text(
-                        'Admin Portal',
-                        style: GoogleFonts.dmSans(
-                          color: textSecondary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        isAdminLoggedIn ? 'Back to Admin' : 'Switch to Admin',
+                        style: AppTextStyles.body(context).copyWith(color: textSecondary),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ).animate().fadeIn(duration: 400.ms, delay: 400.ms),
-          ],
+              ).animate().fadeIn(duration: 400.ms, delay: 400.ms),
+              
+              const SizedBox(height: AppSpacing.lg),
+            ],
+          ),
         ),
       ),
     );

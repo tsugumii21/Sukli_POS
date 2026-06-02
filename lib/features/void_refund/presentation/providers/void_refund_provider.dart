@@ -1,4 +1,4 @@
-import 'dart:convert';
+
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
@@ -9,6 +9,7 @@ import '../../../../core/constants/supabase_constants.dart';
 import '../../../../core/utils/pin_helper.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
+import '../../../../shared/providers/store_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab enum
@@ -87,9 +88,12 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
 
   Future<void> _load() async {
     try {
+      final storeId = ref.read(currentStoreIdProvider);
       // All non-deleted orders sorted newest-first
       final all = await _isar.isar.orderCollections
           .filter()
+          .storeIdEqualTo(storeId)
+          .and()
           .isDeletedEqualTo(false)
           .sortByOrderedAtDesc()
           .findAll();
@@ -127,8 +131,11 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
   /// Returns the admin's [UserCollection] on success, null on failure.
   Future<UserCollection?> verifyAdminPin(String pin) async {
     try {
+      final storeId = ref.read(currentStoreIdProvider);
       final admins = await _isar.isar.userCollections
           .filter()
+          .storeIdEqualTo(storeId)
+          .and()
           .roleEqualTo(SupabaseConstants.roleAdmin)
           .and()
           .statusEqualTo(SupabaseConstants.statusActive)

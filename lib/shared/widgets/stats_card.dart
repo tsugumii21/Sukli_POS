@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// StatsCard — Redesigned for the new high-end fintech design system.
 /// Displays a metric title and a bold value with soft elevation.
@@ -47,15 +47,18 @@ class StatsCard extends StatelessWidget {
                 Icon(
                   icon,
                   size: 16,
-                  color: (valueColor ?? const Color(0xFF8B4049))
-                      .withValues(alpha: 0.6),
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : (valueColor ?? AppColors.secondaryLight).withValues(alpha: 0.6),
                 ),
                 const SizedBox(width: 8),
               ],
               Text(
                 title,
-                style: GoogleFonts.dmSans(
-                  color: textPrimary.withValues(alpha: 0.5),
+                style: AppTextStyles.body(context).copyWith(
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : textPrimary.withValues(alpha: 0.5),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
@@ -66,12 +69,7 @@ class StatsCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
-            style: GoogleFonts.dmSans(
-              color: valueColor ?? textPrimary,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
+            style: AppTextStyles.h2(context).copyWith(color: valueColor ?? textPrimary),
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:isar_community/isar.dart';
 import '../../../../core/services/isar_service.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/isar_collections/sync_queue_collection.dart';
+import '../../../../shared/providers/store_provider.dart';
 
 /// AdminDashboardData holds all metrics and lists for the Admin Dashboard.
 class AdminDashboardData {
@@ -41,9 +42,13 @@ class AdminDashboardNotifier extends Notifier<AsyncValue<AdminDashboardData>> {
       final startOfDay = DateTime(now.year, now.month, now.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
 
+      final storeId = ref.read(currentStoreIdProvider);
+
       // 1. Today's completed orders
       final todayOrders = await _isar.isar.orderCollections
           .filter()
+          .storeIdEqualTo(storeId)
+          .and()
           .orderedAtBetween(startOfDay, endOfDay)
           .and()
           .statusEqualTo('completed')
@@ -60,7 +65,8 @@ class AdminDashboardNotifier extends Notifier<AsyncValue<AdminDashboardData>> {
 
       // 3. Recent 10 orders (any status)
       final recentOrders = await _isar.isar.orderCollections
-          .where()
+          .filter()
+          .storeIdEqualTo(storeId)
           .sortByOrderedAtDesc()
           .limit(10)
           .findAll();

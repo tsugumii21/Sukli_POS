@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/destructive_action_dialog.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../providers/category_provider.dart';
@@ -18,12 +18,11 @@ import '../widgets/category_tile.dart';
 class CategoryManagementScreen extends ConsumerWidget {
   const CategoryManagementScreen({super.key});
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categoriesAsync = ref.watch(categoryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
     final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -48,7 +47,10 @@ class CategoryManagementScreen extends ConsumerWidget {
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCategorySheet(context, ref),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          _showCategorySheet(context, ref);
+        },
         backgroundColor: _maroon,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
@@ -97,9 +99,12 @@ class CategoryManagementScreen extends ConsumerWidget {
                 AppSpacing.xxl + 80,
               ),
               itemCount: categories.length,
-              onReorder: (oldIndex, newIndex) => ref
-                  .read(categoryProvider.notifier)
-                  .reorder(oldIndex, newIndex),
+              onReorder: (oldIndex, newIndex) {
+                HapticFeedback.lightImpact();
+                ref
+                    .read(categoryProvider.notifier)
+                    .reorder(oldIndex, newIndex);
+              },
               proxyDecorator: (child, index, animation) => Material(
                 elevation: 8,
                 color: Colors.transparent,
@@ -149,38 +154,16 @@ class CategoryManagementScreen extends ConsumerWidget {
     final category = item.category;
     final count = item.itemCount;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDestructiveDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: Text(
-          'Delete Category',
-          style: GoogleFonts.dmSans(fontWeight: FontWeight.w700),
-        ),
-        content: Text(
-          count > 0
-              ? 'This category has $count menu item${count == 1 ? '' : 's'}. '
-                  'Deleting it will keep the items but they will become '
-                  'uncategorised. Continue?'
-              : 'Delete "${category.name}"? This cannot be undone.',
-          style: GoogleFonts.dmSans(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: Text('Cancel', style: GoogleFonts.dmSans()),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: Text(
-              'Delete',
-              style: GoogleFonts.dmSans(
-                color: AppColors.errorLight,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: 'Delete Category',
+      message: count > 0
+          ? 'This category has $count menu item${count == 1 ? '' : 's'}. '
+              'Deleting it will keep the items but they will become '
+              'uncategorised. Continue?'
+          : 'Delete "${category.name}"? This cannot be undone.',
+      confirmLabel: 'Delete',
+      icon: Icons.delete_forever_rounded,
     );
 
     if (confirmed == true && context.mounted) {
@@ -189,7 +172,7 @@ class CategoryManagementScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('"${category.name}" deleted.',
-                style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
+                style: AppTextStyles.bodySemiBold(context)),
             backgroundColor: AppColors.errorLight,
             behavior: SnackBarBehavior.floating,
             shape:
@@ -220,7 +203,6 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
   late bool _isActive;
   bool _isSaving = false;
 
-  static const _maroon = Color(0xFF8B4049);
   bool get _isEdit => widget.existing != null;
 
   @override
@@ -268,7 +250,7 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e',
-                style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
+                style: AppTextStyles.bodySemiBold(context)),
             backgroundColor: AppColors.errorLight,
             behavior: SnackBarBehavior.floating,
             shape:
@@ -287,6 +269,7 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
     final sheetBg = isDark ? AppColors.surfaceDark : AppColors.backgroundLight;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -353,14 +336,10 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
                             child: Center(
                               child: hasEmoji
                                   ? Text(emojiVal.text.trim(),
-                                      style: GoogleFonts.dmSans(fontSize: 24))
+                                      style: AppTextStyles.h2(context))
                                   : Text(
                                       initial,
-                                      style: GoogleFonts.dmSans(
-                                        color: _maroon,
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                                      style: AppTextStyles.h2(context).copyWith(color: _maroon),
                                     ),
                             ),
                           );
@@ -453,11 +432,10 @@ class _ActiveRow extends StatelessWidget {
   final ValueChanged<bool> onChanged;
   final Color textPrimary;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
     final cardBg = isDark ? AppColors.cardDark : AppColors.white;
 
     return Container(
@@ -485,11 +463,7 @@ class _ActiveRow extends StatelessWidget {
           Expanded(
             child: Text(
               isActive ? 'Active' : 'Inactive',
-              style: GoogleFonts.dmSans(
-                color: textPrimary,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTextStyles.body(context).copyWith(color: textPrimary),
             ),
           ),
           Switch.adaptive(
@@ -531,7 +505,7 @@ class _EmptyState extends StatelessWidget {
                 textAlign: TextAlign.center),
             const SizedBox(height: AppSpacing.xl),
             AppPrimaryButton(
-              label: 'Add First Category',
+              label: 'Add Category',
               icon: Icons.add_rounded,
               onPressed: onAdd,
               width: 220,

@@ -7,15 +7,21 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar_community/isar.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../shared/isar_collections/order_collection.dart';
+import '../../../../shared/providers/isar_provider.dart';
+import '../../../../shared/providers/store_provider.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../providers/reports_provider.dart';
 
 /// Export bottom sheet — PDF and Excel export options.
-class ExportSheet extends StatelessWidget {
+class ExportSheet extends ConsumerWidget {
   const ExportSheet({super.key, required this.state});
   final ReportState state;
 
@@ -35,7 +41,7 @@ class ExportSheet extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final sheetBg = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textSecondary =
@@ -72,7 +78,7 @@ class ExportSheet extends StatelessWidget {
               // PDF
               Expanded(
                 child: AppCard(
-                  onTap: () => _exportPdf(context),
+                  onTap: () => _exportPdf(context, ref),
                   padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.lg, horizontal: AppSpacing.md),
                   child: Column(
@@ -102,7 +108,7 @@ class ExportSheet extends StatelessWidget {
               // Excel
               Expanded(
                 child: AppCard(
-                  onTap: () => _exportExcel(context),
+                  onTap: () => _exportExcel(context, ref),
                   padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.lg, horizontal: AppSpacing.md),
                   child: Column(
@@ -137,9 +143,9 @@ class ExportSheet extends StatelessWidget {
 
   // ── PDF Export ──────────────────────────────────────────────────────────────
 
-  Future<void> _exportPdf(BuildContext context) async {
+  Future<void> _exportPdf(BuildContext context, WidgetRef ref) async {
     Navigator.of(context).pop();
-    final orders = state.orders;
+    final orders = await _fetchOrders(ref, state);
     final topItems = state.topItems;
     final dateFmt = DateFormat('MMM d, yyyy h:mm a');
 
@@ -282,9 +288,9 @@ class ExportSheet extends StatelessWidget {
 
   // ── Excel Export ────────────────────────────────────────────────────────────
 
-  Future<void> _exportExcel(BuildContext context) async {
+  Future<void> _exportExcel(BuildContext context, WidgetRef ref) async {
     Navigator.of(context).pop();
-    final orders = state.orders;
+    final orders = await _fetchOrders(ref, state);
     final dateFmt = DateFormat('MMM d, yyyy');
     final timeFmt = DateFormat('h:mm a');
     final excel = xl.Excel.createExcel();
@@ -362,28 +368,25 @@ class ExportSheet extends StatelessWidget {
       xl.TextCellValue('Most Used Payment'),
     ]);
     // Group by cashier
-    final cashierMap = <String, List<dynamic>>{};
+    final cashierMap = <String, List<OrderCollection>>{};
     for (final o in orders) {
       cashierMap.putIfAbsent(o.cashierName, () => []);
       cashierMap[o.cashierName]!.add(o);
     }
     final cashierEntries = cashierMap.entries.toList()
       ..sort((a, b) {
-        final ra = (a.value as List)
-            .fold<double>(0, (s, o) => s + (o.totalAmount as double));
-        final rb = (b.value as List)
-            .fold<double>(0, (s, o) => s + (o.totalAmount as double));
+        final ra = a.value.fold<double>(0, (s, o) => s + o.totalAmount);
+        final rb = b.value.fold<double>(0, (s, o) => s + o.totalAmount);
         return rb.compareTo(ra);
       });
     for (final entry in cashierEntries) {
       final list = entry.value;
-      final totalRev =
-          list.fold<double>(0, (s, o) => s + (o.totalAmount as double));
+      final totalRev = list.fold<double>(0, (s, o) => s + o.totalAmount);
       final avgVal = list.isEmpty ? 0.0 : totalRev / list.length;
       // Most used payment
       final payMap = <String, int>{};
       for (final o in list) {
-        final m = (o.paymentMethod as String).toUpperCase();
+        final m = o.paymentMethod.toUpperCase();
         payMap[m] = (payMap[m] ?? 0) + 1;
       }
       final topPay =
@@ -438,5 +441,43 @@ class ExportSheet extends StatelessWidget {
         ),
       );
     }
+  }
+
+  Future<List<OrderCollection>> _fetchOrders(WidgetRef ref, ReportState state) async {
+    final storeId = ref.read(currentStoreIdProvider);
+    if (storeId.isEmpty) return [];
+
+    final isar = ref.read(isarProvider);
+    DateTime start;
+    DateTime end = DateTime.now();
+
+    switch (state.period) {
+      case ReportPeriod.day:
+        start = DateTime(end.year, end.month, end.day);
+        break;
+      case ReportPeriod.week:
+        start = end.subtract(const Duration(days: 7));
+        break;
+      case ReportPeriod.month:
+        start = DateTime(end.year, end.month, 1);
+        break;
+      case ReportPeriod.year:
+        start = DateTime(end.year, 1, 1);
+        break;
+      case ReportPeriod.custom:
+        start = state.customStart ?? end.subtract(const Duration(days: 7));
+        end = state.customEnd ?? end;
+        break;
+    }
+
+    return await isar.orderCollections
+        .filter()
+        .storeIdEqualTo(storeId)
+        .and()
+        .orderedAtBetween(start, end)
+        .and()
+        .isDeletedEqualTo(false)
+        .sortByOrderedAtDesc()
+        .findAll();
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 import '../../../../core/services/isar_service.dart';
 import '../../../../core/utils/pin_helper.dart';
+import '../../../../shared/isar_collections/store_collection.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
 import '../../../../shared/providers/isar_provider.dart';
 import '../../domain/entities/auth_state.dart';
@@ -60,8 +61,17 @@ class AuthNotifier extends Notifier<AuthState> {
 
   // ── Load active cashiers from Isar ─────────────────────────────────────────
   Future<List<UserCollection>> loadCashiers() async {
+    final store = await _isar.isar.storeCollections
+        .filter()
+        .isDeletedEqualTo(false)
+        .findFirst();
+
+    if (store == null) return [];
+
     return _isar.isar.userCollections
         .filter()
+        .storeIdEqualTo(store.syncId)
+        .and()
         .roleEqualTo('cashier')
         .and()
         .statusEqualTo('active')

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/services/sync_service.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -13,6 +12,7 @@ import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/providers/sync_provider.dart';
 import '../../../../shared/providers/theme_provider.dart';
 import '../../../auth/presentation/providers/admin_auth_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/admin_dashboard_provider.dart';
 
 /// AdminDashboardScreen — the main home screen for administrators.
@@ -81,12 +81,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                               'Sukli',
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
-                              style: GoogleFonts.dmSans(
-                                color: textPrimary,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.5,
-                              ),
+                              style: AppTextStyles.h3(context).copyWith(color: textPrimary),
                             ),
                           ],
                         ),
@@ -113,13 +108,9 @@ class AdminDashboardScreen extends ConsumerWidget {
                         : AppColors.accentLight.withValues(alpha: 0.15),
                     child: Text(
                       initial,
-                      style: GoogleFonts.dmSans(
-                        color: isDark
+                      style: AppTextStyles.body(context).copyWith(color: isDark
                             ? AppColors.accentDarkLight
-                            : AppColors.accentLight,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
+                            :AppColors.accentLight),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -165,7 +156,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                         value: CurrencyFormatter.formatCompact(
                             data.totalSalesToday),
                         label: "Total Sales Today",
-                        accentColor: const Color(0xFF8B4049),
+                        accentColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                         delay: 0,
                       ),
                       _AdminStatCard(
@@ -257,8 +248,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                             context.push(RouteConstants.orderHistory),
                         child: Text(
                           'See All',
-                          style: GoogleFonts.dmSans(
-                            color: const Color(0xFF8B4049),
+                          style: AppTextStyles.body(context).copyWith(color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -291,41 +281,6 @@ class AdminDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: Text(
-          'Logout',
-          style: GoogleFonts.dmSans(fontWeight: FontWeight.w700),
-        ),
-        content: Text(
-          'Are you sure you want to log out?',
-          style: GoogleFonts.dmSans(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: Text('Cancel', style: GoogleFonts.dmSans()),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: Text(
-              'Logout',
-              style: GoogleFonts.dmSans(
-                color: AppColors.errorLight,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && context.mounted) {
-      await ref.read(adminAuthProvider.notifier).signOut();
-      if (context.mounted) context.go(RouteConstants.adminLogin);
-    }
-  }
 }
 
 // ── Section Label ─────────────────────────────────────────────────────────────
@@ -339,8 +294,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext ctx) {
     return Text(
       label,
-      style: GoogleFonts.dmSans(
-        color: Theme.of(ctx).brightness == Brightness.dark
+      style: AppTextStyles.body(context).copyWith(color: Theme.of(ctx).brightness == Brightness.dark
             ? AppColors.textPrimaryDark
             : AppColors.textPrimaryLight,
         fontSize: 20,
@@ -404,8 +358,8 @@ class _AdminStatCard extends StatelessWidget {
                   label,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
-                  style: GoogleFonts.dmSans(
-                    color: textPrimary.withValues(alpha: 0.5),
+                  style: AppTextStyles.body(context).copyWith(
+                    color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.5),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
@@ -417,12 +371,7 @@ class _AdminStatCard extends StatelessWidget {
           // Value
           Text(
             value,
-            style: GoogleFonts.dmSans(
-              color: textPrimary,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
+            style: AppTextStyles.h2(context).copyWith(color: textPrimary),
           ),
         ],
       ),
@@ -448,11 +397,10 @@ class _QuickActionCard extends StatelessWidget {
   final VoidCallback onTap;
   final int delay;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
     final cardBg = isDark ? AppColors.cardDark : AppColors.white;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -461,7 +409,10 @@ class _QuickActionCard extends StatelessWidget {
       color: cardBg,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(14),
         splashColor: _maroon.withValues(alpha: 0.08),
         highlightColor: _maroon.withValues(alpha: 0.04),
@@ -486,17 +437,13 @@ class _QuickActionCard extends StatelessWidget {
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.dmSans(
-                    color: textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
                 ),
               ),
               Icon(
                 Icons.chevron_right_rounded,
                 size: 18,
-                color: textPrimary.withValues(alpha: 0.3),
+                color: isDark ? AppColors.textDisabledDark : textPrimary.withValues(alpha: 0.3),
               ),
             ],
           ),
@@ -533,7 +480,7 @@ class _SyncNowButtonState extends ConsumerState<_SyncNowButton> {
           SnackBar(
             content: Text(
               'Sync complete.',
-              style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+              style: AppTextStyles.bodySemiBold(context),
             ),
             backgroundColor: AppColors.successLight,
             behavior: SnackBarBehavior.floating,
@@ -548,7 +495,7 @@ class _SyncNowButtonState extends ConsumerState<_SyncNowButton> {
           SnackBar(
             content: Text(
               'Sync failed: $e',
-              style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+              style: AppTextStyles.bodySemiBold(context),
             ),
             backgroundColor: AppColors.errorLight,
             behavior: SnackBarBehavior.floating,
@@ -569,11 +516,14 @@ class _SyncNowButtonState extends ConsumerState<_SyncNowButton> {
     return SizedBox(
       width: double.infinity,
       child: FilledButton.icon(
-        onPressed: (isOnline && !_isSyncing) ? _sync : null,
+        onPressed: (isOnline && !_isSyncing) ? () {
+          HapticFeedback.lightImpact();
+          _sync();
+        } : null,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF8B4049),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
           disabledBackgroundColor:
-              const Color(0xFF8B4049).withValues(alpha: 0.4),
+              Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight.withValues(alpha: 0.4),
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -594,11 +544,7 @@ class _SyncNowButtonState extends ConsumerState<_SyncNowButton> {
               : isOnline
                   ? 'Sync Now'
                   : 'Offline — Cannot Sync',
-          style: GoogleFonts.dmSans(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
-          ),
+          style: AppTextStyles.body(context).copyWith(color: Colors.white),
         ),
       ),
     );
@@ -613,11 +559,10 @@ class _RecentOrderTile extends StatelessWidget {
   final dynamic order; // OrderCollection
   final int index;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
     final cardBg = isDark ? AppColors.cardDark : AppColors.white;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -682,7 +627,7 @@ class _RecentOrderTile extends StatelessWidget {
                           color: _maroon.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.receipt_long_rounded,
+                        child: Icon(Icons.receipt_long_rounded,
                             color: _maroon, size: 18),
                       ),
                       const SizedBox(width: AppSpacing.md),
@@ -694,20 +639,16 @@ class _RecentOrderTile extends StatelessWidget {
                           children: [
                             Text(
                               shortNum,
-                              style: GoogleFonts.dmSans(
-                                color: textPrimary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: AppTextStyles.bodyLarge(context).copyWith(color: textPrimary),
                             ),
                             Text(
                               '$dateStr · $timeStr · ${order.cashierName}',
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
-                              style: GoogleFonts.dmSans(
-                                color: textPrimary.withValues(alpha: 0.5),
-                                fontSize: 12,
-                              ),
+                            style: AppTextStyles.body(context).copyWith(
+                              color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.5),
+                              fontSize: 12,
+                            ),
                             ),
                           ],
                         ),
@@ -720,10 +661,9 @@ class _RecentOrderTile extends StatelessWidget {
                           Text(
                             CurrencyFormatter.format(
                                 order.totalAmount as double),
-                            style: GoogleFonts.dmSans(
+                            style: AppTextStyles.bodyLarge(context).copyWith(
                               color: textPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
+                              fontFeatures: [const FontFeature.tabularFigures()],
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -736,11 +676,7 @@ class _RecentOrderTile extends StatelessWidget {
                             ),
                             child: Text(
                               statusLabel,
-                              style: GoogleFonts.dmSans(
-                                color: statusColor,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: AppTextStyles.label(context).copyWith(color: statusColor),
                             ),
                           ),
                         ],
@@ -766,16 +702,15 @@ class _AdminNavDrawer extends ConsumerWidget {
   const _AdminNavDrawer({required this.adminEmail});
   final String adminEmail;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
     final drawerBg = isDark ? const Color(0xFF2A1215) : Colors.white;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final itemHoverBg =
-        isDark ? const Color(0xFF3E2723) : const Color(0xFFF9F0F1);
+        isDark ? Theme.of(context).brightness == Brightness.dark ? AppColors.surfaceDark : AppColors.textPrimaryLight : const Color(0xFFF9F0F1);
     final initial = adminEmail.isNotEmpty ? adminEmail[0].toUpperCase() : 'A';
 
     return Drawer(
@@ -792,9 +727,9 @@ class _AdminNavDrawer extends ConsumerWidget {
           // ── Profile header ─────────────────────────────────────────────
           Container(
             width: double.infinity,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: _maroon,
-              borderRadius: BorderRadius.only(topRight: Radius.circular(28)),
+              borderRadius: const BorderRadius.only(topRight: Radius.circular(28)),
             ),
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 28,
@@ -820,11 +755,7 @@ class _AdminNavDrawer extends ConsumerWidget {
                   child: Center(
                     child: Text(
                       initial,
-                      style: GoogleFonts.dmSans(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: AppTextStyles.h2(context).copyWith(color: Colors.white),
                     ),
                   ),
                 ).animate().scale(
@@ -840,11 +771,7 @@ class _AdminNavDrawer extends ConsumerWidget {
                 Text(
                   adminEmail.isNotEmpty ? adminEmail : 'Admin',
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.dmSans(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AppTextStyles.bodyLarge(context).copyWith(color: Colors.white),
                 ).animate().fadeIn(duration: 350.ms, delay: 80.ms),
 
                 const SizedBox(height: 6),
@@ -859,8 +786,7 @@ class _AdminNavDrawer extends ConsumerWidget {
                   ),
                   child: Text(
                     'Administrator',
-                    style: GoogleFonts.dmSans(
-                      color: Colors.white.withValues(alpha: 0.9),
+                    style: AppTextStyles.body(context).copyWith(color: Colors.white.withValues(alpha:0.9),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
@@ -878,8 +804,8 @@ class _AdminNavDrawer extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
             child: Text(
               'NAVIGATION',
-              style: GoogleFonts.dmSans(
-                color: textPrimary.withValues(alpha: 0.35),
+              style: AppTextStyles.body(context).copyWith(
+                color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.35),
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.4,
@@ -943,6 +869,18 @@ class _AdminNavDrawer extends ConsumerWidget {
             textColor: textPrimary,
           ),
 
+          _AdminNavItem(
+            icon: Icons.switch_account_rounded,
+            label: 'Switch to Cashier',
+            delay: 360,
+            onTap: () {
+              Navigator.pop(context);
+              context.push(RouteConstants.cashierSelect);
+            },
+            hoverBg: itemHoverBg,
+            textColor: textPrimary,
+          ),
+
           const Spacer(),
 
           // ── Footer divider ─────────────────────────────────────────────
@@ -960,6 +898,37 @@ class _AdminNavDrawer extends ConsumerWidget {
           _AdminThemeToggleTile(
             textColor: textPrimary,
             hoverBg: itemHoverBg,
+          ),
+
+          const Divider(height: 1),
+
+          ListTile(
+            leading: Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.successLight.withValues(alpha: 0.12),
+                borderRadius: AppRadius.smallBR,
+              ),
+              child: Icon(
+                Icons.point_of_sale_rounded,
+                size: 18,
+                color: isDark ? AppColors.successDark : AppColors.successLight,
+              ),
+            ),
+            title: Text(
+              'Switch to Cashier',
+              style: AppTextStyles.bodySemiBold(context).copyWith(color: isDark ? AppColors.textPrimaryDark :AppColors.textPrimaryLight),
+            ),
+            subtitle: Text(
+              'Go to cashier login screen',
+              style: AppTextStyles.caption(context).copyWith(color: isDark ? AppColors.textSecondaryDark :AppColors.textSecondaryLight),
+            ),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(context); // close drawer first
+              ref.read(authProvider.notifier).logout();
+              context.go(RouteConstants.cashierSelect);
+            },
           ),
 
           // ── Logout ─────────────────────────────────────────────────────
@@ -1015,7 +984,10 @@ class _AdminNavItem extends StatelessWidget {
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
           borderRadius: BorderRadius.circular(14),
           splashColor: ic.withValues(alpha: 0.1),
           highlightColor: hoverBg,
@@ -1027,11 +999,7 @@ class _AdminNavItem extends StatelessWidget {
                 const SizedBox(width: 16),
                 Text(
                   label,
-                  style: GoogleFonts.dmSans(
-                    color: textColor,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.body(context).copyWith(color: textColor),
                 ),
               ],
             ),
@@ -1058,12 +1026,11 @@ class _AdminThemeToggleTile extends ConsumerWidget {
   final Color textColor;
   final Color hoverBg;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
     final isDark = themeMode == ThemeMode.dark;
+    final _maroon = Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -1071,7 +1038,10 @@ class _AdminThemeToggleTile extends ConsumerWidget {
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
-          onTap: () => ref.read(themeProvider.notifier).toggle(),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            ref.read(themeProvider.notifier).toggle();
+          },
           borderRadius: BorderRadius.circular(14),
           splashColor: textColor.withValues(alpha: 0.08),
           highlightColor: hoverBg,
@@ -1088,16 +1058,15 @@ class _AdminThemeToggleTile extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     isDark ? 'Dark Mode' : 'Light Mode',
-                    style: GoogleFonts.dmSans(
-                      color: textColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.body(context).copyWith(color: textColor),
                   ),
                 ),
                 Switch.adaptive(
                   value: isDark,
-                  onChanged: (_) => ref.read(themeProvider.notifier).toggle(),
+                  onChanged: (_) {
+                    HapticFeedback.lightImpact();
+                    ref.read(themeProvider.notifier).toggle();
+                  },
                   activeThumbColor: AppColors.accentDark,
                   activeTrackColor: AppColors.accentDark.withValues(alpha: 0.5),
                   inactiveThumbColor: _maroon,
@@ -1111,3 +1080,4 @@ class _AdminThemeToggleTile extends ConsumerWidget {
     );
   }
 }
+

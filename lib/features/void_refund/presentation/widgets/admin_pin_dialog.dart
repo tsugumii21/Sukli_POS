@@ -42,10 +42,15 @@ class AdminPinDialog extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => AdminPinDialog(
-        notifier: notifier,
-        title: title,
-        subtitle: subtitle,
+      builder: (_) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: AdminPinDialog(
+          notifier: notifier,
+          title: title,
+          subtitle: subtitle,
+        ),
       ),
     );
   }
@@ -129,9 +134,7 @@ class _AdminPinDialogState extends State<AdminPinDialog>
     final sheetBg = isDark ? AppColors.surfaceDark : AppColors.backgroundLight;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final textSecondary =
-        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
-    const maroon = Color(0xFF8B4049);
+    final primaryColor = isDark ? AppColors.accentDark : AppColors.secondaryLight;
 
     return Padding(
       padding: MediaQuery.of(context).viewInsets,
@@ -150,7 +153,7 @@ class _AdminPinDialogState extends State<AdminPinDialog>
               height: 4,
               decoration: BoxDecoration(
                 color: textPrimary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(99),
+                borderRadius: AppRadius.pillBR,
               ),
             ),
 
@@ -164,11 +167,11 @@ class _AdminPinDialogState extends State<AdminPinDialog>
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: maroon.withValues(alpha: 0.1),
+                      color: primaryColor.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child:
-                        const Icon(Icons.lock_rounded, color: maroon, size: 26),
+                        Icon(Icons.lock_rounded, color: primaryColor, size: 26),
                   ).animate().scale(
                         begin: const Offset(0.8, 0.8),
                         duration: 300.ms,
@@ -219,11 +222,11 @@ class _AdminPinDialogState extends State<AdminPinDialog>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: filled
-                                ? (_hasError ? AppColors.errorLight : maroon)
+                                ? (_hasError ? AppColors.errorLight : primaryColor)
                                 : Colors.transparent,
                             border: Border.all(
                               color: filled
-                                  ? (_hasError ? AppColors.errorLight : maroon)
+                                  ? (_hasError ? AppColors.errorLight : primaryColor)
                                   : textPrimary.withValues(alpha: 0.2),
                               width: 2,
                             ),
@@ -261,7 +264,7 @@ class _AdminPinDialogState extends State<AdminPinDialog>
               onDelete: _onDelete,
               isVerifying: _isVerifying,
               isDark: isDark,
-              maroon: maroon,
+              primaryColor: primaryColor,
               textPrimary: textPrimary,
             ),
 
@@ -284,7 +287,7 @@ class _PinKeypad extends StatelessWidget {
     required this.onDelete,
     required this.isVerifying,
     required this.isDark,
-    required this.maroon,
+    required this.primaryColor,
     required this.textPrimary,
   });
 
@@ -292,7 +295,7 @@ class _PinKeypad extends StatelessWidget {
   final VoidCallback onDelete;
   final bool isVerifying;
   final bool isDark;
-  final Color maroon;
+  final Color primaryColor;
   final Color textPrimary;
 
   static const _keys = [
@@ -325,7 +328,7 @@ class _PinKeypad extends StatelessWidget {
                       label: key,
                       isDel: isDel,
                       btnBg: btnBg,
-                      maroon: maroon,
+                      primaryColor: primaryColor,
                       textPrimary: textPrimary,
                       enabled: !isVerifying,
                       onTap: isDel ? onDelete : () => onDigit(key),
@@ -346,7 +349,7 @@ class _KeyButton extends StatelessWidget {
     required this.label,
     required this.isDel,
     required this.btnBg,
-    required this.maroon,
+    required this.primaryColor,
     required this.textPrimary,
     required this.enabled,
     required this.onTap,
@@ -355,7 +358,7 @@ class _KeyButton extends StatelessWidget {
   final String label;
   final bool isDel;
   final Color btnBg;
-  final Color maroon;
+  final Color primaryColor;
   final Color textPrimary;
   final bool enabled;
   final VoidCallback onTap;

@@ -18,48 +18,69 @@ class SukliPosApp extends ConsumerStatefulWidget {
 }
 
 class _SukliPosAppState extends ConsumerState<SukliPosApp> {
-  late final AppLinks _appLinks;
+  final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSub;
 
   @override
   void initState() {
     super.initState();
-    _initDeepLinks();
+    _handleIncomingLinks();
   }
 
-  Future<void> _initDeepLinks() async {
-    _appLinks = AppLinks();
-
-    // Handle link if app was launched from a cold start via deep link
-    final initialLink = await _appLinks.getInitialLink();
-    if (initialLink != null) {
-      _handleDeepLink(initialLink);
+  Future<void> _handleIncomingLinks() async {
+    // Handle cold start — app opened via deep link
+    try {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        debugPrint('Initial deep link: $initialUri');
+        await _processAuthLink(initialUri);
+      }
+    } catch (e) {
+      debugPrint('Error getting initial link: $e');
     }
 
-    // Handle links while app is already running
+    // Handle warm start — app already running
     _linkSub = _appLinks.uriLinkStream.listen(
-      _handleDeepLink,
-      onError: (e) => debugPrint('Deep link error: $e'),
+      (uri) async {
+        debugPrint('Deep link received: $uri');
+        await _processAuthLink(uri);
+      },
+      onError: (e) => debugPrint('Deep link stream error: $e'),
     );
   }
 
-  void _handleDeepLink(Uri uri) {
-    debugPrint('Deep link received: $uri');
+  Future<void> _processAuthLink(Uri uri) async {
+    debugPrint('Processing auth link: $uri');
+    debugPrint('Scheme: ${uri.scheme}');
+    debugPrint('Host: ${uri.host}');
+    debugPrint('Fragment: ${uri.fragment}');
+    debugPrint('Query: ${uri.query}');
 
-    // Supabase puts the session tokens in the fragment (#)
-    // app_links gives us access_token and refresh_token in the uri
-    if (uri.scheme == 'com.suklipos.sukli_pos' && uri.host == 'auth-callback') {
-      // Extract tokens from fragment or query params
-      final fragment = uri.fragment;
-      final params = Uri.splitQueryString(fragment);
-      final accessToken = params['access_token'];
-      final refreshToken = params['refresh_token'];
+    // Handle both fragment (#) and query (?) token formats
+    final fragment = uri.fragment.isNotEmpty ? uri.fragment : uri.query;
+    final params = Uri.splitQueryString(fragment);
 
-      if (accessToken != null && refreshToken != null) {
-        // Set the session in Supabase
-        SupabaseService.instance.client.auth.setSession(accessToken);
-        // Navigate to admin login to complete sign in
-        ref.read(appRouterProvider).go(RouteConstants.adminLogin);
+    final accessToken = params['access_token'];
+    final refreshToken = params['refresh_token'];
+    final type = params['type'];
+
+    debugPrint('Access token present: ${accessToken != null}');
+    debugPrint('Type: $type');
+
+    if (accessToken != null && refreshToken != null) {
+      try {
+        await SupabaseService.instance.client.auth.setSession(accessToken);
+        debugPrint('Session set successfully');
+
+        if (mounted) {
+          // Small delay to let auth state update
+          await Future.delayed(const Duration(milliseconds: 300));
+          if (mounted) {
+            ref.read(appRouterProvider).go(RouteConstants.adminLogin);
+          }
+        }
+      } catch (e) {
+        debugPrint('Error setting session: $e');
       }
     }
   }

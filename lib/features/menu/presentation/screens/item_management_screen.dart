@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/destructive_action_dialog.dart';
+import '../../../../shared/widgets/empty_state_widget.dart';
+import '../../../../shared/widgets/shimmer_list.dart';
 import '../../../../shared/isar_collections/category_collection.dart';
 import '../../../../shared/isar_collections/menu_item_collection.dart';
 import '../providers/item_provider.dart';
@@ -36,8 +40,6 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   void dispose() {
     _searchCtrl.dispose();
@@ -59,41 +61,24 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
   Future<void> _confirmDelete(
       BuildContext context, MenuItemCollection item) async {
     final messenger = ScaffoldMessenger.of(context);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDestructiveDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.largeBR),
-        title: Text('Delete Item?', style: AppTextStyles.bodySemiBold(context)),
-        content: Text(
-          'Are you sure you want to delete "${item.name}"? This cannot be undone.',
-          style: AppTextStyles.body(context),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: Text('Cancel', style: AppTextStyles.bodySemiBold(context)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: Text('Delete',
-                style: AppTextStyles.bodySemiBold(context)
-                    .copyWith(color: AppColors.errorLight)),
-          ),
-        ],
-      ),
+      title: 'Delete Item?',
+      message: 'Are you sure you want to delete "${item.name}"? This cannot be undone.',
+      confirmLabel: 'Delete',
+      icon: Icons.delete_outline_rounded,
     );
-    if (confirmed == true && mounted) {
+    if (confirmed == true && context.mounted) {
       await ref.read(itemProvider.notifier).softDelete(item);
-      if (mounted) {
-        messenger.showSnackBar(SnackBar(
-          content: Text('${item.name} deleted',
-              style: AppTextStyles.bodySemiBold(context)
-                  .copyWith(color: Colors.white)),
-          backgroundColor: AppColors.errorLight,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.mediumBR),
-        ));
-      }
+      if (!context.mounted) return;
+      messenger.showSnackBar(SnackBar(
+        content: Text('${item.name} deleted',
+            style: AppTextStyles.bodySemiBold(context)
+                .copyWith(color: Colors.white)),
+        backgroundColor: AppColors.errorLight,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.mediumBR),
+      ));
     }
   }
 
@@ -157,6 +142,7 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
     final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     final itemsAsync = ref.watch(itemProvider);
 
@@ -164,7 +150,10 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
       backgroundColor: bg,
       appBar: _buildAppBar(context, isDark, textPrimary),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          _openForm();
+        },
         backgroundColor: _maroon,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
@@ -176,8 +165,7 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
           .slideY(begin: 0.3, end: 0, duration: 400.ms)
           .fadeIn(duration: 400.ms),
       body: itemsAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator.adaptive()),
+        loading: () => const ShimmerMenuGrid(),
         error: (e, _) => Center(
           child: Text('Error loading items: $e',
               style: AppTextStyles.body(context)),
@@ -193,6 +181,7 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
     bool isDark,
     Color textPrimary,
   ) {
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
     final categories = state.categories;
     final filtered = state.filtered;
 
@@ -275,13 +264,12 @@ class _CategoryTabsRow extends StatelessWidget {
   final ValueChanged<String?> onSelect;
   final bool isDark;
 
-  static const _maroon = Color(0xFF8B4049);
-
   @override
   Widget build(BuildContext context) {
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final unselectedBg = isDark ? AppColors.cardDark : AppColors.cardLight;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     return SizedBox(
       height: 48,
@@ -338,8 +326,11 @@ class _Tab extends StatelessWidget {
   final Color textPrimary;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
+  Widget build(BuildContext context) => InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.only(right: 8),
@@ -356,7 +347,7 @@ class _Tab extends StatelessWidget {
                 style: AppTextStyles.captionMedium(context).copyWith(
                   color: isSelected
                       ? Colors.white
-                      : textPrimary.withValues(alpha: 0.7),
+                      : (Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.7)),
                 ),
               ),
               const SizedBox(width: 6),
@@ -396,45 +387,18 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-
     final message = hasSearch
         ? 'No items match your search.'
         : hasCategoryFilter
             ? 'No items in this category yet.'
             : 'No menu items yet.';
 
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.restaurant_menu_outlined,
-              size: 64, color: textPrimary.withValues(alpha: 0.15)),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: AppTextStyles.body(context).copyWith(
-              color: textPrimary.withValues(alpha: 0.4),
-            ),
-          ),
-          if (!hasSearch) ...[
-            const SizedBox(height: 20),
-            TextButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded),
-              label: Text('Add First Item',
-                  style: AppTextStyles.bodySemiBold(context)),
-              style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF8B4049)),
-            ),
-          ],
-        ],
-      )
-          .animate()
-          .fadeIn(duration: 400.ms)
-          .scale(begin: const Offset(0.95, 0.95)),
+    return EmptyStateWidget(
+      icon: Icons.restaurant_menu_outlined,
+      title: message,
+      subtitle: !hasSearch ? 'Add menu items from the admin panel.' : null,
+      actionLabel: !hasSearch ? 'Add First Item' : null,
+      onAction: !hasSearch ? onAdd : null,
     );
   }
 }

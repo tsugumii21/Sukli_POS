@@ -1,7 +1,6 @@
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 
 /// 3×4 numeric keypad for cash amount entry.
@@ -88,8 +87,8 @@ class _KeyButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        splashColor: const Color(0xFF8B4049).withValues(alpha: 0.12),
-        highlightColor: const Color(0xFF8B4049).withValues(alpha: 0.06),
+        splashColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight.withValues(alpha: 0.12),
+        highlightColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight.withValues(alpha: 0.06),
         child: Ink(
           height: 60,
           decoration: BoxDecoration(
@@ -105,11 +104,7 @@ class _KeyButton extends StatelessWidget {
                   )
                 : Text(
                     label,
-                    style: GoogleFonts.dmSans(
-                      color: textColor,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.h3(context).copyWith(color: textColor),
                   ),
           ),
         ),

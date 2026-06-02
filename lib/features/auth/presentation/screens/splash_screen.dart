@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:isar_community/isar.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/services/isar_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/isar_collections/store_collection.dart';
+import '../providers/auth_provider.dart';
+import '../providers/admin_auth_provider.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// SplashScreen — The "Modern Brand Evolution" design.
 /// Features a rounded-rectangle logo container, Plus Jakarta Sans, and fintech gradient.
@@ -26,24 +28,53 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(milliseconds: 3500));
+    await Future.delayed(const Duration(milliseconds: 2500));
     if (!mounted) return;
 
-    // Check if a store has been set up locally
-    final isar = IsarService.instance.isar;
-    final store = await isar.storeCollections
-        .filter()
-        .isDeletedEqualTo(false)
-        .findFirst();
+    try {
+      final isar = IsarService.instance.isar;
 
-    if (!mounted) return;
+      // Check if any store has been set up
+      final store = await isar.storeCollections
+          .filter()
+          .isDeletedEqualTo(false)
+          .findFirst();
 
-    if (store == null) {
-      // No store set up yet → show welcome/onboarding
-      context.go(RouteConstants.welcome);
-    } else {
-      // Store exists → go to cashier selection (existing behavior)
+      if (!mounted) return;
+
+      if (store == null) {
+        // No store exists — brand new user → Welcome screen
+        context.go(RouteConstants.welcome);
+        return;
+      }
+
+      // Store exists — check current auth states
+      final adminAuth = ref.read(adminAuthProvider);
+      final cashierAuth = ref.read(authProvider);
+
+      if (adminAuth.isLoading) {
+        // Wait briefly for auth to resolve then retry
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) _navigate();
+        return;
+      }
+
+      if (adminAuth.value != null) {
+        context.go(RouteConstants.adminHome);
+        return;
+      }
+
+      if (cashierAuth.isAuthenticated) {
+        context.go(RouteConstants.cashierHome);
+        return;
+      }
+
+      // Store exists but no one logged in → Cashier Select
       context.go(RouteConstants.cashierSelect);
+
+    } catch (e) {
+      debugPrint('Splash navigation error: $e');
+      if (mounted) context.go(RouteConstants.welcome);
     }
   }
 
@@ -53,12 +84,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: RadialGradient(
             center: Alignment(0, -0.15),
             radius: 1.0,
             colors: [
-              Color(0xFF8B4049), // Lighter Maroon
+              Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight, // Lighter Maroon
               Color(0xFF2A1215), // Deep Dark Maroon
             ],
           ),
@@ -123,12 +154,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   // App Title
                   Text(
                     'Sukli',
-                    style: GoogleFonts.dmSans(
-                      color: AppColors.primaryLightVariant,
-                      fontSize: 58,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1.5,
-                    ),
+                    style: AppTextStyles.h2(context).copyWith(color: AppColors.primaryLightVariant),
                   ).animate().fadeIn(duration: 800.ms, delay: 600.ms).slideY(
                       begin: 0.1, end: 0, duration: 800.ms, delay: 600.ms),
 
@@ -137,8 +163,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   // Subtext
                   Text(
                     'Smart Point of Sale',
-                    style: GoogleFonts.dmSans(
-                      color: AppColors.primaryLight.withValues(alpha: 0.6),
+                    style: AppTextStyles.body(context).copyWith(color: AppColors.primaryLight.withValues(alpha:0.6),
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.2,

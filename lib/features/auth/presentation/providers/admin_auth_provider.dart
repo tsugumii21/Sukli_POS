@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/supabase_service.dart';
@@ -8,7 +9,7 @@ import '../../../../core/errors/app_exception.dart' as app_ex;
 /// Uses AsyncNotifier so the UI can reactively show loading/error/data states.
 class AdminAuthNotifier extends AsyncNotifier<User?> {
   @override
-  Future<User?> build() async {
+  FutureOr<User?> build() {
     // Return the currently authenticated Supabase user (if any)
     return SupabaseService.instance.currentUser;
   }
@@ -22,6 +23,10 @@ class AdminAuthNotifier extends AsyncNotifier<User?> {
           .signInWithEmail(email.trim(), password);
 
       final user = response.user;
+      if (user != null) {
+        // Fetch remote store and cashier data for this admin
+        await SyncService.instance.pullStoreData(email);
+      }
       state = AsyncData(user);
 
       // Start background sync as soon as admin is authenticated

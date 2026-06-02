@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/isar_collections/menu_item_collection.dart';
+import 'package:sukli_pos/core/theme/app_text_styles.dart';
 
 /// ItemCard — Displays a single menu item in the grid.
 /// Shows image or a clean gradient placeholder, name, price, and availability.
@@ -24,15 +24,18 @@ class ItemCard extends StatelessWidget {
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final priceColor =
-        isDark ? AppColors.accentDarkLight : const Color(0xFF8B4049);
-    final accentColor = isDark ? AppColors.accentDark : const Color(0xFF8B4049);
+        isDark ? AppColors.accentDarkLight : Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight;
+    final accentColor = isDark ? AppColors.accentDark : Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight;
     final isUnavailable = !item.isAvailable;
 
     final variants = _parseVariants(item.variantsJson);
     final hasVariants = variants.isNotEmpty;
 
-    return GestureDetector(
+    return InkWell(
       onTap: isUnavailable ? null : onTap,
+      borderRadius: BorderRadius.circular(16),
+      splashColor: isDark ? AppColors.accentDark.withValues(alpha: 0.08) : AppColors.accentLight.withValues(alpha: 0.08),
+      highlightColor: isDark ? AppColors.accentDark.withValues(alpha: 0.04) : AppColors.accentLight.withValues(alpha: 0.04),
       child: Opacity(
         opacity: isUnavailable ? 0.5 : 1.0,
         child: Container(
@@ -66,9 +69,9 @@ class ItemCard extends StatelessWidget {
                                     item.imageUrl!,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) =>
-                                        _buildPlaceholder(isDark),
+                                        _buildPlaceholder(isDark, context),
                                   )
-                                : _buildPlaceholder(isDark),
+                                : _buildPlaceholder(isDark, context),
                       ),
                     ),
 
@@ -79,12 +82,7 @@ class ItemCard extends StatelessWidget {
                       item.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.dmSans(
-                        color: textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        height: 1.3,
-                      ),
+                      style: AppTextStyles.body(context).copyWith(color: textPrimary),
                     ),
 
                     const SizedBox(height: 4),
@@ -94,11 +92,7 @@ class ItemCard extends StatelessWidget {
                       hasVariants
                           ? 'from ${CurrencyFormatter.format(item.basePrice)}'
                           : CurrencyFormatter.format(item.basePrice),
-                      style: GoogleFonts.dmSans(
-                        color: priceColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: AppTextStyles.body(context).copyWith(color: priceColor),
                     ),
 
                     const Spacer(),
@@ -120,11 +114,7 @@ class ItemCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Unavailable',
-                      style: GoogleFonts.dmSans(
-                        color: AppColors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: AppTextStyles.label(context).copyWith(color: AppColors.white),
                     ),
                   ),
                 ),
@@ -143,11 +133,7 @@ class ItemCard extends StatelessWidget {
                     ),
                     child: Text(
                       '${variants.length} sizes',
-                      style: GoogleFonts.dmSans(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: AppTextStyles.label(context).copyWith(color: Colors.white),
                     ),
                   ),
                 ),
@@ -159,7 +145,7 @@ class ItemCard extends StatelessWidget {
   }
 
   /// Gradient placeholder shown when no image URL is available.
-  Widget _buildPlaceholder(bool isDark) {
+  Widget _buildPlaceholder(bool isDark, BuildContext context) {
     final gradientStart = isDark ? AppColors.cardDark : AppColors.cardLight;
     final gradientEnd = isDark ? AppColors.surfaceDark : AppColors.primaryLight;
     final hintColor =
@@ -182,11 +168,7 @@ class ItemCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'No image',
-            style: GoogleFonts.dmSans(
-              color: hintColor,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
+            style: AppTextStyles.label(context).copyWith(color: hintColor),
           ),
         ],
       ),
