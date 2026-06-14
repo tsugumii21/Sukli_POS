@@ -51,11 +51,18 @@ class ImageCompressHelper {
   }) async {
     final tempDir = await getTemporaryDirectory();
     final ext = path.extension(file.path).toLowerCase();
-    final format = ext == '.png' ? CompressFormat.png : CompressFormat.jpeg;
+
+    // Normalize source extension to a supported compress format.
+    // Gallery images may be .heic, .webp, .PNG (uppercase), etc.
+    // flutter_image_compress only supports jpeg/png output — always use .jpg
+    // for non-PNG sources.
+    final isPng = ext == '.png';
+    final format = isPng ? CompressFormat.png : CompressFormat.jpeg;
+    final outputExt = isPng ? '.png' : '.jpg';
 
     final targetPath = path.join(
       tempDir.path,
-      '${path.basenameWithoutExtension(file.path)}$suffix${ext.isEmpty ? '.jpg' : ext}',
+      '${path.basenameWithoutExtension(file.path)}$suffix$outputExt',
     );
 
     final result = await FlutterImageCompress.compressAndGetFile(

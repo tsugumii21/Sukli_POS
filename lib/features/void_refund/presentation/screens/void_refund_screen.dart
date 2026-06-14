@@ -499,55 +499,79 @@ class _OrderRow extends ConsumerWidget {
         final textSecondary =
             isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
-        return AlertDialog(
+        return Dialog(
           backgroundColor: dialogBg,
           shape: RoundedRectangleBorder(borderRadius: AppRadius.largeBR),
-          title: Text(
-            'Void Reason',
-            style: AppTextStyles.h3(context),
-          ),
-          content: TextField(
-            controller: ctrl,
-            autofocus: true,
-            maxLines: 3,
-            style: AppTextStyles.body(context),
-            decoration: InputDecoration(
-              hintText: 'Enter void reason (required)',
-              hintStyle:
-                  AppTextStyles.body(context).copyWith(color: textSecondary),
-              filled: true,
-              fillColor: isDark ? AppColors.cardDark : AppColors.cardLight,
-              border: OutlineInputBorder(
-                borderRadius: AppRadius.mediumBR,
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.all(AppSpacing.md),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Void Reason',
+                  style: AppTextStyles.h3(context),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  maxLines: 3,
+                  style: AppTextStyles.body(context),
+                  decoration: InputDecoration(
+                    hintText: 'Enter void reason (required)',
+                    hintStyle: AppTextStyles.body(context).copyWith(color: textSecondary),
+                    filled: true,
+                    fillColor: isDark ? AppColors.cardDark : AppColors.cardLight,
+                    border: OutlineInputBorder(
+                      borderRadius: AppRadius.mediumBR,
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppRadius.mediumBR,
+                      borderSide: BorderSide(
+                        color: isDark ? AppColors.errorDark : AppColors.errorLight,
+                        width: 1.5,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.all(AppSpacing.md),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogCtx).pop(null),
+                      child: Text(
+                        'Cancel',
+                        style: AppTextStyles.bodySemiBold(context).copyWith(color: textSecondary),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    ElevatedButton(
+                      onPressed: () {
+                        final reason = ctrl.text.trim();
+                        if (reason.isEmpty) return;
+                        Navigator.of(dialogCtx).pop(reason);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.errorLight,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                        shape: RoundedRectangleBorder(borderRadius: AppRadius.mediumBR),
+                      ),
+                      child: Text(
+                        'Confirm Void',
+                        style: AppTextStyles.bodySemiBold(context).copyWith(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(null),
-              child: Text('Cancel',
-                  style: AppTextStyles.bodySemiBold(context)
-                      .copyWith(color: textSecondary)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final reason = ctrl.text.trim();
-                if (reason.isEmpty) return;
-                Navigator.of(dialogCtx).pop(reason);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.errorLight,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: AppRadius.mediumBR),
-              ),
-              child: Text('Confirm Void',
-                  style: AppTextStyles.bodySemiBold(context)
-                      .copyWith(color: Colors.white)),
-            ),
-          ],
         );
       },
     );

@@ -93,16 +93,11 @@ class OrderRepositoryImpl {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  /// Generates a sequential order number for the current day for THIS store.
+  /// Generates a continuous sequential order number for THIS store.
   Future<String> _generateOrderNumber(DateTime now, String storeId) async {
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
-
     final count = await _isar.orderCollections
         .filter()
         .storeIdEqualTo(storeId)
-        .and()
-        .orderedAtBetween(startOfDay, endOfDay)
         .count();
 
     final dateStr =

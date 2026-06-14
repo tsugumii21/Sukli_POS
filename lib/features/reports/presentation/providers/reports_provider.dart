@@ -1,5 +1,5 @@
+import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar_community/isar.dart';
@@ -273,14 +273,12 @@ class ReportsNotifier extends Notifier<ReportState> {
 
         for (final json in o.orderItemsJson) {
           try {
-            final nameMatch = RegExp(r'"name"\s*:\s*"([^"]+)"').firstMatch(json);
-            final priceMatch = RegExp(r'"totalPrice"\s*:\s*([\d.]+)').firstMatch(json);
-            final qtyMatch = RegExp(r'"quantity"\s*:\s*(\d+)').firstMatch(json);
+            final map = jsonDecode(json);
+            final name = map['itemName'] as String?;
+            final price = (map['subtotal'] as num?)?.toDouble() ?? 0.0;
+            final count = (map['quantity'] as num?)?.toInt() ?? 1;
 
-            if (nameMatch == null) continue;
-            final name = nameMatch.group(1)!;
-            final price = double.tryParse(priceMatch?.group(1) ?? '0') ?? 0;
-            final count = int.tryParse(qtyMatch?.group(1) ?? '1') ?? 1;
+            if (name == null) continue;
 
             itemRevenue[name] = (itemRevenue[name] ?? 0) + price;
             itemQty[name] = (itemQty[name] ?? 0) + count;

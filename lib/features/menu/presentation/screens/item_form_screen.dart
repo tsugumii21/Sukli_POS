@@ -204,13 +204,6 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
         finalImageUrl =
             await SupabaseService.instance.uploadMenuImage(bytes, name);
         await ImageCompressHelper.deleteTempFile(compressed);
-
-        if (finalImageUrl == null && mounted) {
-          _showError(
-              'Image upload failed. Check your Supabase "menu-items" bucket.');
-          setState(() => _isSaving = false);
-          return;
-        }
       }
 
       if (_isEdit) {

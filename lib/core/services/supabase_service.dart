@@ -85,8 +85,10 @@ class SupabaseService {
   /// Rejects files larger than 15 MB.
   static const int maxImageBytes = 15 * 1024 * 1024; // 15 MB
 
-  Future<String?> uploadMenuImage(List<int> bytes, String fileName) async {
-    if (bytes.length > maxImageBytes) return null;
+  Future<String> uploadMenuImage(List<int> bytes, String fileName) async {
+    if (bytes.length > maxImageBytes) {
+      throw DatabaseException('Image too large. Maximum size is 15 MB.');
+    }
     try {
       final ext = fileName.contains('.')
           ? fileName.split('.').last.toLowerCase()
@@ -99,7 +101,7 @@ class SupabaseService {
           );
       return client.storage.from('menu-items').getPublicUrl(storagePath);
     } catch (e) {
-      return null;
+      throw DatabaseException('Image upload failed: $e');
     }
   }
 }
