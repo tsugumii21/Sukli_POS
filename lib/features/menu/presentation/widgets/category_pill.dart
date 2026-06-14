@@ -21,7 +21,7 @@ class CategoryPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final selectedBg = isDark ? AppColors.accentDark : AppColors.accentLight;
+    final selectedBg = AppColors.secondary(context);
     final unselectedBg =
         isDark ? AppColors.surfaceDarkElevated : AppColors.cardLight;
     final selectedText = AppColors.white;

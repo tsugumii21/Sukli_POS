@@ -78,8 +78,7 @@ class AppTextField extends StatelessWidget {
           hintText: hint,
           prefixIcon: prefixIcon,
           suffixIcon: suffixIcon,
-          filled: true,
-          fillColor: fillColor,
+          filled: false,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: 18,
@@ -96,15 +95,15 @@ class AppTextField extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
                 color: isDark
-                    ? Colors.white12
-                    : Colors.black.withValues(alpha: 0.05)),
+                    ? Colors.white24
+                    : Colors.black.withValues(alpha: 0.15)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
                 color: isDark
-                    ? Colors.white12
-                    : Colors.black.withValues(alpha: 0.05)),
+                    ? Colors.white24
+                    : Colors.black.withValues(alpha: 0.15)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),

@@ -1,12 +1,11 @@
 
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 
 import '../../../../core/services/isar_service.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../../../../core/services/sync_service.dart';
 import '../../../../core/constants/supabase_constants.dart';
-import '../../../../core/utils/pin_helper.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
 import '../../../../shared/providers/store_provider.dart';
@@ -125,12 +124,15 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
     state = state.copyWith(tab: tab);
   }
 
-  // ── Admin PIN verification ──────────────────────────────────────────────────
+  // ── Admin resolution ────────────────────────────────────────────────────────
 
-  /// Finds the first active admin user and verifies the entered PIN.
-  /// Returns the admin's [UserCollection] on success, null on failure.
-  Future<UserCollection?> verifyAdminPin(String pin) async {
+  /// Resolves the currently logged-in admin user from Isar by matching
+  /// the Supabase Auth UID. Returns null if no admin is found.
+  Future<UserCollection?> _resolveAdmin() async {
     try {
+      final supabaseUser = SupabaseService.instance.currentUser;
+      if (supabaseUser == null) return null;
+
       final storeId = ref.read(currentStoreIdProvider);
       final admins = await _isar.isar.userCollections
           .filter()
@@ -138,17 +140,14 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
           .and()
           .roleEqualTo(SupabaseConstants.roleAdmin)
           .and()
-          .statusEqualTo(SupabaseConstants.statusActive)
-          .and()
           .isDeletedEqualTo(false)
           .findAll();
 
-      for (final admin in admins) {
-        if (admin.pinHash != null && PinHelper.verifyPin(pin, admin.pinHash!)) {
-          return admin;
-        }
-      }
-      return null;
+      // Match by email since admin email is the same as Supabase auth email
+      return admins.firstWhere(
+        (a) => a.email == supabaseUser.email,
+        orElse: () => admins.first,
+      );
     } catch (_) {
       return null;
     }
@@ -156,20 +155,19 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
 
   // ── Void order ──────────────────────────────────────────────────────────────
 
-  /// Marks an order as voided after admin PIN + reason verification.
-  /// Persists to Isar first, then enqueues to SyncQueue.
+  /// Marks an order as voided. Records the currently logged-in admin.
   Future<bool> voidOrder({
     required OrderCollection order,
-    required UserCollection admin,
     required String reason,
   }) async {
     try {
+      final admin = await _resolveAdmin();
       final now = DateTime.now();
       await _isar.isar.writeTxn(() async {
         order.status = SupabaseConstants.orderStatusVoided;
         order.voidReason = reason;
-        order.voidedById = admin.syncId;
-        order.voidedByName = admin.name;
+        order.voidedById = admin?.syncId;
+        order.voidedByName = admin?.name;
         order.voidedAt = now;
         order.updatedAt = now;
         order.isSynced = false;
@@ -184,8 +182,8 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
           SupabaseConstants.syncId: order.syncId,
           SupabaseConstants.orderStatus: SupabaseConstants.orderStatusVoided,
           'void_reason': reason,
-          'voided_by_id': admin.syncId,
-          'voided_by_name': admin.name,
+          'voided_by_id': admin?.syncId,
+          'voided_by_name': admin?.name,
           'voided_at': now.toIso8601String(),
           SupabaseConstants.updatedAt: now.toIso8601String(),
         },
@@ -200,15 +198,15 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
 
   // ── Refund order ─────────────────────────────────────────────────────────────
 
-  /// Marks an order as refunded after admin PIN verification.
+  /// Marks an order as refunded. Records the currently logged-in admin.
   Future<bool> refundOrder({
     required OrderCollection order,
-    required UserCollection admin,
     required String reason,
     required double refundAmount,
     required bool isPartial,
   }) async {
     try {
+      final admin = await _resolveAdmin();
       final now = DateTime.now();
 
       await _isar.isar.writeTxn(() async {
@@ -216,8 +214,8 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
         order.refundReason = reason;
         order.refundAmount = refundAmount;
         order.isPartialRefund = isPartial;
-        order.refundedById = admin.syncId;
-        order.refundedByName = admin.name;
+        order.refundedById = admin?.syncId;
+        order.refundedByName = admin?.name;
         order.refundedAt = now;
         order.updatedAt = now;
         order.isSynced = false;
@@ -234,8 +232,8 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
           'refund_reason': reason,
           'refund_amount': refundAmount,
           'is_partial_refund': isPartial,
-          'refunded_by_id': admin.syncId,
-          'refunded_by_name': admin.name,
+          'refunded_by_id': admin?.syncId,
+          'refunded_by_name': admin?.name,
           'refunded_at': now.toIso8601String(),
           SupabaseConstants.updatedAt: now.toIso8601String(),
         },

@@ -40,7 +40,7 @@ class OrderTile extends StatelessWidget {
         isDark ? AppColors.textPrimaryDark : const Color(0xFF1A1A1A);
     final textSecondary =
         isDark ? AppColors.textSecondaryDark : const Color(0xFF6B6B6B);
-    final totalColor = isDark ? AppColors.accentDark : AppColors.accentLight;
+    final totalColor = isDark ? AppColors.white : AppColors.secondaryLight;
 
     final statusColor = _statusColor(order.status);
     final payIcon = _paymentIcon(order.paymentMethod);

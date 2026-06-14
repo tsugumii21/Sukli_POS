@@ -240,11 +240,7 @@ class _CashierSelectionScreenState
                   onTap: () {
                     HapticFeedback.lightImpact();
                     if (isAdminLoggedIn) {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go(RouteConstants.adminHome);
-                      }
+                      context.push(RouteConstants.switchToAdmin);
                     } else {
                       context.push(RouteConstants.adminLogin);
                     }

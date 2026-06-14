@@ -99,6 +99,8 @@ class UsersNotifier extends Notifier<AsyncValue<UsersState>> {
           .storeIdEqualTo(storeId)
           .and()
           .isDeletedEqualTo(false)
+          .and()
+          .roleEqualTo('cashier')
           .findAll();
 
       final sortedUsers = List<UserCollection>.from(users)

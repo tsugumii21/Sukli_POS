@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:isar_community/isar.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/constants/supabase_constants.dart';
 import '../../../../core/services/isar_service.dart';
+import '../../../../core/services/supabase_service.dart';
+import '../../../../core/services/sync_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/isar_collections/store_collection.dart';
 import '../providers/auth_provider.dart';
@@ -34,16 +37,57 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     try {
       final isar = IsarService.instance.isar;
 
-      // Check if any store has been set up
-      final store = await isar.storeCollections
+      // Check if any store has been set up locally
+      var store = await isar.storeCollections
           .filter()
           .isDeletedEqualTo(false)
           .findFirst();
 
+      // If no local store but admin is still authenticated with Supabase,
+      // restore store data so the user doesn't have to re-setup everything.
+      if (store == null) {
+        final supabaseUser = SupabaseService.instance.currentUser;
+        if (supabaseUser != null) {
+          debugPrint('SPLASH: No local store but auth active — restoring from Supabase');
+          try {
+            final rows = await SupabaseService.instance.client
+                .from(SupabaseConstants.storesTable)
+                .select()
+                .eq(SupabaseConstants.storeAuthUid, supabaseUser.id)
+                .eq(SupabaseConstants.isDeleted, false)
+                .limit(1);
+
+            if (rows.isNotEmpty) {
+              final row = rows.first;
+              final restoredStore = StoreCollection()
+                ..syncId = row['sync_id'] as String
+                ..name = row['name'] as String
+                ..logoUrl = row['logo_url'] as String?
+                ..ownerId = row['owner_id'] as String
+                ..supabaseAuthUid = supabaseUser.id
+                ..isActive = true
+                ..createdAt = DateTime.parse(row['created_at'] as String)
+                ..updatedAt = DateTime.parse(row['updated_at'] as String)
+                ..isSynced = true
+                ..isDeleted = false;
+
+              await isar.writeTxn(() => isar.storeCollections.put(restoredStore));
+              store = restoredStore;
+              debugPrint('SPLASH: Store restored: ${store.name}');
+
+              // Pull all related data (users, categories, items, orders)
+              await SyncService.instance.initialPullFromSupabase();
+            }
+          } catch (e) {
+            debugPrint('SPLASH: Store restoration failed: $e');
+          }
+        }
+      }
+
       if (!mounted) return;
 
       if (store == null) {
-        // No store exists — brand new user → Welcome screen
+        // Truly no store found anywhere → Welcome screen
         context.go(RouteConstants.welcome);
         return;
       }
@@ -162,7 +206,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
                   // Subtext
                   Text(
-                    'Smart Point of Sale',
+                    'Seamless Transactions, Smart Change.',
                     style: AppTextStyles.body(context).copyWith(color: AppColors.primaryLight.withValues(alpha:0.6),
                       fontSize: 15,
                       fontWeight: FontWeight.w500,

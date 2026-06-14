@@ -24,8 +24,11 @@ class SettingsState {
     this.receiptFooter = 'Thank you for dining with us! 😊',
     this.showCashierName = true,
     this.showOrderNumber = true,
-    this.lowStockThreshold = 10,
-    this.enableEmailNotifications = true,
+    this.storeAddress = '',
+    this.storeContact = '',
+    this.printLogo = false,
+    this.showDateTime = true,
+    this.paperSize = '58mm',
     this.autoSync = true,
     this.syncInterval = 30,
     this.isSyncing = false,
@@ -41,8 +44,11 @@ class SettingsState {
   final String receiptFooter;
   final bool showCashierName;
   final bool showOrderNumber;
-  final int lowStockThreshold;
-  final bool enableEmailNotifications;
+  final String storeAddress;
+  final String storeContact;
+  final bool printLogo;
+  final bool showDateTime;
+  final String paperSize;
   final bool autoSync;
   final int syncInterval;
   final bool isSyncing;
@@ -58,8 +64,11 @@ class SettingsState {
     String? receiptFooter,
     bool? showCashierName,
     bool? showOrderNumber,
-    int? lowStockThreshold,
-    bool? enableEmailNotifications,
+    String? storeAddress,
+    String? storeContact,
+    bool? printLogo,
+    bool? showDateTime,
+    String? paperSize,
     bool? autoSync,
     int? syncInterval,
     bool? isSyncing,
@@ -75,8 +84,11 @@ class SettingsState {
       receiptFooter: receiptFooter ?? this.receiptFooter,
       showCashierName: showCashierName ?? this.showCashierName,
       showOrderNumber: showOrderNumber ?? this.showOrderNumber,
-      lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
-      enableEmailNotifications: enableEmailNotifications ?? this.enableEmailNotifications,
+      storeAddress: storeAddress ?? this.storeAddress,
+      storeContact: storeContact ?? this.storeContact,
+      printLogo: printLogo ?? this.printLogo,
+      showDateTime: showDateTime ?? this.showDateTime,
+      paperSize: paperSize ?? this.paperSize,
       autoSync: autoSync ?? this.autoSync,
       syncInterval: syncInterval ?? this.syncInterval,
       isSyncing: isSyncing ?? this.isSyncing,
@@ -115,8 +127,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final receiptFooter = prefs.getString('receipt_footer') ?? 'Thank you for dining with us! 😊';
     final showCashierName = prefs.getBool('receipt_show_cashier') ?? true;
     final showOrderNumber = prefs.getBool('receipt_show_order_num') ?? true;
-    final lowStockThreshold = prefs.getInt('low_stock_threshold') ?? 10;
-    final enableEmailNotifications = prefs.getBool('enable_email_notifications') ?? true;
+    final storeAddress = prefs.getString('store_address') ?? '';
+    final storeContact = prefs.getString('store_contact') ?? '';
+    final printLogo = prefs.getBool('receipt_print_logo') ?? false;
+    final showDateTime = prefs.getBool('receipt_show_date_time') ?? true;
+    final paperSize = prefs.getString('receipt_paper_size') ?? '58mm';
     final autoSync = prefs.getBool('auto_sync') ?? true;
     final syncInterval = prefs.getInt('sync_interval') ?? 30;
 
@@ -142,8 +157,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
       receiptFooter: receiptFooter,
       showCashierName: showCashierName,
       showOrderNumber: showOrderNumber,
-      lowStockThreshold: lowStockThreshold,
-      enableEmailNotifications: enableEmailNotifications,
+      storeAddress: storeAddress,
+      storeContact: storeContact,
+      printLogo: printLogo,
+      showDateTime: showDateTime,
+      paperSize: paperSize,
       autoSync: autoSync,
       syncInterval: syncInterval,
       adminName: adminName,
@@ -158,8 +176,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
     String? receiptFooter,
     bool? showCashierName,
     bool? showOrderNumber,
-    int? lowStockThreshold,
-    bool? enableEmailNotifications,
+    String? storeAddress,
+    String? storeContact,
+    bool? printLogo,
+    bool? showDateTime,
+    String? paperSize,
     bool? autoSync,
     int? syncInterval,
   }) async {
@@ -170,10 +191,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
     if (receiptFooter != null) await prefs.setString('receipt_footer', receiptFooter);
     if (showCashierName != null) await prefs.setBool('receipt_show_cashier', showCashierName);
     if (showOrderNumber != null) await prefs.setBool('receipt_show_order_num', showOrderNumber);
-    if (lowStockThreshold != null) await prefs.setInt('low_stock_threshold', lowStockThreshold);
-    if (enableEmailNotifications != null) {
-      await prefs.setBool('enable_email_notifications', enableEmailNotifications);
-    }
+    if (storeAddress != null) await prefs.setString('store_address', storeAddress);
+    if (storeContact != null) await prefs.setString('store_contact', storeContact);
+    if (printLogo != null) await prefs.setBool('receipt_print_logo', printLogo);
+    if (showDateTime != null) await prefs.setBool('receipt_show_date_time', showDateTime);
+    if (paperSize != null) await prefs.setString('receipt_paper_size', paperSize);
     if (autoSync != null) await prefs.setBool('auto_sync', autoSync);
     if (syncInterval != null) await prefs.setInt('sync_interval', syncInterval);
 
@@ -183,8 +205,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
       receiptFooter: receiptFooter ?? state.receiptFooter,
       showCashierName: showCashierName ?? state.showCashierName,
       showOrderNumber: showOrderNumber ?? state.showOrderNumber,
-      lowStockThreshold: lowStockThreshold ?? state.lowStockThreshold,
-      enableEmailNotifications: enableEmailNotifications ?? state.enableEmailNotifications,
+      storeAddress: storeAddress ?? state.storeAddress,
+      storeContact: storeContact ?? state.storeContact,
+      printLogo: printLogo ?? state.printLogo,
+      showDateTime: showDateTime ?? state.showDateTime,
+      paperSize: paperSize ?? state.paperSize,
       autoSync: autoSync ?? state.autoSync,
       syncInterval: syncInterval ?? state.syncInterval,
     );

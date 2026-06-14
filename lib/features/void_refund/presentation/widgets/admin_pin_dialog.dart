@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:isar_community/isar.dart';
 
+import '../../../../core/constants/supabase_constants.dart';
+import '../../../../core/services/isar_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/utils/pin_helper.dart';
+import '../../../../shared/isar_collections/store_collection.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
 import '../providers/void_refund_provider.dart';
 
@@ -109,7 +114,7 @@ class _AdminPinDialogState extends State<AdminPinDialog>
     setState(() => _isVerifying = true);
     HapticFeedback.lightImpact();
 
-    final admin = await widget.notifier.verifyAdminPin(_pin);
+    final admin = await _verifyAdminPin(_pin);
 
     if (!mounted) return;
 
@@ -125,6 +130,40 @@ class _AdminPinDialogState extends State<AdminPinDialog>
         _errorText = 'Incorrect PIN. Try again.';
         _pin = '';
       });
+    }
+  }
+
+  /// Inline PIN verification — looks up admin users in Isar and verifies PIN hash.
+  Future<UserCollection?> _verifyAdminPin(String pin) async {
+    try {
+      final isar = IsarService.instance;
+
+      // Resolve storeId from the first active store in Isar
+      final store = await isar.isar.storeCollections
+          .filter()
+          .isDeletedEqualTo(false)
+          .findFirst();
+      final storeId = store?.syncId ?? '';
+
+      final admins = await isar.isar.userCollections
+          .filter()
+          .storeIdEqualTo(storeId)
+          .and()
+          .roleEqualTo(SupabaseConstants.roleAdmin)
+          .and()
+          .statusEqualTo(SupabaseConstants.statusActive)
+          .and()
+          .isDeletedEqualTo(false)
+          .findAll();
+
+      for (final admin in admins) {
+        if (admin.pinHash != null && PinHelper.verifyPin(pin, admin.pinHash!)) {
+          return admin;
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 

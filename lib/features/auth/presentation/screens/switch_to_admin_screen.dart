@@ -31,6 +31,15 @@ class _SwitchToAdminScreenState extends ConsumerState<SwitchToAdminScreen> {
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    final adminEmail = SupabaseService.instance.currentUser?.email;
+    if (adminEmail != null) {
+      _emailCtrl.text = adminEmail;
+    }
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
@@ -251,13 +260,36 @@ class _SwitchToAdminScreenState extends ConsumerState<SwitchToAdminScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     
-                    // Admin email field
-                    AppTextField(
-                      hint: 'admin@email.com',
-                      controller: _emailCtrl,
-                      prefixIcon: Icon(Icons.email_outlined, color: textSecondary, size: 22),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
+                    if (SupabaseService.instance.currentUser?.email != null) ...[
+                      // Show email as read-only text
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+                          borderRadius: AppRadius.mediumBR,
+                          border: Border.all(color: borderCol),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.email_outlined, color: textSecondary, size: 22),
+                            const SizedBox(width: AppSpacing.md),
+                            Text(
+                              SupabaseService.instance.currentUser!.email!,
+                              style: AppTextStyles.body(context).copyWith(color: textPrimary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      // Admin email field fallback
+                      AppTextField(
+                        hint: 'admin@email.com',
+                        controller: _emailCtrl,
+                        prefixIcon: Icon(Icons.email_outlined, color: textSecondary, size: 22),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                    ],
                     
                     const SizedBox(height: AppSpacing.md),
                     

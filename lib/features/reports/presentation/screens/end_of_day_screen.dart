@@ -587,23 +587,31 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
     final confirmed = await showDialog<bool>(
       context: ctx,
       builder: (c) => AlertDialog(
-        title: Text('Close Day?', style: AppTextStyles.h3(c)),
+        backgroundColor: Theme.of(c).brightness == Brightness.dark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        title: Text('Close Day?', style: AppTextStyles.h3(c).copyWith(color: AppColors.textPrimary(c))),
         content: Text(
             'This will mark today as closed. You can still view the report afterwards.',
-            style: AppTextStyles.body(c)),
+            style: AppTextStyles.body(c).copyWith(color: AppColors.textSecondary(c))),
         actions: [
           TextButton(
               onPressed: () {
                 HapticFeedback.lightImpact();
                 Navigator.pop(c, false);
               },
-              child: const Text('Cancel')),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textSecondary(c),
+              ),
+              child: Text('Cancel', style: AppTextStyles.body(c))),
           ElevatedButton(
               onPressed: () {
                 HapticFeedback.lightImpact();
                 Navigator.pop(c, true);
               },
-              child: const Text('Close Day')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent(c),
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Close Day', style: AppTextStyles.bodySemiBold(c).copyWith(color: Colors.white))),
         ],
       ),
     );

@@ -32,7 +32,7 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.accentDark : AppColors.accentLight;
+    final bg = AppColors.secondary(context);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -127,7 +127,7 @@ class _AppSecondaryButtonState extends State<AppSecondaryButton> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark ? AppColors.accentDark : AppColors.accentLight;
+    final color = AppColors.secondary(context);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -201,7 +201,7 @@ class AppTextButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark ? AppColors.accentDark : AppColors.accentLight;
+    final color = AppColors.secondary(context);
 
     return TextButton(
       onPressed: onPressed == null

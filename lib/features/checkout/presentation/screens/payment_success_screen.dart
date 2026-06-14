@@ -319,15 +319,25 @@ class PaymentSuccessScreen extends ConsumerWidget {
           const SizedBox(height: 4),
 
           // Back to Home — text button
-          TextButton(
-            onPressed: () {
-              ref.read(checkoutProvider.notifier).reset();
-              context.go(RouteConstants.cashierHome);
-            },
-            child: Text(
-              'Back to Home',
-              style: AppTextStyles.caption(context).copyWith(
-                color: Colors.white.withValues(alpha: 0.75),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: TextButton(
+              onPressed: () {
+                ref.read(checkoutProvider.notifier).reset();
+                context.go(RouteConstants.cashierHome);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.largeBR,
+                ),
+              ),
+              child: Text(
+                'Back to Home',
+                style: AppTextStyles.bodySemiBold(context).copyWith(
+                  color: Colors.white.withValues(alpha: 0.85),
+                ),
               ),
             ),
           ),

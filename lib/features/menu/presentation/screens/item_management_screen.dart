@@ -37,6 +37,7 @@ class ItemManagementScreen extends ConsumerStatefulWidget {
 class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
     with SingleTickerProviderStateMixin {
   bool _showSearch = false;
+  bool _isGridView = false;
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
 
@@ -125,6 +126,26 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
             )
           : Text('Menu Items', style: AppTextStyles.h3(context)),
       actions: [
+        if (!_showSearch)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10.0),
+            child: SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: false, icon: Icon(Icons.list_rounded, size: 18)),
+                ButtonSegment(value: true, icon: Icon(Icons.grid_view_rounded, size: 18)),
+              ],
+              selected: {_isGridView},
+              onSelectionChanged: (Set<bool> newSelection) {
+                HapticFeedback.lightImpact();
+                setState(() => _isGridView = newSelection.first);
+              },
+              showSelectedIcon: false,
+              style: SegmentedButton.styleFrom(
+                visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            ),
+          ),
         IconButton(
           icon: Icon(
             _showSearch ? Icons.close_rounded : Icons.search_rounded,
@@ -212,24 +233,48 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
               : RefreshIndicator(
                   onRefresh: () => ref.read(itemProvider.notifier).refresh(),
                   color: _maroon,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md, AppSpacing.sm, AppSpacing.md, 80),
-                    itemCount: filtered.length,
-                    itemBuilder: (_, i) {
-                      final item = filtered[i];
-                      final catName =
-                          _categoryName(state.categories, item.categoryId);
-                      return ItemManageTile(
-                        key: ValueKey(item.syncId),
-                        item: item,
-                        categoryName: catName,
-                        animationIndex: i,
-                        onEdit: () => _openForm(item: item),
-                        onDelete: () => _confirmDelete(context, item),
-                      );
-                    },
-                  ),
+                  child: _isGridView
+                      ? GridView.builder(
+                          padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 80),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.72,
+                            crossAxisSpacing: AppSpacing.sm,
+                            mainAxisSpacing: AppSpacing.sm,
+                          ),
+                          itemCount: filtered.length,
+                          itemBuilder: (_, i) {
+                            final item = filtered[i];
+                            final catName =
+                                _categoryName(state.categories, item.categoryId);
+                            return ItemManageGridTile(
+                              key: ValueKey(item.syncId),
+                              item: item,
+                              categoryName: catName,
+                              animationIndex: i,
+                              onEdit: () => _openForm(item: item),
+                              onDelete: () => _confirmDelete(context, item),
+                            );
+                          },
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.md, AppSpacing.sm, AppSpacing.md, 80),
+                          itemCount: filtered.length,
+                          itemBuilder: (_, i) {
+                            final item = filtered[i];
+                            final catName =
+                                _categoryName(state.categories, item.categoryId);
+                            return ItemManageTile(
+                              key: ValueKey(item.syncId),
+                              item: item,
+                              categoryName: catName,
+                              animationIndex: i,
+                              onEdit: () => _openForm(item: item),
+                              onDelete: () => _confirmDelete(context, item),
+                            );
+                          },
+                        ),
                 ),
         ),
       ],

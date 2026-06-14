@@ -869,17 +869,7 @@ class _AdminNavDrawer extends ConsumerWidget {
             textColor: textPrimary,
           ),
 
-          _AdminNavItem(
-            icon: Icons.switch_account_rounded,
-            label: 'Switch to Cashier',
-            delay: 360,
-            onTap: () {
-              Navigator.pop(context);
-              context.push(RouteConstants.cashierSelect);
-            },
-            hoverBg: itemHoverBg,
-            textColor: textPrimary,
-          ),
+
 
           const Spacer(),
 

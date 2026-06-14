@@ -589,15 +589,15 @@ class _RevenueChart extends StatelessWidget {
                           spots: state.revenueSpots,
                           isCurved: true,
                           curveSmoothness: 0.3,
-                          color: accent,
-                          barWidth: 2.5,
+                          color: isDark ? const Color(0xFFE8738A) : const Color(0xFFA0545C), // Lighter Maroon from theme
+                          barWidth: 3.5,
                           isStrokeCapRound: true,
                           dotData: FlDotData(
                             show: true,
                             getDotPainter: (_, __, ___, ____) =>
                                 FlDotCirclePainter(
-                              radius: 3.5,
-                              color: accent,
+                              radius: 4.5,
+                              color: isDark ? const Color(0xFFE8738A) : const Color(0xFFA0545C),
                               strokeWidth: 2,
                               strokeColor: Colors.white,
                             ),
@@ -608,15 +608,18 @@ class _RevenueChart extends StatelessWidget {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                accent.withValues(alpha: 0.25),
-                                accent.withValues(alpha: 0.0),
+                                (isDark ? const Color(0xFFE8738A) : const Color(0xFFA0545C)).withValues(alpha: 0.35),
+                                (isDark ? const Color(0xFFE8738A) : const Color(0xFFA0545C)).withValues(alpha: 0.0),
                               ],
                             ),
                           ),
                         ),
                       ],
                       lineTouchData: LineTouchData(
+                        getTouchLineEnd: (data, index) => double.infinity,
+                        getTouchLineStart: (data, index) => 0,
                         touchTooltipData: LineTouchTooltipData(
+                          getTooltipColor: (spot) => isDark ? const Color(0xFF2A2D3E) : const Color(0xFF3E2723),
                           getTooltipItems: (spots) => spots
                               .map((s) => LineTooltipItem(
                                     CurrencyFormatter.format(s.y),
@@ -679,13 +682,13 @@ class _PaymentDonutChart extends StatelessWidget {
   Color _paymentColor(String method, bool isDark) {
     switch (method.toLowerCase()) {
       case 'cash':
-        return isDark ? AppColors.accentDark : AppColors.accentLight;
+        return isDark ? const Color(0xFFE8738A) : const Color(0xFFA0545C); // Lighter Maroon
       case 'gcash':
-        return isDark ? AppColors.successDark : AppColors.successLight;
+        return isDark ? const Color(0xFF8B92A8) : const Color(0xFF7B9971); // Olive Green
       case 'maya':
-        return isDark ? AppColors.warningDark : AppColors.warningLight;
+        return isDark ? const Color(0xFFD4A574) : const Color(0xFFD4A574); // Sandy Orange
       case 'card':
-        return isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
+        return isDark ? const Color(0xFF2E3347) : const Color(0xFF8B4049); // Dark Maroon
       default:
         return isDark
             ? AppColors.textSecondaryDark

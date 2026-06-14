@@ -82,15 +82,11 @@ class CashierDashboardScreen extends ConsumerWidget {
                   // Avatar circle
                   CircleAvatar(
                     radius: 16,
-                    backgroundColor: isDark
-                        ? AppColors.accentDark.withValues(alpha: 0.2)
-                        : AppColors.accentLight.withValues(alpha: 0.15),
+                    backgroundColor: AppColors.secondary(context).withValues(alpha: 0.15),
                     child: Text(
                       initials,
                       style: TextStyle(
-                        color: isDark
-                            ? AppColors.accentDarkLight
-                            : AppColors.accentLight,
+                        color: AppColors.secondary(context),
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),

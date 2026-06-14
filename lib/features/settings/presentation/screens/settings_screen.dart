@@ -48,8 +48,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late TextEditingController _newPassCtrl;
   late TextEditingController _confirmPassCtrl;
 
-  // Threshold controller
-  late TextEditingController _lowStockCtrl;
+  // Receipt Customization controllers
+  late TextEditingController _storeAddressCtrl;
+  late TextEditingController _storeContactCtrl;
 
   @override
   void initState() {
@@ -63,7 +64,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _currentPassCtrl = TextEditingController();
     _newPassCtrl = TextEditingController();
     _confirmPassCtrl = TextEditingController();
-    _lowStockCtrl = TextEditingController();
+    _storeAddressCtrl = TextEditingController();
+    _storeContactCtrl = TextEditingController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialSettingsData();
@@ -81,7 +83,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _currentPassCtrl.dispose();
     _newPassCtrl.dispose();
     _confirmPassCtrl.dispose();
-    _lowStockCtrl.dispose();
+    _storeAddressCtrl.dispose();
+    _storeContactCtrl.dispose();
     super.dispose();
   }
 
@@ -95,7 +98,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _receiptFooterCtrl.text = state.receiptFooter;
       _adminNameCtrl.text = state.adminName;
       _adminEmailCtrl.text = state.adminEmail;
-      _lowStockCtrl.text = state.lowStockThreshold.toString();
+      _storeAddressCtrl.text = state.storeAddress;
+      _storeContactCtrl.text = state.storeContact;
     } catch (e) {
       _showErrorSnackBar('Failed to load settings: $e', null);
     } finally {
@@ -197,7 +201,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await notifier.updateStoreName(_storeNameCtrl.text.trim());
       await notifier.saveSettings(
         storeTagline: _storeTaglineCtrl.text.trim(),
-        receiptFooter: _receiptFooterCtrl.text.trim(),
       );
       _showSuccessSnackBar('Store information updated.');
     } catch (e) {
@@ -210,6 +213,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       await notifier.saveSettings(
         receiptHeader: _receiptHeaderCtrl.text.trim(),
+        receiptFooter: _receiptFooterCtrl.text.trim(),
+        storeAddress: _storeAddressCtrl.text.trim(),
+        storeContact: _storeContactCtrl.text.trim(),
       );
       _showSuccessSnackBar('Receipt templates saved.');
     } catch (e) {
@@ -217,18 +223,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _handleNotificationsSave() async {
-    final notifier = ref.read(settingsProvider.notifier);
-    final threshold = int.tryParse(_lowStockCtrl.text.trim()) ?? 10;
-    try {
-      await notifier.saveSettings(
-        lowStockThreshold: threshold,
-      );
-      _showSuccessSnackBar('Notification settings updated.');
-    } catch (e) {
-      _showErrorSnackBar('Failed to save notification settings.', _handleNotificationsSave);
-    }
-  }
+
 
   Future<void> _handleProfileSave() async {
     final notifier = ref.read(settingsProvider.notifier);
@@ -508,18 +503,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               label: 'Store Name',
                               prefixIcon: Icon(Icons.business, color: textSecondary, size: 20),
                             ),
-                            Divider(color: dividerColor),
+                            const SizedBox(height: AppSpacing.md),
                             AppTextField(
                               controller: _storeTaglineCtrl,
                               label: 'Store Tagline',
                               prefixIcon: Icon(Icons.tag_faces_rounded, color: textSecondary, size: 20),
                             ),
-                            Divider(color: dividerColor),
-                            AppTextField(
-                              controller: _receiptFooterCtrl,
-                              label: 'Default Receipt Footer Text',
-                              prefixIcon: Icon(Icons.text_fields, color: textSecondary, size: 20),
-                            ),
+
                             const SizedBox(height: AppSpacing.md),
                             Align(
                               alignment: Alignment.centerRight,
@@ -545,7 +535,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             AppTextField(
                               controller: _receiptHeaderCtrl,
                               label: 'Receipt Header Text',
-                              prefixIcon: Icon(Icons.subtitles_rounded, color: textSecondary, size: 20),
+                              prefixIcon: Icon(Icons.title, color: textSecondary, size: 20),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            AppTextField(
+                              controller: _storeAddressCtrl,
+                              label: 'Store Address',
+                              prefixIcon: Icon(Icons.location_on_rounded, color: textSecondary, size: 20),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            AppTextField(
+                              controller: _storeContactCtrl,
+                              label: 'Contact Number',
+                              prefixIcon: Icon(Icons.phone_rounded, color: textSecondary, size: 20),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            AppTextField(
+                              controller: _receiptFooterCtrl,
+                              label: 'Receipt Footer Message',
+                              prefixIcon: Icon(Icons.text_fields, color: textSecondary, size: 20),
+                            ),
+                            Divider(color: dividerColor),
+                            SwitchListTile.adaptive(
+                              title: Text('Print Store Logo', style: AppTextStyles.body(context).copyWith(color: textPrimary)),
+                              subtitle: Text('Display logo at the top', style: AppTextStyles.captionSecondary(context)),
+                              activeColor: AppColors.secondaryLight,
+                              value: state.printLogo,
+                              onChanged: (val) {
+                                HapticFeedback.lightImpact();
+                                ref.read(settingsProvider.notifier).saveSettings(printLogo: val);
+                              },
+                            ),
+                            Divider(color: dividerColor),
+                            SwitchListTile.adaptive(
+                              title: Text('Show Date & Time', style: AppTextStyles.body(context).copyWith(color: textPrimary)),
+                              subtitle: Text('Print transaction timestamp', style: AppTextStyles.captionSecondary(context)),
+                              activeColor: AppColors.secondaryLight,
+                              value: state.showDateTime,
+                              onChanged: (val) {
+                                HapticFeedback.lightImpact();
+                                ref.read(settingsProvider.notifier).saveSettings(showDateTime: val);
+                              },
                             ),
                             Divider(color: dividerColor),
                             SwitchListTile.adaptive(
@@ -569,6 +599,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 ref.read(settingsProvider.notifier).saveSettings(showOrderNumber: val);
                               },
                             ),
+                            Divider(color: dividerColor),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Printer Paper Size', style: AppTextStyles.body(context).copyWith(color: textPrimary)),
+                                  Text('58mm or 80mm thermal paper', style: AppTextStyles.captionSecondary(context)),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: SegmentedButton<String>(
+                                    segments: const [
+                                      ButtonSegment(value: '58mm', label: Text('58mm')),
+                                      ButtonSegment(value: '80mm', label: Text('80mm')),
+                                    ],
+                                    selected: {state.paperSize},
+                                    onSelectionChanged: (Set<String> newSelection) {
+                                      HapticFeedback.selectionClick();
+                                      ref.read(settingsProvider.notifier).saveSettings(paperSize: newSelection.first);
+                                    },
+                                    style: ButtonStyle(
+                                      visualDensity: VisualDensity.compact,
+                                      textStyle: WidgetStatePropertyAll(AppTextStyles.captionMedium(context)),
+                                    ),
+                                  ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             const SizedBox(height: AppSpacing.md),
                             Align(
                               alignment: Alignment.centerRight,
@@ -584,84 +644,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ).animate().fadeIn(delay: 50.ms, duration: 300.ms).slideY(begin: 0.04, end: 0),
                     const SizedBox(height: AppSpacing.lg),
 
-                    // SECTION 3: Notification Settings
-                    _buildSectionHeader('Notification Settings', Icons.notifications_active_rounded),
-                    AppCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: Column(
-                          children: [
-                            AppTextField(
-                              controller: _lowStockCtrl,
-                              label: 'Low Stock Alert Threshold',
-                              keyboardType: TextInputType.number,
-                              prefixIcon: Icon(Icons.warning_amber_rounded, color: textSecondary, size: 20),
-                            ),
-                            Divider(color: dividerColor),
-                            SwitchListTile.adaptive(
-                              title: Text('Enable Email Alerts', style: AppTextStyles.body(context).copyWith(color: textPrimary)),
-                              subtitle: Text('Get daily report notifications', style: AppTextStyles.captionSecondary(context)),
-                              activeColor: AppColors.secondaryLight,
-                              value: state.enableEmailNotifications,
-                              onChanged: (val) {
-                                HapticFeedback.lightImpact();
-                                ref.read(settingsProvider.notifier).saveSettings(enableEmailNotifications: val);
-                              },
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: AppPrimaryButton(
-                                label: 'Save Notifications',
-                                onPressed: _handleNotificationsSave,
-                                width: 180,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ).animate().fadeIn(delay: 100.ms, duration: 300.ms).slideY(begin: 0.04, end: 0),
-                    const SizedBox(height: AppSpacing.lg),
 
-                    // SECTION 4: Appearance
-                    _buildSectionHeader('Appearance', Icons.color_lens_rounded),
-                    AppCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Choose Theme ThemeMode',
-                              style: AppTextStyles.bodyMedium(context).copyWith(color: textPrimary),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildThemeOption(
-                                    'Light',
-                                    Icons.light_mode_rounded,
-                                    ThemeMode.light,
-                                    themeMode,
-                                  ),
-                                ),
-                                const SizedBox(width: AppSpacing.xs),
-                                Expanded(
-                                  child: _buildThemeOption(
-                                    'Dark',
-                                    Icons.dark_mode_rounded,
-                                    ThemeMode.dark,
-                                    themeMode,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ).animate().fadeIn(delay: 150.ms, duration: 300.ms).slideY(begin: 0.04, end: 0),
-                    const SizedBox(height: AppSpacing.lg),
 
                     // SECTION 5: Sync Settings
                     _buildSectionHeader('Sync Settings', Icons.cloud_sync_rounded),
@@ -785,7 +768,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               label: 'Administrator Name',
                               prefixIcon: Icon(Icons.person, color: textSecondary, size: 20),
                             ),
-                            Divider(color: dividerColor),
+                            const SizedBox(height: AppSpacing.md),
                             AppTextField(
                               controller: _adminEmailCtrl,
                               label: 'Administrator Email',
@@ -817,14 +800,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               obscureText: true,
                               prefixIcon: Icon(Icons.lock_open, color: textSecondary, size: 20),
                             ),
-                            Divider(color: dividerColor),
+                            const SizedBox(height: AppSpacing.md),
                             AppTextField(
                               controller: _newPassCtrl,
                               label: 'New Password',
                               obscureText: true,
                               prefixIcon: Icon(Icons.lock_outline, color: textSecondary, size: 20),
                             ),
-                            Divider(color: dividerColor),
+                            const SizedBox(height: AppSpacing.md),
                             AppTextField(
                               controller: _confirmPassCtrl,
                               label: 'Confirm New Password',
@@ -875,52 +858,5 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildThemeOption(
-    String label,
-    IconData icon,
-    ThemeMode targetMode,
-    ThemeMode currentMode,
-  ) {
-    final isSelected = currentMode == targetMode;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final activeBg = isDark ? AppColors.accentDark : AppColors.accentLight;
-    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
 
-    return InkWell(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        ref.read(themeProvider.notifier).setMode(targetMode);
-      },
-      borderRadius: AppRadius.mediumBR,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.md),
-        decoration: BoxDecoration(
-          color: isSelected ? activeBg : Colors.transparent,
-          border: Border.all(
-            color: isSelected ? Colors.transparent : textPrimary.withValues(alpha: 0.2),
-            width: 1.5,
-          ),
-          borderRadius: AppRadius.mediumBR,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : textPrimary,
-              size: 18,
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            Text(
-              label,
-              style: AppTextStyles.bodyMedium(context).copyWith(
-                color: isSelected ? Colors.white : textPrimary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

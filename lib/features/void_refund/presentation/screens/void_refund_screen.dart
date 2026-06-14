@@ -13,7 +13,6 @@ import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../providers/void_refund_provider.dart';
-import '../widgets/admin_pin_dialog.dart';
 import '../widgets/refund_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -452,23 +451,23 @@ class _OrderRow extends ConsumerWidget {
   Future<void> _handleVoid(BuildContext context, WidgetRef ref) async {
     final notifier = ref.read(voidRefundProvider.notifier);
 
-    // Step 1 — Admin PIN
-    final admin = await AdminPinDialog.show(
-      context,
-      notifier,
-      title: 'Admin Verification',
-      subtitle: 'Enter admin PIN to void this order',
-    );
-    if (admin == null || !context.mounted) return;
-
-    // Step 2 — Reason dialog
+    // Step 1 — Reason dialog
     final reason = await _showReasonDialog(context);
     if (reason == null || !context.mounted) return;
+
+    // Step 2 — Confirmation popup
+    final confirmed = await _showConfirmDialog(
+      context,
+      title: 'Void Order',
+      message: 'Are you sure you want to void ${order.orderNumber}? This cannot be undone.',
+      confirmLabel: 'Yes, Void',
+      confirmColor: isDark ? AppColors.errorDark : AppColors.errorLight,
+    );
+    if (confirmed != true || !context.mounted) return;
 
     // Step 3 — Process void
     final ok = await notifier.voidOrder(
       order: order,
-      admin: admin,
       reason: reason,
     );
 
@@ -563,19 +562,19 @@ class _OrderRow extends ConsumerWidget {
     final result = await RefundSheet.show(context, order);
     if (result == null || !context.mounted) return;
 
-    // Step 2 — Admin PIN
-    final admin = await AdminPinDialog.show(
+    // Step 2 — Confirmation popup
+    final confirmed = await _showConfirmDialog(
       context,
-      notifier,
       title: 'Confirm Refund',
-      subtitle: 'Enter admin PIN to process the refund',
+      message: 'Refund ${CurrencyFormatter.format(result.amount)} for ${order.orderNumber}?',
+      confirmLabel: 'Yes, Refund',
+      confirmColor: isDark ? AppColors.warningDark : AppColors.warningLight,
     );
-    if (admin == null || !context.mounted) return;
+    if (confirmed != true || !context.mounted) return;
 
     // Step 3 — Process refund
     final ok = await notifier.refundOrder(
       order: order,
-      admin: admin,
       reason: result.reason,
       refundAmount: result.amount,
       isPartial: result.isPartial,
@@ -598,6 +597,58 @@ class _OrderRow extends ConsumerWidget {
         ),
       );
     }
+  }
+
+  /// Generic confirmation dialog used for both void and refund.
+  Future<bool?> _showConfirmDialog(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String confirmLabel,
+    required Color confirmColor,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? AppColors.surfaceDark : AppColors.backgroundLight;
+    final textSecondary =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: dialogBg,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.largeBR),
+        title: Text(title, style: AppTextStyles.h3(context)),
+        content: Text(
+          message,
+          style: AppTextStyles.body(context).copyWith(color: textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.bodySemiBold(context)
+                  .copyWith(color: textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: confirmColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.mediumBR),
+            ),
+            child: Text(
+              confirmLabel,
+              style: AppTextStyles.bodySemiBold(context)
+                  .copyWith(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _capitalize(String s) =>

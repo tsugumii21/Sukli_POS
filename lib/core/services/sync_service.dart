@@ -5,10 +5,12 @@ import 'package:isar_community/isar.dart';
 import 'isar_service.dart';
 import 'supabase_service.dart';
 import '../constants/app_constants.dart';
+import '../constants/supabase_constants.dart';
 import '../../shared/isar_collections/store_collection.dart';
 import '../../shared/isar_collections/user_collection.dart';
 import '../../shared/isar_collections/category_collection.dart';
 import '../../shared/isar_collections/menu_item_collection.dart';
+import '../../shared/isar_collections/order_collection.dart';
 import '../../shared/isar_collections/sync_queue_collection.dart';
 
 /// SyncResult represents the outcome of a synchronization operation.
@@ -409,10 +411,128 @@ class SyncService {
           '${categoryRows.length} categories, '
           '${menuItemRows.length} menu items.');
 
+      // Also pull recent orders using the storeId already in scope
+      await _pullOrders(storeId);
+
       return true;
     } catch (e, stack) {
       debugPrint('SYNC PULL ERROR: Failed to pull store data: $e\n$stack');
       return false;
+    }
+  }
+
+  /// Pulls the most recent orders from Supabase for a given storeId.
+  /// Uses LWW (Last-Write-Wins) to avoid overwriting newer local data.
+  Future<void> _pullOrders(String storeId) async {
+    try {
+      final rows = await _supabase.client
+          .from(SupabaseConstants.ordersTable)
+          .select()
+          .eq(SupabaseConstants.storeId, storeId)
+          .eq(SupabaseConstants.isDeleted, false)
+          .order('ordered_at', ascending: false)
+          .limit(500);
+
+      debugPrint('SYNC: Pulled ${rows.length} orders');
+
+      await _isar.isar.writeTxn(() async {
+        for (final row in rows) {
+          final existing = await _isar.isar.orderCollections
+              .filter()
+              .syncIdEqualTo(row['sync_id'] as String)
+              .findFirst();
+
+          final serverUpdatedAt = DateTime.parse(row['updated_at'] as String);
+
+          // LWW — only update if server record is newer or doesn't exist locally
+          if (existing == null || serverUpdatedAt.isAfter(existing.updatedAt)) {
+            final orderItemsRaw = row['order_items_json'];
+            List<String> orderItemsJson = [];
+            if (orderItemsRaw is List) {
+              orderItemsJson = orderItemsRaw
+                  .map((v) => v is String ? v : jsonEncode(v))
+                  .toList();
+            }
+
+            final order = OrderCollection()
+              ..syncId = row['sync_id'] as String
+              ..storeId = row['store_id'] as String?
+              ..orderNumber = row['order_number'] as String
+              ..cashierId = row['cashier_id'] as String
+              ..cashierName = row['cashier_name'] as String
+              ..orderItemsJson = orderItemsJson
+              ..subtotal = (row['subtotal'] as num).toDouble()
+              ..discountAmount = (row['discount_amount'] as num? ?? 0).toDouble()
+              ..discountReason = row['discount_reason'] as String?
+              ..taxAmount = (row['tax_amount'] as num? ?? 0).toDouble()
+              ..totalAmount = (row['total_amount'] as num).toDouble()
+              ..amountTendered = (row['amount_tendered'] as num).toDouble()
+              ..changeAmount = (row['change_amount'] as num).toDouble()
+              ..paymentMethod = row['payment_method'] as String
+              ..paymentReference = row['payment_reference'] as String?
+              ..status = row['status'] as String
+              ..voidReason = row['void_reason'] as String?
+              ..refundReason = row['refund_reason'] as String?
+              ..voidedById = row['voided_by_id'] as String?
+              ..voidedAt = row['voided_at'] != null
+                  ? DateTime.parse(row['voided_at'] as String)
+                  : null
+              ..orderedAt = DateTime.parse(row['ordered_at'] as String)
+              ..createdAt = DateTime.parse(row['created_at'] as String)
+              ..updatedAt = DateTime.parse(row['updated_at'] as String)
+              ..isSynced = true
+              ..isDeleted = row['is_deleted'] as bool? ?? false;
+
+            await _isar.isar.orderCollections.put(order);
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('SYNC: Pull orders failed: $e');
+    }
+  }
+
+  /// Full pull of all store data from Supabase into Isar.
+  /// Call this on every login to restore local data from Supabase.
+  /// This is a convenience wrapper around pullStoreData for cases where
+  /// the admin email is already stored locally (e.g., cashier PIN login).
+  Future<void> initialPullFromSupabase() async {
+    try {
+      debugPrint('SYNC: Starting initial pull from Supabase...');
+
+      // Check for a Supabase-authenticated user
+      final supabaseUser = _supabase.currentUser;
+      if (supabaseUser == null) {
+        debugPrint('SYNC: No Supabase user — skipping initial pull');
+        return;
+      }
+
+      // Fetch the store from Supabase using the authenticated user's UID
+      final storeRows = await _supabase.client
+          .from(SupabaseConstants.storesTable)
+          .select()
+          .eq(SupabaseConstants.storeAuthUid, supabaseUser.id)
+          .eq(SupabaseConstants.isDeleted, false)
+          .limit(1);
+
+      if (storeRows.isEmpty) {
+        debugPrint('SYNC: No store found in Supabase — skipping initial pull');
+        return;
+      }
+
+      final ownerEmail = storeRows.first['owner_id'] as String?;
+      if (ownerEmail == null) {
+        debugPrint('SYNC: Store has no owner_id — skipping initial pull');
+        return;
+      }
+
+      // Re-use the full pullStoreData pipeline (users, categories, items, orders)
+      await pullStoreData(ownerEmail);
+
+      debugPrint('SYNC: Initial pull complete.');
+    } catch (e) {
+      // Don't throw — app must still work offline if pull fails
+      debugPrint('SYNC: Initial pull failed: $e');
     }
   }
 }

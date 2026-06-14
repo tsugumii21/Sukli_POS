@@ -74,12 +74,13 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                   : null,
             );
       } else {
+        // Create mode — always cashier, always active, no email needed
         await ref.read(usersProvider.notifier).createUser(
               name: _nameCtrl.text,
-              email: _emailCtrl.text,
-              role: _role,
-              pin: _role == 'cashier' ? _pinCtrl.text : null,
-              status: _status,
+              email: '',
+              role: 'cashier',
+              pin: _pinCtrl.text,
+              status: 'active',
             );
       }
       if (mounted) {
@@ -213,7 +214,7 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          _isEdit ? 'Edit User' : 'Add User',
+          _isEdit ? 'Edit User' : 'Add Cashier',
           style: AppTextStyles.bodySemiBold(context),
         ),
         centerTitle: true,
@@ -289,93 +290,96 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                 ),
                 const SizedBox(height: AppSpacing.md),
 
-                // ── Email ─────────────────────────────────────────────────
-                AppTextField(
-                  controller: _emailCtrl,
-                  label: 'Email',
-                  hint: 'e.g. maria@suklipos.com',
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: Icon(Icons.alternate_email_rounded,
-                      color: textPrimary.withValues(alpha: 0.4), size: 20),
-                  textInputAction: TextInputAction.next,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'Email is required';
-                    }
-                    if (!v.contains('@')) return 'Enter a valid email';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppSpacing.md),
-
-                // ── Role dropdown ─────────────────────────────────────────
-                _SectionHeader(label: 'Role', context: context),
-                const SizedBox(height: AppSpacing.xs),
-                _RoleSelector(
-                  selected: _role,
-                  onChanged: (r) => setState(() => _role = r),
-                ),
-                const SizedBox(height: AppSpacing.md),
-
-                // ── PIN (cashiers only) ───────────────────────────────────
-                if (_role == 'cashier') ...[
+                // ── Email (edit mode only) ─────────────────────────────────
+                if (_isEdit) ...[
                   AppTextField(
-                    controller: _pinCtrl,
-                    label: _isEdit
-                        ? 'New PIN (leave blank to keep)'
-                        : 'PIN (4 digits)',
-                    hint: '••••',
-                    obscureText: _obscurePin,
-                    keyboardType: TextInputType.number,
-                    prefixIcon: Icon(Icons.lock_outline_rounded,
+                    controller: _emailCtrl,
+                    label: 'Email',
+                    hint: 'e.g. maria@suklipos.com',
+                    keyboardType: TextInputType.emailAddress,
+                    prefixIcon: Icon(Icons.alternate_email_rounded,
                         color: textPrimary.withValues(alpha: 0.4), size: 20),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePin
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: textPrimary.withValues(alpha: 0.4),
-                        size: 20,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePin = !_obscurePin),
-                    ),
-                    textInputAction: TextInputAction.done,
+                    textInputAction: TextInputAction.next,
                     validator: (v) {
-                      if (!_isEdit) {
-                        if (v == null || v.isEmpty) return 'PIN is required';
-                        if (v.length != 4) {
-                          return 'PIN must be exactly 4 digits';
-                        }
-                        if (!RegExp(r'^\d{4}$').hasMatch(v)) {
-                          return 'PIN must be digits only';
-                        }
-                      } else {
-                        if (v != null && v.isNotEmpty) {
-                          if (v.length != 4) {
-                            return 'PIN must be exactly 4 digits';
-                          }
-                          if (!RegExp(r'^\d{4}$').hasMatch(v)) {
-                            return 'PIN must be digits only';
-                          }
-                        }
-                      }
+                      if (v == null || v.trim().isEmpty) return null;
+                      if (!v.contains('@')) return 'Enter a valid email';
                       return null;
                     },
                   ),
                   const SizedBox(height: AppSpacing.md),
                 ],
 
-                // ── Status toggle ─────────────────────────────────────────
-                _SectionHeader(label: 'Status', context: context),
-                const SizedBox(height: AppSpacing.xs),
-                _StatusToggle(
-                  isActive: _status == 'active',
-                  onChanged: (v) =>
-                      setState(() => _status = v ? 'active' : 'inactive'),
-                ),
+                // ── Role selector (edit mode only) ─────────────────────────
+                if (_isEdit) ...[
+                  _SectionHeader(label: 'Role', context: context),
+                  const SizedBox(height: AppSpacing.xs),
+                  _RoleSelector(
+                    selected: _role,
+                    onChanged: (r) => setState(() => _role = r),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
 
-                const SizedBox(height: AppSpacing.xl),
+                // ── PIN ───────────────────────────────────────────────────
+                AppTextField(
+                  controller: _pinCtrl,
+                  label: _isEdit
+                      ? 'New PIN (leave blank to keep)'
+                      : 'PIN (4 digits)',
+                  hint: '••••',
+                  obscureText: _obscurePin,
+                  keyboardType: TextInputType.number,
+                  prefixIcon: Icon(Icons.lock_outline_rounded,
+                      color: textPrimary.withValues(alpha: 0.4), size: 20),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePin
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: textPrimary.withValues(alpha: 0.4),
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        setState(() => _obscurePin = !_obscurePin),
+                  ),
+                  textInputAction: TextInputAction.done,
+                  validator: (v) {
+                    if (!_isEdit) {
+                      if (v == null || v.isEmpty) return 'PIN is required';
+                      if (v.length != 4) {
+                        return 'PIN must be exactly 4 digits';
+                      }
+                      if (!RegExp(r'^\d{4}$').hasMatch(v)) {
+                        return 'PIN must be digits only';
+                      }
+                    } else {
+                      if (v != null && v.isNotEmpty) {
+                        if (v.length != 4) {
+                          return 'PIN must be exactly 4 digits';
+                        }
+                        if (!RegExp(r'^\d{4}$').hasMatch(v)) {
+                          return 'PIN must be digits only';
+                        }
+                      }
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // ── Status toggle (edit mode only) ────────────────────────
+                if (_isEdit) ...[
+                  _SectionHeader(label: 'Status', context: context),
+                  const SizedBox(height: AppSpacing.xs),
+                  _StatusToggle(
+                    isActive: _status == 'active',
+                    onChanged: (v) =>
+                        setState(() => _status = v ? 'active' : 'inactive'),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
+
+                if (!_isEdit) const SizedBox(height: AppSpacing.md),
 
                 // ── Reset PIN (edit + cashier) ────────────────────────────
                 if (_isEdit && widget.user!.role == 'cashier') ...[
@@ -402,7 +406,7 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
 
                 // ── Save button ───────────────────────────────────────────
                 AppPrimaryButton(
-                  label: _isEdit ? 'Save Changes' : 'Add User',
+                  label: _isEdit ? 'Save Changes' : 'Add Cashier',
                   icon:
                       _isEdit ? Icons.check_rounded : Icons.person_add_rounded,
                   onPressed: _isSaving ? null : _save,
