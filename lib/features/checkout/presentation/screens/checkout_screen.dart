@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +27,8 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+  final _otherLabelController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +36,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) ref.read(checkoutProvider.notifier).reset();
     });
+  }
+
+  @override
+  void dispose() {
+    _otherLabelController.dispose();
+    super.dispose();
   }
 
   @override
@@ -58,7 +67,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
 
     final isCash = checkout.selectedMethod == PaymentMethod.cash;
-    final isNonCash = checkout.selectedMethod != null && !isCash;
     final change = isCash &&
             checkout.amountEntered > 0 &&
             checkout.amountEntered >= order.total
@@ -170,8 +178,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     }).toList(),
                   ).animate().fadeIn(duration: 350.ms, delay: 120.ms),
 
-                  // GCash / Other confirmation note
-                  if (isNonCash) ...[
+                  // "Other" free-text field
+                  if (checkout.selectedMethod == PaymentMethod.other) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    _OtherPaymentField(
+                      controller: _otherLabelController,
+                      cardBg: cardBg,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      onChanged: (v) =>
+                          ref.read(checkoutProvider.notifier).setOtherLabel(v),
+                    ).animate().fadeIn(duration: 200.ms),
+                  ],
+
+                  // GCash info note
+                  if (checkout.selectedMethod == PaymentMethod.gcash) ...[
                     const SizedBox(height: AppSpacing.sm),
                     _NonCashNote(
                       method: checkout.selectedMethod!,
@@ -212,7 +233,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             isValidPayment: isValidPayment,
             isProcessing: checkout.isProcessing,
             errorMessage: checkout.errorMessage,
-            onComplete: () => _handleCompletePayment(context),
+            onComplete: () {
+              final method = checkout.selectedMethod;
+              // Cash: proceed immediately. GCash/Other: show confirmation first.
+              if (method == PaymentMethod.cash) {
+                _handleCompletePayment(context);
+              } else {
+                _showPaymentConfirmSheet(context, method!, order.total);
+              }
+            },
             onCancel: () => _showCancelDialog(context),
           ),
         ],
@@ -225,6 +254,166 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (saved != null && context.mounted) {
       context.go(RouteConstants.paymentSuccess);
     }
+  }
+
+  /// Shows a confirmation bottom sheet for GCash / Other payments.
+  /// The cashier must confirm the customer has paid before proceeding.
+  void _showPaymentConfirmSheet(
+    BuildContext context,
+    PaymentMethod method,
+    double total,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? AppColors.surfaceDark : AppColors.white;
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final maroon = isDark ? AppColors.primaryDark : AppColors.secondaryLight;
+    final checkout = ref.read(checkoutProvider);
+
+    // Build the display label for this payment method.
+    final methodLabel = method == PaymentMethod.other &&
+            checkout.otherPaymentLabel.trim().isNotEmpty
+        ? checkout.otherPaymentLabel.trim()
+        : method.label;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        padding: EdgeInsets.fromLTRB(
+          24,
+          20,
+          24,
+          24 + MediaQuery.of(ctx).padding.bottom,
+        ),
+        decoration: BoxDecoration(
+          color: sheetBg,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: textPrimary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+
+            // Icon badge
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: maroon.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                method == PaymentMethod.gcash
+                    ? Icons.account_balance_wallet_rounded
+                    : Icons.payment_rounded,
+                color: maroon,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Text(
+              'Confirm $methodLabel Payment',
+              style: GoogleFonts.dmSans(
+                color: textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Has the customer paid ${CurrencyFormatter.format(total)} via $methodLabel?',
+              style: GoogleFonts.dmSans(
+                color: textSecondary,
+                fontSize: 14,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 28),
+
+            // Confirm — payment received
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.pop(ctx);
+                  _handleCompletePayment(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: maroon,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check_circle_rounded, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Yes, Payment Received',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Not yet — dismiss safely
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.pop(ctx);
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: textSecondary,
+                  side: BorderSide(
+                    color: textSecondary.withValues(alpha: 0.3),
+                  ),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                ),
+                child: Text(
+                  'Not Yet — Go Back',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showCancelDialog(BuildContext context) {
@@ -892,6 +1081,81 @@ class _BottomActionBar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Text field shown when the cashier selects "Other" as the payment method.
+/// The cashier types the actual payment method name (e.g. "PayMaya").
+/// The Complete Payment button is disabled until this field is non-empty.
+class _OtherPaymentField extends StatelessWidget {
+  const _OtherPaymentField({
+    required this.controller,
+    required this.cardBg,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final Color cardBg, textPrimary, textSecondary;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final accentColor = AppColors.accent(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'PAYMENT DETAILS',
+          style: AppTextStyles.caption(context).copyWith(
+            color: textSecondary,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          onChanged: onChanged,
+          textCapitalization: TextCapitalization.words,
+          style: AppTextStyles.body(context).copyWith(color: textPrimary),
+          decoration: InputDecoration(
+            hintText: 'e.g. PayMaya, Bank Transfer, Coins.ph',
+            hintStyle: AppTextStyles.body(context).copyWith(
+              color: textSecondary.withValues(alpha: 0.5),
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(
+              Icons.edit_note_rounded,
+              color: textSecondary.withValues(alpha: 0.5),
+              size: 22,
+            ),
+            filled: true,
+            fillColor: cardBg,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: Colors.black.withValues(alpha: 0.06),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: Colors.black.withValues(alpha: 0.06),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: accentColor, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

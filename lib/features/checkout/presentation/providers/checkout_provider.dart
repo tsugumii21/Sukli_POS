@@ -44,12 +44,16 @@ class CheckoutState {
   final String? errorMessage;
   final OrderCollection? completedOrder;
 
+  /// Free-text label for "Other" payment (e.g. "PayMaya", "Bank Transfer").
+  final String otherPaymentLabel;
+
   const CheckoutState({
     this.selectedMethod,
     this.amountDisplay = '',
     this.isProcessing = false,
     this.errorMessage,
     this.completedOrder,
+    this.otherPaymentLabel = '',
   });
 
   double get amountEntered => double.tryParse(amountDisplay) ?? 0.0;
@@ -58,6 +62,10 @@ class CheckoutState {
     if (selectedMethod == null) return false;
     if (selectedMethod == PaymentMethod.cash) {
       return amountEntered >= orderTotal;
+    }
+    // For "Other", require a non-empty label before allowing completion.
+    if (selectedMethod == PaymentMethod.other) {
+      return otherPaymentLabel.trim().isNotEmpty;
     }
     return true;
   }
@@ -68,6 +76,7 @@ class CheckoutState {
     bool? isProcessing,
     String? errorMessage,
     OrderCollection? completedOrder,
+    String? otherPaymentLabel,
     bool clearError = false,
     bool clearMethod = false,
   }) {
@@ -78,6 +87,7 @@ class CheckoutState {
       isProcessing: isProcessing ?? this.isProcessing,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       completedOrder: completedOrder ?? this.completedOrder,
+      otherPaymentLabel: otherPaymentLabel ?? this.otherPaymentLabel,
     );
   }
 }
@@ -95,8 +105,14 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
     state = state.copyWith(
       selectedMethod: method,
       amountDisplay: '',
+      otherPaymentLabel: '',
       clearError: true,
     );
+  }
+
+  /// Sets the free-text payment label used when method is [PaymentMethod.other].
+  void setOtherLabel(String label) {
+    state = state.copyWith(otherPaymentLabel: label, clearError: true);
   }
 
   void appendDigit(String digit) {
@@ -141,6 +157,15 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
 
       final storeId = ref.read(currentStoreIdProvider);
 
+      // Build a human-readable payment reference for non-cash methods.
+      String? paymentReference;
+      if (state.selectedMethod == PaymentMethod.gcash) {
+        paymentReference = 'GCash';
+      } else if (state.selectedMethod == PaymentMethod.other &&
+          state.otherPaymentLabel.trim().isNotEmpty) {
+        paymentReference = state.otherPaymentLabel.trim();
+      }
+
       final savedOrder = await repo.saveOrder(
         storeId: storeId,
         orderState: orderState,
@@ -148,6 +173,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
         cashierName: cashier.name,
         amountTendered: amountTendered,
         paymentMethod: state.selectedMethod!.value,
+        paymentReference: paymentReference,
       );
 
       ref.read(orderProvider.notifier).clearCart();
