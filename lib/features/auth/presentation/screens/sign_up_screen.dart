@@ -92,7 +92,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text,
         data: {'name': _nameCtrl.text.trim()},
-        emailRedirectTo: 'com.suklipos.sukli_pos://auth-callback',
       );
 
       if (authResponse.user == null) {

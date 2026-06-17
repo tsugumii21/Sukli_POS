@@ -15,7 +15,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/constants/supabase_constants.dart';
-import '../../../../shared/providers/theme_provider.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/app_text_field.dart';
@@ -383,7 +382,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final dividerColor = textSecondary.withValues(alpha: 0.1);
 
     final state = ref.watch(settingsProvider);
-    final themeMode = ref.watch(themeProvider);
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),

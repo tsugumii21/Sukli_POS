@@ -21,7 +21,6 @@ import '../../../../core/utils/pin_helper.dart';
 import '../../../../shared/isar_collections/sync_queue_collection.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
 import '../../../../shared/providers/isar_provider.dart';
-import '../../../../shared/providers/theme_provider.dart';
 import '../../../../shared/widgets/app_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import '../providers/auth_provider.dart';
@@ -97,8 +96,6 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
 
     final authState = ref.watch(authProvider);
     final cashier = authState.selectedCashier;
-    final themeMode = ref.watch(themeProvider);
-    final isDarkMode = themeMode == ThemeMode.dark;
 
     if (cashier == null) {
       return Scaffold(
@@ -319,60 +316,7 @@ class _CashierProfileScreenState extends ConsumerState<CashierProfileScreen> {
 
                       const SizedBox(height: AppSpacing.lg),
 
-                      // ── Preferences ──────────────────────────────────
-                      _SectionLabel(
-                        label: 'Preferences',
-                        textSecondary: textSecondary,
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      AppCard(
-                        padding: EdgeInsets.zero,
-                        borderRadius: AppRadius.largeBR,
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: 4,
-                          ),
-                          leading: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: (isDarkMode
-                                      ? Colors.amber.shade700
-                                      : Colors.orange.shade400)
-                                  .withAlpha(22),
-                              borderRadius: AppRadius.smallBR,
-                            ),
-                            child: Icon(
-                              isDarkMode
-                                  ? Icons.dark_mode_rounded
-                                  : Icons.light_mode_rounded,
-                              color: isDarkMode
-                                  ? Colors.amber.shade400
-                                  : Colors.orange.shade500,
-                              size: 20,
-                            ),
-                          ),
-                          title: Text(
-                            isDarkMode ? 'Dark Mode' : 'Light Mode',
-                            style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
-                          ),
-                          subtitle: Text(
-                            isDarkMode
-                                ? 'Switch to light theme'
-                                : 'Switch to dark theme',
-                            style: AppTextStyles.label(context).copyWith(color: textSecondary),
-                          ),
-                          trailing: Switch.adaptive(
-                            value: isDarkMode,
-                            onChanged: (_) =>
-                                ref.read(themeProvider.notifier).toggle(),
-                            activeThumbColor: AppColors.accentLight,
-                            activeTrackColor:
-                                AppColors.accentLight.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ).animate().fadeIn(delay: 200.ms, duration: 320.ms),
+
 
                       const SizedBox(height: AppSpacing.xl),
 

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:isar_community/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/constants/supabase_constants.dart';
 import '../../../../core/services/isar_service.dart';
@@ -103,6 +104,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         return;
       }
 
+      final prefs = await SharedPreferences.getInstance();
+      final lastActiveRole = prefs.getString('last_active_role');
+
+      if (lastActiveRole == 'cashier') {
+        if (cashierAuth.isAuthenticated) {
+          context.go(RouteConstants.cashierHome);
+        } else {
+          context.go(RouteConstants.cashierSelect);
+        }
+        return;
+      }
+
       if (adminAuth.value != null) {
         context.go(RouteConstants.adminHome);
         return;
@@ -163,14 +176,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 children: [
                   // Logo Container: Rounded Box with Curve Edges
                   Container(
-                    width: 140, // Container size
-                    height: 140,
+                    width: 170, // Container size
+                    height: 170,
                     padding: const EdgeInsets.all(
-                        32), // Padding to make the internal logo smaller
+                        24), // Padding to make the internal logo smaller
                     decoration: BoxDecoration(
                       color: AppColors
                           .primaryLightVariant, // Cream background for the box
-                      borderRadius: BorderRadius.circular(40), // Curved edges
+                      borderRadius: BorderRadius.circular(48), // Curved edges
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.3),
@@ -181,7 +194,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       ],
                     ),
                     child: Image.asset(
-                      'assets/images/sukli_logo.png',
+                      'assets/images/sukli_logo_transparent.png',
                       fit: BoxFit.contain,
                     ),
                   )
@@ -198,19 +211,25 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   // App Title
                   Text(
                     'Sukli',
-                    style: AppTextStyles.h2(context).copyWith(color: AppColors.primaryLightVariant),
+                    style: AppTextStyles.h1(context).copyWith(
+                      color: AppColors.primaryLightVariant,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
                   ).animate().fadeIn(duration: 800.ms, delay: 600.ms).slideY(
                       begin: 0.1, end: 0, duration: 800.ms, delay: 600.ms),
 
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
 
                   // Subtext
                   Text(
                     'Seamless Transactions, Smart Change.',
-                    style: AppTextStyles.body(context).copyWith(color: AppColors.primaryLight.withValues(alpha:0.6),
-                      fontSize: 15,
+                    style: AppTextStyles.body(context).copyWith(
+                      color: AppColors.primaryLight.withValues(alpha:0.7),
+                      fontSize: 17,
                       fontWeight: FontWeight.w500,
-                      letterSpacing: 0.2,
+                      letterSpacing: 0.3,
                     ),
                   ).animate().fadeIn(duration: 800.ms, delay: 1200.ms),
                 ],

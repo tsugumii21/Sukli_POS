@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/responsive_layout.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +11,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/providers/sync_provider.dart';
-import '../../../../shared/providers/theme_provider.dart';
 import '../../../auth/presentation/providers/admin_auth_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/admin_dashboard_provider.dart';
@@ -137,19 +137,20 @@ class AdminDashboardScreen extends ConsumerWidget {
                 AppSpacing.md,
                 AppSpacing.xxl,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: ResponsiveLayout.constrainedBody(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   // ── Stats Grid ────────────────────────────────────────────
                   _SectionLabel(label: 'Overview', context: context),
                   const SizedBox(height: AppSpacing.sm),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: AppSpacing.md,
-                    crossAxisSpacing: AppSpacing.md,
-                    childAspectRatio: 1.55,
+                    GridView.count(
+                      crossAxisCount: ResponsiveLayout.gridColumns(context),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: AppSpacing.md,
+                      crossAxisSpacing: AppSpacing.md,
+                      childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 1.55),
                     children: [
                       _AdminStatCard(
                         icon: Icons.payments_outlined,
@@ -183,13 +184,13 @@ class AdminDashboardScreen extends ConsumerWidget {
                   // ── Quick Actions ─────────────────────────────────────────
                   _SectionLabel(label: 'Quick Actions', context: context),
                   const SizedBox(height: AppSpacing.sm),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: AppSpacing.md,
-                    crossAxisSpacing: AppSpacing.md,
-                    childAspectRatio: 2.6,
+                    GridView.count(
+                      crossAxisCount: ResponsiveLayout.gridColumns(context),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: AppSpacing.md,
+                      crossAxisSpacing: AppSpacing.md,
+                      childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 2.6),
                     children: [
                       _QuickActionCard(
                         icon: Icons.people_outline_rounded,
@@ -272,7 +273,8 @@ class AdminDashboardScreen extends ConsumerWidget {
                       final order = entry.value;
                       return _RecentOrderTile(order: order, index: idx);
                     }),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -706,11 +708,17 @@ class _AdminNavDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
-    final drawerBg = isDark ? const Color(0xFF2A1215) : Colors.white;
-    final textPrimary =
-        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final itemHoverBg =
-        isDark ? Theme.of(context).brightness == Brightness.dark ? AppColors.surfaceDark : AppColors.textPrimaryLight : const Color(0xFFF9F0F1);
+    
+    // User requested dark mode colors:
+    final drawerBg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final headerBg = isDark ? const Color(0xFF2C2C2E) : _maroon;
+    final textPrimary = isDark ? const Color(0xFFF5F5F5) : AppColors.textPrimaryLight;
+    final iconPrimary = isDark ? const Color(0xFFE8D5C4) : AppColors.textPrimaryLight;
+    final textSecondary = isDark ? const Color(0xFF8E8E93) : AppColors.textSecondaryLight;
+    final dividerColor = isDark ? const Color(0xFF3A3A3C) : AppColors.textPrimaryLight.withValues(alpha: 0.08);
+    final itemHoverBg = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF9F0F1);
+    
+    final currentPath = GoRouterState.of(context).uri.path;
     final initial = adminEmail.isNotEmpty ? adminEmail[0].toUpperCase() : 'A';
 
     return Drawer(
@@ -724,11 +732,10 @@ class _AdminNavDrawer extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Profile header ─────────────────────────────────────────────
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              color: _maroon,
+              color: headerBg,
               borderRadius: const BorderRadius.only(topRight: Radius.circular(28)),
             ),
             padding: EdgeInsets.only(
@@ -740,13 +747,12 @@ class _AdminNavDrawer extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Avatar
                 Container(
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: isDark ? const Color(0xFF6B2C33) : Colors.white.withValues(alpha: 0.15),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.35),
                       width: 2,
@@ -764,29 +770,22 @@ class _AdminNavDrawer extends ConsumerWidget {
                       duration: 400.ms,
                       curve: Curves.easeOutBack,
                     ),
-
                 const SizedBox(height: 14),
-
-                // Email
                 Text(
                   adminEmail.isNotEmpty ? adminEmail : 'Admin',
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.bodyLarge(context).copyWith(color: Colors.white),
                 ).animate().fadeIn(duration: 350.ms, delay: 80.ms),
-
                 const SizedBox(height: 6),
-
-                // Role chip
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(99),
                   ),
                   child: Text(
                     'Administrator',
-                    style: AppTextStyles.body(context).copyWith(color: Colors.white.withValues(alpha:0.9),
+                    style: AppTextStyles.body(context).copyWith(color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
@@ -796,102 +795,105 @@ class _AdminNavDrawer extends ConsumerWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 12),
-
-          // ── Nav section label ──────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
             child: Text(
               'NAVIGATION',
               style: AppTextStyles.body(context).copyWith(
-                color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.35),
+                color: textSecondary,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.4,
               ),
             ),
           ).animate().fadeIn(duration: 300.ms, delay: 160.ms),
-
           const SizedBox(height: 4),
-
-          // ── Nav items ──────────────────────────────────────────────────
           _AdminNavItem(
             icon: Icons.dashboard_rounded,
             label: 'Home',
             delay: 180,
-            onTap: () => Navigator.pop(context),
+            isSelected: currentPath == RouteConstants.adminHome,
+            onTap: () {
+              Navigator.pop(context);
+              if (currentPath != RouteConstants.adminHome) {
+                context.push(RouteConstants.adminHome);
+              }
+            },
             hoverBg: itemHoverBg,
             textColor: textPrimary,
+            iconColor: iconPrimary,
           ),
           _AdminNavItem(
             icon: Icons.people_outline_rounded,
             label: 'Users',
             delay: 200,
+            isSelected: currentPath == RouteConstants.adminUsers,
             onTap: () {
               Navigator.pop(context);
-              context.push(RouteConstants.adminUsers);
+              if (currentPath != RouteConstants.adminUsers) {
+                context.push(RouteConstants.adminUsers);
+              }
             },
             hoverBg: itemHoverBg,
             textColor: textPrimary,
+            iconColor: iconPrimary,
           ),
           _AdminNavItem(
             icon: Icons.restaurant_menu_rounded,
             label: 'Menu',
             delay: 220,
+            isSelected: currentPath == RouteConstants.adminMenuItems,
             onTap: () {
               Navigator.pop(context);
-              context.push(RouteConstants.adminMenuItems);
+              if (currentPath != RouteConstants.adminMenuItems) {
+                context.push(RouteConstants.adminMenuItems);
+              }
             },
             hoverBg: itemHoverBg,
             textColor: textPrimary,
+            iconColor: iconPrimary,
           ),
           _AdminNavItem(
             icon: Icons.bar_chart_rounded,
             label: 'Reports',
             delay: 300,
+            isSelected: currentPath == RouteConstants.adminReports,
             onTap: () {
               Navigator.pop(context);
-              context.push(RouteConstants.adminReports);
+              if (currentPath != RouteConstants.adminReports) {
+                context.push(RouteConstants.adminReports);
+              }
             },
             hoverBg: itemHoverBg,
             textColor: textPrimary,
+            iconColor: iconPrimary,
           ),
           _AdminNavItem(
             icon: Icons.settings_rounded,
             label: 'Settings',
             delay: 340,
+            isSelected: currentPath == RouteConstants.adminSettings,
             onTap: () {
               Navigator.pop(context);
-              context.push(RouteConstants.adminSettings);
+              if (currentPath != RouteConstants.adminSettings) {
+                context.push(RouteConstants.adminSettings);
+              }
             },
             hoverBg: itemHoverBg,
             textColor: textPrimary,
+            iconColor: iconPrimary,
           ),
-
-
-
           const Spacer(),
-
-          // ── Footer divider ─────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Divider(
-              color: textPrimary.withValues(alpha: 0.08),
+              color: dividerColor,
               height: 1,
             ),
           ),
-
           const SizedBox(height: 8),
-
-          // ── Theme toggle ───────────────────────────────────────────────
-          _AdminThemeToggleTile(
-            textColor: textPrimary,
-            hoverBg: itemHoverBg,
-          ),
-
-          const Divider(height: 1),
-
+          Divider(height: 1, color: dividerColor),
           ListTile(
             leading: Container(
               width: 36, height: 36,
@@ -907,27 +909,25 @@ class _AdminNavDrawer extends ConsumerWidget {
             ),
             title: Text(
               'Switch to Cashier',
-              style: AppTextStyles.bodySemiBold(context).copyWith(color: isDark ? AppColors.textPrimaryDark :AppColors.textPrimaryLight),
+              style: AppTextStyles.bodySemiBold(context).copyWith(color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
             ),
             subtitle: Text(
               'Go to cashier login screen',
-              style: AppTextStyles.caption(context).copyWith(color: isDark ? AppColors.textSecondaryDark :AppColors.textSecondaryLight),
+              style: AppTextStyles.caption(context).copyWith(color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
             ),
             onTap: () {
               HapticFeedback.lightImpact();
-              Navigator.pop(context); // close drawer first
+              Navigator.pop(context);
               ref.read(authProvider.notifier).logout();
               context.go(RouteConstants.cashierSelect);
             },
           ),
-
-          // ── Logout ─────────────────────────────────────────────────────
           _AdminNavItem(
             icon: Icons.power_settings_new_rounded,
             label: 'Logout',
             delay: 0,
-            iconColor: AppColors.errorLight,
-            textColor: AppColors.errorLight,
+            iconColor: isDark ? const Color(0xFFFF453A) : AppColors.errorLight,
+            textColor: isDark ? const Color(0xFFFF453A) : AppColors.errorLight,
             hoverBg: AppColors.errorLight.withValues(alpha: 0.07),
             onTap: () async {
               Navigator.pop(context);
@@ -935,7 +935,6 @@ class _AdminNavDrawer extends ConsumerWidget {
               if (context.mounted) context.go(RouteConstants.adminLogin);
             },
           ),
-
           SizedBox(
             height: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
           ),
@@ -945,7 +944,6 @@ class _AdminNavDrawer extends ConsumerWidget {
   }
 }
 
-/// A single tappable row in the admin navigation drawer.
 class _AdminNavItem extends StatelessWidget {
   const _AdminNavItem({
     required this.icon,
@@ -954,6 +952,7 @@ class _AdminNavItem extends StatelessWidget {
     required this.hoverBg,
     required this.textColor,
     this.iconColor,
+    this.isSelected = false,
     this.delay = 0,
   });
 
@@ -963,15 +962,25 @@ class _AdminNavItem extends StatelessWidget {
   final Color hoverBg;
   final Color textColor;
   final Color? iconColor;
+  final bool isSelected;
   final int delay;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final ic = iconColor ?? textColor;
+    
+    final selectedBg = isDark ? const Color(0xFF6B2C33) : AppColors.secondaryLight;
+    final selectedText = Colors.white;
+
+    final currentBg = isSelected ? selectedBg : Colors.transparent;
+    final currentText = isSelected ? selectedText : textColor;
+    final currentIcon = isSelected ? selectedText : ic;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Material(
-        color: Colors.transparent,
+        color: currentBg,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: () {
@@ -979,17 +988,17 @@ class _AdminNavItem extends StatelessWidget {
             onTap();
           },
           borderRadius: BorderRadius.circular(14),
-          splashColor: ic.withValues(alpha: 0.1),
+          splashColor: currentIcon.withValues(alpha: 0.1),
           highlightColor: hoverBg,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(icon, size: 21, color: ic),
+                Icon(icon, size: 21, color: currentIcon),
                 const SizedBox(width: 16),
                 Text(
                   label,
-                  style: AppTextStyles.body(context).copyWith(color: textColor),
+                  style: AppTextStyles.body(context).copyWith(color: currentText, fontWeight: isSelected ? FontWeight.w600 : null),
                 ),
               ],
             ),
@@ -1006,68 +1015,4 @@ class _AdminNavItem extends StatelessWidget {
   }
 }
 
-/// Theme toggle row in the admin drawer footer.
-class _AdminThemeToggleTile extends ConsumerWidget {
-  const _AdminThemeToggleTile({
-    required this.textColor,
-    required this.hoverBg,
-  });
-
-  final Color textColor;
-  final Color hoverBg;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == ThemeMode.dark;
-    final _maroon = Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            ref.read(themeProvider.notifier).toggle();
-          },
-          borderRadius: BorderRadius.circular(14),
-          splashColor: textColor.withValues(alpha: 0.08),
-          highlightColor: hoverBg,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                Icon(
-                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                  size: 21,
-                  color: isDark ? AppColors.accentDarkLight : _maroon,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    isDark ? 'Dark Mode' : 'Light Mode',
-                    style: AppTextStyles.body(context).copyWith(color: textColor),
-                  ),
-                ),
-                Switch.adaptive(
-                  value: isDark,
-                  onChanged: (_) {
-                    HapticFeedback.lightImpact();
-                    ref.read(themeProvider.notifier).toggle();
-                  },
-                  activeThumbColor: AppColors.accentDark,
-                  activeTrackColor: AppColors.accentDark.withValues(alpha: 0.5),
-                  inactiveThumbColor: _maroon,
-                  inactiveTrackColor: _maroon.withValues(alpha: 0.2),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 

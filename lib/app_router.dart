@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/constants/route_constants.dart';
 
 // ── Auth Screens ──────────────────────────────────────────────────────────────
@@ -66,6 +67,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: RouteConstants.splash,
     debugLogDiagnostics: true,
+    redirect: (context, state) {
+      final path = state.matchedLocation;
+      if (path.startsWith('/cashier')) {
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.setString('last_active_role', 'cashier');
+        });
+      } else if (path.startsWith('/admin')) {
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.setString('last_active_role', 'admin');
+        });
+      }
+      return null;
+    },
     routes: [
       // ── Auth (no shell) ─────────────────────────────────────────────────────
       GoRoute(
@@ -91,10 +105,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RouteConstants.verifyEmail,
-        pageBuilder: (c, s) => _buildFadeSlideTransitionPage(
-          state: s,
-          child: const VerifyEmailScreen(),
-        ),
+        pageBuilder: (c, s) {
+          final email = s.extra as String? ?? '';
+          return _buildFadeSlideTransitionPage(
+            state: s,
+            child: VerifyEmailScreen(email: email),
+          );
+        },
       ),
       GoRoute(
         path: RouteConstants.setupWizard,

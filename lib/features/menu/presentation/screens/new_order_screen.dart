@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/responsive_layout.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -305,11 +306,11 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.md),
                         gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: ResponsiveLayout.gridColumns(context),
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: 0.78,
+                          childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.78),
                         ),
                         itemCount: menuState.items.length,
                         itemBuilder: (context, index) {

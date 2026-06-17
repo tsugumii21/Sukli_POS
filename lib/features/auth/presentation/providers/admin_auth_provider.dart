@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/services/supabase_service.dart';
 import '../../../../core/services/sync_service.dart';
 import '../../../../core/errors/app_exception.dart' as app_ex;
@@ -49,6 +50,8 @@ class AdminAuthNotifier extends AsyncNotifier<User?> {
     try {
       SyncService.instance.stopPeriodicSync();
       await SupabaseService.instance.signOut();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('last_active_role');
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);

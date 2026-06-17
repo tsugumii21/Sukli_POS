@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/responsive_layout.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +11,6 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/order_number_helper.dart';
 import '../../../../shared/providers/sync_provider.dart';
-import '../../../../shared/providers/theme_provider.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/stats_card.dart';
@@ -140,9 +140,10 @@ class CashierDashboardScreen extends ConsumerWidget {
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(
                 AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.xxl),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            child: ResponsiveLayout.constrainedBody(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // ── Stats Row (60/40 asymmetric) ─────────────────────────────
                 Row(
                   children: [
@@ -366,7 +367,8 @@ class CashierDashboardScreen extends ConsumerWidget {
                         .fadeIn(duration: 300.ms)
                         .slideY(begin: 0.08, end: 0);
                   }),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -383,18 +385,18 @@ class _DashboardDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
-    final drawerBg = isDark ? const Color(0xFF2A1215) : Colors.white;
-    final textPrimary =
-        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final textSecondary =
-        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
-    final itemHoverBg =
-        isDark ? Theme.of(context).brightness == Brightness.dark ? AppColors.surfaceDark : AppColors.textPrimaryLight : const Color(0xFFF9F0F1);
+    final drawerBg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final textPrimary = isDark ? const Color(0xFFF5F5F5) : AppColors.textPrimaryLight;
+    final textSecondary = isDark ? const Color(0xFF8E8E93) : AppColors.textSecondaryLight;
+    final itemHoverBg = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF9F0F1);
+    final iconPrimary = isDark ? const Color(0xFFE8D5C4) : AppColors.textPrimaryLight;
+    final dividerColor = isDark ? const Color(0xFF3A3A3C) : AppColors.textPrimaryLight.withValues(alpha: 0.08);
+    final headerBg = isDark ? const Color(0xFF2C2C2E) : maroon;
+    final currentPath = GoRouterState.of(context).uri.path;
     final initial = cashierName.isNotEmpty ? cashierName[0].toUpperCase() : '?';
 
     return Drawer(
       backgroundColor: drawerBg,
-      // Slight rounded right edge for a modern feel.
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topRight: Radius.circular(28),
@@ -404,12 +406,11 @@ class _DashboardDrawer extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Profile header ─────────────────────────────────────────────
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              color: maroon,
-              borderRadius: BorderRadius.only(
+              color: headerBg,
+              borderRadius: const BorderRadius.only(
                 topRight: Radius.circular(28),
               ),
             ),
@@ -422,13 +423,12 @@ class _DashboardDrawer extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Avatar
                 Container(
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: isDark ? const Color(0xFF6B2C33) : Colors.white.withValues(alpha: 0.15),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.35),
                       width: 2,
@@ -446,28 +446,21 @@ class _DashboardDrawer extends ConsumerWidget {
                       duration: 400.ms,
                       curve: Curves.easeOutBack,
                     ),
-
                 const SizedBox(height: 16),
-
-                // Name
                 Text(
                   cashierName,
                   style: AppTextStyles.h3(context).copyWith(color: Colors.white),
                 ).animate().fadeIn(duration: 350.ms, delay: 80.ms),
-
                 const SizedBox(height: 6),
-
-                // Role chip
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(99),
                   ),
                   child: Text(
                     'Cashier',
-                    style: AppTextStyles.body(context).copyWith(color: Colors.white.withValues(alpha:0.9),
+                    style: AppTextStyles.body(context).copyWith(color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
@@ -477,77 +470,75 @@ class _DashboardDrawer extends ConsumerWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 12),
-
-          // ── Nav section label ──────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
             child: Text(
               'MENU',
               style: AppTextStyles.body(context).copyWith(
-                color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.35),
+                color: textSecondary,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.4,
               ),
             ),
           ).animate().fadeIn(duration: 300.ms, delay: 160.ms),
-
           const SizedBox(height: 4),
-
-          // ── Nav items ──────────────────────────────────────────────────
           _NavItem(
             icon: Icons.grid_view_rounded,
             label: 'Home',
             delay: 180,
-            onTap: () => Navigator.pop(context),
+            isSelected: currentPath == RouteConstants.cashierHome,
+            onTap: () {
+              Navigator.pop(context);
+              if (currentPath != RouteConstants.cashierHome) {
+                context.push(RouteConstants.cashierHome);
+              }
+            },
             hoverBg: itemHoverBg,
             textColor: textPrimary,
+            iconColor: iconPrimary,
           ),
           _NavItem(
             icon: Icons.point_of_sale_rounded,
             label: 'New Order',
             delay: 220,
+            isSelected: currentPath == RouteConstants.newOrder,
             onTap: () {
               Navigator.pop(context);
-              context.push(RouteConstants.newOrder);
+              if (currentPath != RouteConstants.newOrder) {
+                context.push(RouteConstants.newOrder);
+              }
             },
             hoverBg: itemHoverBg,
             textColor: textPrimary,
+            iconColor: iconPrimary,
           ),
           _NavItem(
             icon: Icons.receipt_long_rounded,
             label: 'Order History',
             delay: 260,
+            isSelected: currentPath == RouteConstants.orderHistory,
             onTap: () {
               Navigator.pop(context);
-              context.push(RouteConstants.orderHistory);
+              if (currentPath != RouteConstants.orderHistory) {
+                context.push(RouteConstants.orderHistory);
+              }
             },
             hoverBg: itemHoverBg,
             textColor: textPrimary,
+            iconColor: iconPrimary,
           ),
           const Spacer(),
-
-          // ── Footer divider ─────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Divider(
-              color: textPrimary.withValues(alpha: 0.08),
+              color: dividerColor,
               height: 1,
             ),
           ),
-
           const SizedBox(height: 8),
-
-          // ── Theme toggle ───────────────────────────────────────────────
-          _ThemeToggleTile(
-            textColor: textPrimary,
-            hoverBg: itemHoverBg,
-          ),
-
-          const Divider(height: 1),
-
+          Divider(height: 1, color: dividerColor),
           ListTile(
             leading: Container(
               width: 36, height: 36,
@@ -563,7 +554,7 @@ class _DashboardDrawer extends ConsumerWidget {
             ),
             title: Text(
               'Switch to Admin',
-              style: AppTextStyles.bodySemiBold(context).copyWith(color: isDark ? AppColors.accentDark :AppColors.accentLight),
+              style: AppTextStyles.bodySemiBold(context).copyWith(color: isDark ? AppColors.accentDark : AppColors.accentLight),
             ),
             subtitle: Text(
               'Requires admin login',
@@ -571,13 +562,10 @@ class _DashboardDrawer extends ConsumerWidget {
             ),
             onTap: () {
               HapticFeedback.lightImpact();
-              Navigator.pop(context); // close drawer first
+              Navigator.pop(context);
               context.push(RouteConstants.switchToAdmin);
             },
           ),
-
-
-
           SizedBox(
             height: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
           ),
@@ -587,7 +575,6 @@ class _DashboardDrawer extends ConsumerWidget {
   }
 }
 
-/// A single tappable row used in [_DashboardDrawer].
 class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.icon,
@@ -595,6 +582,8 @@ class _NavItem extends StatelessWidget {
     required this.onTap,
     required this.hoverBg,
     required this.textColor,
+    required this.iconColor,
+    this.isSelected = false,
     this.delay = 0,
   });
 
@@ -603,16 +592,25 @@ class _NavItem extends StatelessWidget {
   final VoidCallback onTap;
   final Color hoverBg;
   final Color textColor;
+  final Color iconColor;
+  final bool isSelected;
   final int delay;
 
   @override
   Widget build(BuildContext context) {
-    final ic = textColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    final selectedBg = isDark ? const Color(0xFF6B2C33) : AppColors.secondaryLight;
+    final selectedText = Colors.white;
+
+    final currentBg = isSelected ? selectedBg : Colors.transparent;
+    final currentText = isSelected ? selectedText : textColor;
+    final currentIcon = isSelected ? selectedText : iconColor;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Material(
-        color: Colors.transparent,
+        color: currentBg,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: () {
@@ -620,17 +618,17 @@ class _NavItem extends StatelessWidget {
             onTap();
           },
           borderRadius: BorderRadius.circular(14),
-          splashColor: ic.withValues(alpha: 0.1),
+          splashColor: currentIcon.withValues(alpha: 0.1),
           highlightColor: hoverBg,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(icon, size: 21, color: ic),
+                Icon(icon, size: 21, color: currentIcon),
                 const SizedBox(width: 16),
                 Text(
                   label,
-                  style: AppTextStyles.body(context).copyWith(color: textColor),
+                  style: AppTextStyles.body(context).copyWith(color: currentText, fontWeight: isSelected ? FontWeight.w600 : null),
                 ),
               ],
             ),
@@ -653,69 +651,4 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-/// Theme toggle row — sits above Logout in the drawer footer.
-/// Tapping anywhere on the row (or the switch) toggles light/dark mode.
-class _ThemeToggleTile extends ConsumerWidget {
-  const _ThemeToggleTile({
-    required this.textColor,
-    required this.hoverBg,
-  });
-
-  final Color textColor;
-  final Color hoverBg;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == ThemeMode.dark;
-    final maroon = Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            ref.read(themeProvider.notifier).toggle();
-          },
-          borderRadius: BorderRadius.circular(14),
-          splashColor: textColor.withValues(alpha: 0.08),
-          highlightColor: hoverBg,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                Icon(
-                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                  size: 21,
-                  color: isDark ? AppColors.accentDarkLight : maroon,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    isDark ? 'Dark Mode' : 'Light Mode',
-                    style: AppTextStyles.body(context).copyWith(color: textColor),
-                  ),
-                ),
-                Switch.adaptive(
-                  value: isDark,
-                  onChanged: (_) {
-                    HapticFeedback.lightImpact();
-                    ref.read(themeProvider.notifier).toggle();
-                  },
-                  activeThumbColor: AppColors.accentDark,
-                  activeTrackColor: AppColors.accentDark.withValues(alpha: 0.5),
-                  inactiveThumbColor: maroon,
-                  inactiveTrackColor: maroon.withValues(alpha: 0.2),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 

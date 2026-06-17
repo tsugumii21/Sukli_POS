@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/utils/responsive_layout.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -432,8 +433,8 @@ class _KpiGrid extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: GridView.count(
-        crossAxisCount: 2,
-        childAspectRatio: 1.45,
+        crossAxisCount: ResponsiveLayout.gridColumns(context),
+        childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 1.45),
         crossAxisSpacing: AppSpacing.sm,
         mainAxisSpacing: AppSpacing.sm,
         shrinkWrap: true,
