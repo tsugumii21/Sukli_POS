@@ -310,7 +310,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                           crossAxisCount: ResponsiveLayout.gridColumns(context),
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.78),
+                          childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.70),
                         ),
                         itemCount: menuState.items.length,
                         itemBuilder: (context, index) {

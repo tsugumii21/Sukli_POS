@@ -93,7 +93,7 @@ class ShimmerMenuGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: ResponsiveLayout.gridColumns(context),
-          childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.78),
+          childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.70),
           crossAxisSpacing: AppSpacing.sm,
           mainAxisSpacing: AppSpacing.sm,
         ),

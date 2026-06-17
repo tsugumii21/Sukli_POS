@@ -301,7 +301,7 @@ class ItemManageGridTile extends ConsumerWidget {
             children: [
               // Image area — fixed height
               Container(
-                height: 110,
+                height: 95,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: cardBg,
@@ -390,17 +390,21 @@ class ItemManageGridTile extends ConsumerWidget {
                     ),
 
                     // Available toggle
-                    Transform.scale(
-                      scale: 0.70,
-                      alignment: Alignment.center,
-                      child: Switch.adaptive(
-                        value: item.isAvailable,
-                        onChanged: (_) {
-                          HapticFeedback.lightImpact();
-                          ref.read(itemProvider.notifier).toggleAvailability(item);
-                        },
-                        activeThumbColor: Colors.white,
-                        activeTrackColor: isDark ? AppColors.accentDark : AppColors.accentLight,
+                    SizedBox(
+                      width: 38,
+                      height: 24,
+                      child: Transform.scale(
+                        scale: 0.70,
+                        alignment: Alignment.center,
+                        child: Switch.adaptive(
+                          value: item.isAvailable,
+                          onChanged: (_) {
+                            HapticFeedback.lightImpact();
+                            ref.read(itemProvider.notifier).toggleAvailability(item);
+                          },
+                          activeThumbColor: Colors.white,
+                          activeTrackColor: isDark ? AppColors.accentDark : AppColors.accentLight,
+                        ),
                       ),
                     ),
 

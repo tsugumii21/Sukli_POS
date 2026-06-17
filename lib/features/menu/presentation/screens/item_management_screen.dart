@@ -239,7 +239,7 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
                           padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 80),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: ResponsiveLayout.gridColumns(context),
-                            childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.72),
+                            childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.65),
                             crossAxisSpacing: AppSpacing.sm,
                             mainAxisSpacing: AppSpacing.sm,
                           ),

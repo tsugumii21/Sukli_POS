@@ -94,8 +94,6 @@ class ItemCard extends StatelessWidget {
                           : CurrencyFormatter.format(item.basePrice),
                       style: AppTextStyles.body(context).copyWith(color: priceColor),
                     ),
-
-                    const Spacer(),
                   ],
                 ),
               ),
