@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -360,45 +361,25 @@ class _ItemCustomizationModalState
                     ),
 
                     // ── Image Header ────────────────────────────────────
-                    if (widget.item.imageUrl != null &&
-                        widget.item.imageUrl!.isNotEmpty)
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(28)),
-                            child: Image.network(
-                              widget.item.imageUrl!,
-                              width: double.infinity,
-                              height: 160,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  _buildImagePlaceholder(isDark),
-                            ),
-                          ),
-                          // Gradient overlay at bottom of image
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              height: 60,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    sheetBg,
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    else
-                      _buildImagePlaceholder(isDark),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 160,
+                          child: widget.item.imageUrl != null &&
+                                  widget.item.imageUrl!.isNotEmpty
+                              ? Image.network(
+                                  widget.item.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      _buildImagePlaceholderContent(isDark),
+                                )
+                              : _buildImagePlaceholderContent(isDark),
+                        ),
+                      ),
+                    ),
 
                     Padding(
                       padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
@@ -458,15 +439,12 @@ class _ItemCustomizationModalState
                                             duration: const Duration(
                                                 milliseconds: 200),
                                             margin: EdgeInsets.only(
-                                                right: oi <
-                                                        group.options.length - 1
-                                                    ? 10
-                                                    : 0),
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 14),
+                                              right: oi < group.options.length - 1 ? 10 : 0,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(vertical: 14),
                                             decoration: BoxDecoration(
                                               color: isSelected
-                                                  ? Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight
+                                                  ? AppColors.accent(context)
                                                   : chipBg,
                                               borderRadius:
                                                   BorderRadius.circular(14),
@@ -479,8 +457,7 @@ class _ItemCustomizationModalState
                                               boxShadow: isSelected
                                                   ? [
                                                       BoxShadow(
-                                                        color: const Color(
-                                                                0xFF8B4049)
+                                                        color: AppColors.accent(context)
                                                             .withValues(
                                                                 alpha: 0.25),
                                                         blurRadius: 8,
@@ -496,7 +473,7 @@ class _ItemCustomizationModalState
                                                   opt.name,
                                                   style: AppTextStyles.body(context).copyWith(color: isSelected
                                                         ? AppColors.white
-                                                        :textPrimary),
+                                                        : textPrimary),
                                                 ),
                                                 const SizedBox(height: 2),
                                                 Text(
@@ -504,10 +481,11 @@ class _ItemCustomizationModalState
                                                       ? CurrencyFormatter
                                                           .format(price)
                                                       : '+${CurrencyFormatter.format(opt.priceDelta)}',
-                                                  style: AppTextStyles.body(context).copyWith(color: isSelected
+                                                  style: AppTextStyles.body(context).copyWith(
+                                                    color: isSelected
                                                         ? AppColors.white
                                                             .withValues(
-                                                                alpha:0.7)
+                                                                alpha: 0.7)
                                                         : textPrimary
                                                             .withValues(
                                                                 alpha: 0.5),
@@ -560,7 +538,7 @@ class _ItemCustomizationModalState
                                           vertical: 14),
                                       decoration: BoxDecoration(
                                         color: isSelected
-                                            ? Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight
+                                            ? AppColors.accent(context)
                                             : chipBg,
                                         borderRadius: BorderRadius.circular(14),
                                         border: isSelected
@@ -571,7 +549,7 @@ class _ItemCustomizationModalState
                                         boxShadow: isSelected
                                             ? [
                                                 BoxShadow(
-                                                  color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight
+                                                  color: AppColors.accent(context)
                                                       .withValues(alpha: 0.25),
                                                   blurRadius: 8,
                                                   offset: const Offset(0, 3),
@@ -630,44 +608,38 @@ class _ItemCustomizationModalState
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: chipBg,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: _quantity > 1
-                                      ? () => setState(() => _quantity--)
-                                      : null,
-                                  icon: Icon(
-                                    Icons.remove_rounded,
-                                    color: _quantity > 1
-                                        ? Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight
-                                        : textPrimary.withValues(alpha: 0.2),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _ModalQtyButton(
+                                icon: Icons.remove_rounded,
+                                enabled: _quantity > 1,
+                                onTap: _quantity > 1
+                                    ? () {
+                                        HapticFeedback.lightImpact();
+                                        setState(() => _quantity--);
+                                      }
+                                    : null,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                child: Text(
+                                  '$_quantity',
+                                  style: AppTextStyles.h2(context).copyWith(
+                                    color: textPrimary,
+                                    fontSize: 20,
                                   ),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20),
-                                  child: Text(
-                                    '$_quantity',
-                                    style: AppTextStyles.h2(context).copyWith(color: textPrimary),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () => setState(() => _quantity++),
-                                  icon: Icon(
-                                    Icons.add_rounded,
-                                    color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                              _ModalQtyButton(
+                                icon: Icons.add_rounded,
+                                enabled: true,
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  setState(() => _quantity++);
+                                },
+                              ),
+                            ],
                           ),
 
                           const SizedBox(height: 28),
@@ -695,7 +667,24 @@ class _ItemCustomizationModalState
                               fillColor: chipBg,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
+                                borderSide: BorderSide(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  width: 1,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  width: 1,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: AppColors.accent(context).withValues(alpha: 0.3),
+                                  width: 1.5,
+                                ),
                               ),
                               contentPadding: const EdgeInsets.all(16),
                             ),
@@ -740,7 +729,8 @@ class _ItemCustomizationModalState
                           ),
                           Text(
                             CurrencyFormatter.format(_runningTotal),
-                            style: AppTextStyles.body(context).copyWith(color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
+                            style: AppTextStyles.body(context).copyWith(
+                              color: AppColors.accent(context),
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
                             ),
@@ -755,7 +745,7 @@ class _ItemCustomizationModalState
                           child: ElevatedButton(
                             onPressed: _addOrUpdateCart,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
+                              backgroundColor: AppColors.accent(context),
                               foregroundColor: AppColors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(18),
@@ -800,6 +790,7 @@ class _ItemCustomizationModalState
     Color chipBg,
     bool isDark,
   ) {
+    final accentColor = AppColors.accent(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -819,13 +810,15 @@ class _ItemCustomizationModalState
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
               color: isChecked
-                  ? Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight.withValues(alpha: 0.08)
+                  ? accentColor.withValues(alpha: 0.06)
                   : chipBg,
               borderRadius: BorderRadius.circular(14),
-              border: isChecked
-                  ? Border.all(
-                      color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight.withValues(alpha: 0.2))
-                  : Border.all(color: Colors.black.withValues(alpha: 0.04)),
+              border: Border.all(
+                color: isChecked
+                    ? accentColor.withValues(alpha: 0.3)
+                    : Colors.black.withValues(alpha: 0.04),
+                width: 1.2,
+              ),
             ),
             child: CheckboxListTile(
               value: isChecked,
@@ -840,16 +833,25 @@ class _ItemCustomizationModalState
               },
               title: Text(
                 mod.name,
-                style: AppTextStyles.body(context).copyWith(color: textPrimary),
+                style: AppTextStyles.body(context).copyWith(
+                  color: textPrimary,
+                  fontWeight: isChecked ? FontWeight.w600 : FontWeight.normal,
+                ),
               ),
               secondary: Text(
                 '+${CurrencyFormatter.format(mod.priceDelta)}',
-                style: AppTextStyles.body(context).copyWith(color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
+                style: AppTextStyles.body(context).copyWith(
+                  color: accentColor,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              activeColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
+              activeColor: accentColor,
+              checkColor: Colors.white,
+              side: BorderSide(
+                color: textPrimary.withValues(alpha: 0.3),
+                width: 1.5,
+              ),
               checkboxShape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
               ),
@@ -866,17 +868,13 @@ class _ItemCustomizationModalState
     );
   }
 
-  /// Placeholder when no item image is available.
-  Widget _buildImagePlaceholder(bool isDark) {
+  /// Inner placeholder content when no item image is available.
+  Widget _buildImagePlaceholderContent(bool isDark) {
     return Container(
-      width: double.infinity,
-      height: 120,
-      margin: const EdgeInsets.fromLTRB(24, 8, 24, 0),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.05)
             : AppColors.backgroundLight,
-        borderRadius: BorderRadius.circular(20),
       ),
       child: Center(
         child: Icon(
@@ -886,6 +884,48 @@ class _ItemCustomizationModalState
               ? Colors.white.withValues(alpha: 0.12)
               : Colors.black.withValues(alpha: 0.08),
         ),
+      ),
+    );
+  }
+}
+
+/// Premium elevated button used in quantity controls.
+class _ModalQtyButton extends StatelessWidget {
+  const _ModalQtyButton({required this.icon, required this.onTap, required this.enabled});
+  final IconData icon;
+  final VoidCallback? onTap;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final color = enabled
+        ? AppColors.accent(context)
+        : textPrimary.withValues(alpha: 0.2);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceDark : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.06),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(icon, size: 20, color: color),
       ),
     );
   }

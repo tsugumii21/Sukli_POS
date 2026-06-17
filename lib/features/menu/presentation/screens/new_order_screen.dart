@@ -14,7 +14,6 @@ import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/shimmer_list.dart';
 import '../../../orders/presentation/providers/order_provider.dart';
 import '../providers/menu_provider.dart';
-import '../widgets/category_pill.dart';
 import '../widgets/item_card.dart';
 import '../widgets/item_customization_modal.dart';
 import 'package:sukli_pos/core/theme/app_text_styles.dart';
@@ -249,6 +248,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
       body: Column(
         children: [
           // ── Search Bar ──────────────────────────────────────────────────
+          // ── Search Bar ──────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.only(
               left: AppSpacing.md,
@@ -262,10 +262,17 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                 borderRadius: BorderRadius.circular(99),
                 border: Border.all(
                   color: isDark
-                      ? AppColors.accentDark.withValues(alpha: 0.5)
-                      : AppColors.secondaryLight.withValues(alpha: 0.35),
-                  width: 1.5,
+                      ? AppColors.accentDark.withValues(alpha: 0.3)
+                      : AppColors.secondaryLight.withValues(alpha: 0.2),
+                  width: 1.2,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: TextField(
                 controller: _searchController,
@@ -304,73 +311,27 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
           ).animate().fadeIn(duration: 400.ms),
 
           // ── Category Pills ──────────────────────────────────────────────
-          SizedBox(
-            height: 56,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
-              children: [
-                CategoryPill(
-                  label: 'All',
-                  isSelected: menuState.selectedCategoryId == null,
-                  onTap: () =>
-                      ref.read(menuProvider.notifier).selectCategory(null),
-                ),
-                const SizedBox(width: 10),
-                ...topLevelCategories.map((cat) {
-                  final isSelected = activeParentId == cat.syncId;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: CategoryPill(
-                      label: cat.name,
-                      isSelected: isSelected,
-                      onTap: () => ref
-                          .read(menuProvider.notifier)
-                          .selectCategory(cat.syncId),
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
+          if (topLevelCategories.isNotEmpty)
+            _CategoryTabsRow(
+              categories: topLevelCategories,
+              selectedId: activeParentId,
+              allCount: menuState.allItems.length,
+              countForCategory: menuState.countForCategory,
+              onSelect: ref.read(menuProvider.notifier).selectCategory,
+              isDark: isDark,
+            ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
 
           if (subCategories.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xs),
-            SizedBox(
-              height: 56,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
-                children: [
-                  CategoryPill(
-                    label: 'All',
-                    isSelected: menuState.selectedCategoryId == activeParentId,
-                    onTap: () => ref
-                        .read(menuProvider.notifier)
-                        .selectCategory(activeParentId),
-                    isSecondary: true,
-                  ),
-                  const SizedBox(width: 10),
-                  ...subCategories.map((subCat) {
-                    final isSelected =
-                        menuState.selectedCategoryId == subCat.syncId;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: CategoryPill(
-                        label: subCat.name,
-                        isSelected: isSelected,
-                        onTap: () => ref
-                            .read(menuProvider.notifier)
-                            .selectCategory(subCat.syncId),
-                        isSecondary: true,
-                      ),
-                    );
-                  }),
-                ],
-              ),
+            _SubCategoryTabsRow(
+              categories: subCategories,
+              selectedId: menuState.selectedCategoryId,
+              parentId: activeParentId!,
+              countForCategory: menuState.countForCategory,
+              onSelect: ref.read(menuProvider.notifier).selectCategory,
+              isDark: isDark,
             ).animate().fadeIn(duration: 300.ms),
           ],
-
 
           const SizedBox(height: AppSpacing.md),
 
@@ -392,7 +353,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                           crossAxisCount: ResponsiveLayout.gridColumns(context),
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.60),
+                          childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.80),
                         ),
                         itemCount: menuState.items.length,
                         itemBuilder: (context, index) {
@@ -649,6 +610,214 @@ class _QtyButton extends StatelessWidget {
           border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
         ),
         child: Icon(icon, size: 18, color: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight),
+      ),
+    );
+  }
+}
+
+// ── Category Tabs Row ─────────────────────────────────────────────────────────
+
+class _CategoryTabsRow extends StatelessWidget {
+  const _CategoryTabsRow({
+    required this.categories,
+    required this.selectedId,
+    required this.allCount,
+    required this.countForCategory,
+    required this.onSelect,
+    required this.isDark,
+  });
+
+  final List<CategoryCollection> categories;
+  final String? selectedId;
+  final int allCount;
+  final int Function(String) countForCategory;
+  final ValueChanged<String?> onSelect;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final unselectedBg = isDark ? AppColors.cardDark : AppColors.cardLight;
+    final maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
+
+    return SizedBox(
+      height: 56,
+      child: ListView(
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
+        scrollDirection: Axis.horizontal,
+        children: [
+          _Tab(
+            label: 'All',
+            count: allCount,
+            isSelected: selectedId == null,
+            onTap: () => onSelect(null),
+            maroon: maroon,
+            unselectedBg: unselectedBg,
+            textPrimary: textPrimary,
+          ),
+          ...categories.map((cat) {
+            final count = countForCategory(cat.syncId);
+            return _Tab(
+              label: cat.name,
+              count: count,
+              isSelected: selectedId == cat.syncId,
+              onTap: () => onSelect(cat.syncId),
+              maroon: maroon,
+              unselectedBg: unselectedBg,
+              textPrimary: textPrimary,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _SubCategoryTabsRow extends StatelessWidget {
+  const _SubCategoryTabsRow({
+    required this.categories,
+    required this.selectedId,
+    required this.parentId,
+    required this.countForCategory,
+    required this.onSelect,
+    required this.isDark,
+  });
+
+  final List<CategoryCollection> categories;
+  final String? selectedId;
+  final String parentId;
+  final int Function(String) countForCategory;
+  final ValueChanged<String?> onSelect;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final unselectedBg = isDark ? AppColors.cardDark : AppColors.cardLight;
+    final maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
+
+    return SizedBox(
+      height: 56,
+      child: ListView(
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
+        scrollDirection: Axis.horizontal,
+        children: [
+          _Tab(
+            label: 'All',
+            count: countForCategory(parentId),
+            isSelected: selectedId == parentId,
+            onTap: () => onSelect(parentId),
+            maroon: maroon,
+            unselectedBg: unselectedBg,
+            textPrimary: textPrimary,
+            isSecondary: true,
+          ),
+          ...categories.map((cat) {
+            final count = countForCategory(cat.syncId);
+            return _Tab(
+              label: cat.name,
+              count: count,
+              isSelected: selectedId == cat.syncId,
+              onTap: () => onSelect(cat.syncId),
+              maroon: maroon,
+              unselectedBg: unselectedBg,
+              textPrimary: textPrimary,
+              isSecondary: true,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _Tab extends StatelessWidget {
+  const _Tab({
+    required this.label,
+    required this.count,
+    required this.isSelected,
+    required this.onTap,
+    required this.maroon,
+    required this.unselectedBg,
+    required this.textPrimary,
+    this.isSecondary = false,
+  });
+
+  final String label;
+  final int count;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color maroon;
+  final Color unselectedBg;
+  final Color textPrimary;
+  final bool isSecondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isSelected
+        ? maroon
+        : (isSecondary ? Colors.transparent : unselectedBg);
+    final border = isSelected
+        ? Border.all(color: Colors.transparent)
+        : (isSecondary
+            ? Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : textPrimary.withValues(alpha: 0.2))
+            : Border.all(color: Colors.transparent));
+
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(right: 8),
+        padding: EdgeInsets.symmetric(horizontal: isSecondary ? 10 : 14, vertical: 0),
+        decoration: BoxDecoration(
+          color: bg,
+          border: border,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: AppTextStyles.captionMedium(context).copyWith(
+                fontSize: isSecondary ? 12 : 13,
+                color: isSelected
+                    ? Colors.white
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textSecondaryDark
+                        : textPrimary.withValues(alpha: 0.7)),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : maroon.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: Text(
+                '$count',
+                style: AppTextStyles.captionMedium(context).copyWith(
+                  color: isSelected ? Colors.white : maroon,
+                  fontSize: isSecondary ? 10 : 11,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
