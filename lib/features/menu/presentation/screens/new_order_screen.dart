@@ -45,10 +45,11 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
   @override
   void dispose() {
     _searchController.dispose();
-    // Reset category and search filters when leaving NewOrderScreen
+    // Capture notifier before widget is unmounted, then reset filters.
+    final notifier = ref.read(menuProvider.notifier);
     Future.microtask(() {
-      ref.read(menuProvider.notifier).selectCategory(null);
-      ref.read(menuProvider.notifier).updateSearch('');
+      notifier.selectCategory(null);
+      notifier.updateSearch('');
     });
     super.dispose();
   }
