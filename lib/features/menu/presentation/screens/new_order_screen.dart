@@ -573,7 +573,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                       ),
                       child: Text(
                         'Checkout  •  ${CurrencyFormatter.format(order.total)}',
-                        style: AppTextStyles.bodyLarge(context),
+                        style: AppTextStyles.bodyLarge(context, color: AppColors.white),
                       ),
                     ),
                   ),
