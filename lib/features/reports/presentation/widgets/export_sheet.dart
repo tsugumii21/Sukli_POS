@@ -28,15 +28,8 @@ class ExportSheet extends ConsumerWidget {
   static Future<void> show(BuildContext context, ReportState state) {
     return showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.38,
-        minChildSize: 0.32,
-        maxChildSize: 0.45,
-        snap: true,
-        builder: (ctx, scrollCtrl) => ExportSheet(state: state),
-      ),
+      builder: (_) => ExportSheet(state: state),
     );
   }
 
@@ -52,7 +45,12 @@ class ExportSheet extends ConsumerWidget {
         color: sheetBg,
         borderRadius: const BorderRadius.vertical(top: AppRadius.large),
       ),
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg + MediaQuery.paddingOf(context).bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,68 +71,71 @@ class ExportSheet extends ConsumerWidget {
           Text(state.periodLabel,
               style: AppTextStyles.captionSecondary(context)),
           const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: [
-              // PDF
-              Expanded(
-                child: AppCard(
-                  onTap: () => _exportPdf(context, ref),
-                  padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.lg, horizontal: AppSpacing.md),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: AppColors.errorLight.withValues(alpha: 0.10),
-                          shape: BoxShape.circle,
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // PDF
+                Expanded(
+                  child: AppCard(
+                    onTap: () => _exportPdf(context, ref),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.lg, horizontal: AppSpacing.md),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: AppColors.errorLight.withValues(alpha: 0.10),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.picture_as_pdf_rounded,
+                              size: 32, color: AppColors.errorLight),
                         ),
-                        child: const Icon(Icons.picture_as_pdf_rounded,
-                            size: 32, color: AppColors.errorLight),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text('PDF Report',
-                          style: AppTextStyles.bodySemiBold(context)),
-                      const SizedBox(height: 4),
-                      Text('Full report\nwith charts',
-                          style: AppTextStyles.captionSecondary(context),
-                          textAlign: TextAlign.center),
-                    ],
+                        const SizedBox(height: AppSpacing.sm),
+                        Text('PDF Report',
+                            style: AppTextStyles.bodySemiBold(context)),
+                        const SizedBox(height: 4),
+                        Text('Full report\nwith charts',
+                            style: AppTextStyles.captionSecondary(context),
+                            textAlign: TextAlign.center),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              // Excel
-              Expanded(
-                child: AppCard(
-                  onTap: () => _exportExcel(context, ref),
-                  padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.lg, horizontal: AppSpacing.md),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: AppColors.successLight.withValues(alpha: 0.10),
-                          shape: BoxShape.circle,
+                const SizedBox(width: AppSpacing.sm),
+                // Excel
+                Expanded(
+                  child: AppCard(
+                    onTap: () => _exportExcel(context, ref),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.lg, horizontal: AppSpacing.md),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: AppColors.successLight.withValues(alpha: 0.10),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.table_chart_rounded,
+                              size: 32, color: AppColors.successLight),
                         ),
-                        child: const Icon(Icons.table_chart_rounded,
-                            size: 32, color: AppColors.successLight),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text('Excel File',
-                          style: AppTextStyles.bodySemiBold(context)),
-                      const SizedBox(height: 4),
-                      Text('3 sheets:\nSummary, Orders,\nCashier',
-                          style: AppTextStyles.captionSecondary(context),
-                          textAlign: TextAlign.center),
-                    ],
+                        const SizedBox(height: AppSpacing.sm),
+                        Text('Excel File',
+                            style: AppTextStyles.bodySemiBold(context)),
+                        const SizedBox(height: 4),
+                        Text('3 sheets:\nSummary, Orders,\nCashier',
+                            style: AppTextStyles.captionSecondary(context),
+                            textAlign: TextAlign.center),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
