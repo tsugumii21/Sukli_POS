@@ -186,8 +186,13 @@ class SyncService {
           final payload =
               jsonDecode(item.payloadJson) as Map<String, dynamic>;
 
-          if (item.operation == 'insert' || item.operation == 'update') {
+          if (item.operation == 'insert') {
             await _supabase.upsertRecord(item.tableName, payload);
+          } else if (item.operation == 'update') {
+            // Use a targeted UPDATE (not upsert) so partial payloads
+            // (e.g. void/refund status changes) don't violate NOT NULL columns.
+            final syncId = payload['sync_id'] as String? ?? item.recordSyncId;
+            await _supabase.updateRecord(item.tableName, syncId, payload);
           } else if (item.operation == 'delete') {
             await _supabase.deleteRecord(item.tableName, item.recordSyncId);
           }

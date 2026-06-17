@@ -65,6 +65,24 @@ class SupabaseService {
     }
   }
 
+  /// Updates an existing record matched by `sync_id`.
+  /// Use this for partial updates (e.g. void/refund status changes)
+  /// where the payload does not include all NOT NULL columns.
+  Future<void> updateRecord(
+    String table,
+    String syncId,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      await client
+          .from(table)
+          .update(data)
+          .eq(SupabaseConstants.syncId, syncId);
+    } catch (e) {
+      throw DatabaseException('Failed to update in Supabase: $e');
+    }
+  }
+
   Future<void> deleteRecord(String table, String syncId) async {
     try {
       await client.from(table).delete().eq(SupabaseConstants.syncId, syncId);
