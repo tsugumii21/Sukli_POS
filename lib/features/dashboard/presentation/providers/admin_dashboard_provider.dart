@@ -24,6 +24,9 @@ class AdminDashboardData {
 class AdminDashboardNotifier extends Notifier<AsyncValue<AdminDashboardData>> {
   @override
   AsyncValue<AdminDashboardData> build() {
+    final storeId = ref.watch(currentStoreIdProvider);
+    if (storeId.isEmpty) return const AsyncValue.loading();
+
     _init();
     return const AsyncValue.loading();
   }
@@ -32,8 +35,12 @@ class AdminDashboardNotifier extends Notifier<AsyncValue<AdminDashboardData>> {
 
   void _init() {
     Future.microtask(() => refreshData());
-    _isar.isar.orderCollections.watchLazy().listen((_) => refreshData());
-    _isar.isar.syncQueueCollections.watchLazy().listen((_) => refreshData());
+    final sub1 = _isar.isar.orderCollections.watchLazy().listen((_) => refreshData());
+    final sub2 = _isar.isar.syncQueueCollections.watchLazy().listen((_) => refreshData());
+    ref.onDispose(() {
+      sub1.cancel();
+      sub2.cancel();
+    });
   }
 
   Future<void> refreshData() async {
@@ -43,6 +50,7 @@ class AdminDashboardNotifier extends Notifier<AsyncValue<AdminDashboardData>> {
       final endOfDay = startOfDay.add(const Duration(days: 1));
 
       final storeId = ref.read(currentStoreIdProvider);
+      if (storeId.isEmpty) return;
 
       // 1. Today's completed orders
       final todayOrders = await _isar.isar.orderCollections

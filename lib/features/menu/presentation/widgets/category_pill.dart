@@ -11,22 +11,33 @@ class CategoryPill extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.isSecondary = false,
   });
 
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool isSecondary;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final selectedBg = AppColors.secondary(context);
-    final unselectedBg =
-        isDark ? AppColors.surfaceDarkElevated : AppColors.cardLight;
+    final unselectedBg = isSecondary
+        ? Colors.transparent
+        : (isDark ? AppColors.surfaceDarkElevated : AppColors.cardLight);
     final selectedText = AppColors.white;
     final unselectedText =
         isDark ? AppColors.textSecondaryDark : AppColors.textPrimaryLight;
+
+    final padding = isSecondary
+        ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8)
+        : const EdgeInsets.symmetric(horizontal: 20, vertical: 12);
+
+    final textStyle = isSecondary
+        ? AppTextStyles.body(context).copyWith(fontSize: 13)
+        : AppTextStyles.body(context);
 
     return InkWell(
       onTap: () {
@@ -39,14 +50,19 @@ class CategoryPill extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: padding,
         decoration: BoxDecoration(
           color: isSelected ? selectedBg : unselectedBg,
           borderRadius: BorderRadius.circular(99),
-          border: isSelected
-              ? null
-              : Border.all(color: Colors.black.withValues(alpha: 0.06)),
-          boxShadow: isSelected
+          border: Border.all(
+            color: isSelected
+                ? Colors.transparent
+                : (isSecondary
+                    ? (isDark ? AppColors.borderDark : AppColors.textSecondaryLight.withValues(alpha: 0.2))
+                    : Colors.black.withValues(alpha: 0.06)),
+            width: 1,
+          ),
+          boxShadow: isSelected && !isSecondary
               ? [
                   BoxShadow(
                     color: selectedBg.withValues(alpha: 0.3),
@@ -58,9 +74,10 @@ class CategoryPill extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: AppTextStyles.body(context).copyWith(color: isSelected ? selectedText :unselectedText),
+          style: textStyle.copyWith(color: isSelected ? selectedText : unselectedText),
         ),
       ),
     );
   }
 }
+

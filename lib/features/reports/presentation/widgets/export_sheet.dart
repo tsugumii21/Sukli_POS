@@ -174,6 +174,16 @@ class ExportSheet extends ConsumerWidget {
                   CurrencyFormatter.format(state.averageOrderValue)),
             ],
           ),
+          pw.SizedBox(height: 8),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+            children: [
+              _pdfKpi(
+                  'Highest Sale', CurrencyFormatter.format(state.highestSale)),
+              _pdfKpi('Total Voids', CurrencyFormatter.format(state.totalVoids)),
+              _pdfKpi('Total Refunds', CurrencyFormatter.format(state.totalRefunds)),
+            ],
+          ),
           pw.SizedBox(height: 16),
           // Orders table
           pw.Text('Order Details',
@@ -316,6 +326,18 @@ class ExportSheet extends ConsumerWidget {
     summary.appendRow([
       xl.TextCellValue('Average Order'),
       xl.TextCellValue(CurrencyFormatter.format(state.averageOrderValue)),
+    ]);
+    summary.appendRow([
+      xl.TextCellValue('Highest Sale'),
+      xl.TextCellValue(CurrencyFormatter.format(state.highestSale)),
+    ]);
+    summary.appendRow([
+      xl.TextCellValue('Total Voids'),
+      xl.TextCellValue(CurrencyFormatter.format(state.totalVoids)),
+    ]);
+    summary.appendRow([
+      xl.TextCellValue('Total Refunds'),
+      xl.TextCellValue(CurrencyFormatter.format(state.totalRefunds)),
     ]);
     summary.appendRow([
       xl.TextCellValue('Top Cashier'),

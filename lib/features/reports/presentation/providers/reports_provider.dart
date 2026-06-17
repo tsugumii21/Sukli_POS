@@ -66,6 +66,8 @@ class ReportState {
   final int totalOrders;
   final double averageOrderValue;
   final double highestSale;
+  final double totalVoids;
+  final double totalRefunds;
   final String topCashierName;
   final List<PaymentBreakdownItem> paymentBreakdown;
   final List<TopItem> topItems;
@@ -80,6 +82,8 @@ class ReportState {
     this.totalOrders = 0,
     this.averageOrderValue = 0.0,
     this.highestSale = 0.0,
+    this.totalVoids = 0.0,
+    this.totalRefunds = 0.0,
     this.topCashierName = '—',
     this.paymentBreakdown = const [],
     this.topItems = const [],
@@ -95,6 +99,8 @@ class ReportState {
     int? totalOrders,
     double? averageOrderValue,
     double? highestSale,
+    double? totalVoids,
+    double? totalRefunds,
     String? topCashierName,
     List<PaymentBreakdownItem>? paymentBreakdown,
     List<TopItem>? topItems,
@@ -109,6 +115,8 @@ class ReportState {
       totalOrders: totalOrders ?? this.totalOrders,
       averageOrderValue: averageOrderValue ?? this.averageOrderValue,
       highestSale: highestSale ?? this.highestSale,
+      totalVoids: totalVoids ?? this.totalVoids,
+      totalRefunds: totalRefunds ?? this.totalRefunds,
       topCashierName: topCashierName ?? this.topCashierName,
       paymentBreakdown: paymentBreakdown ?? this.paymentBreakdown,
       topItems: topItems ?? this.topItems,
@@ -191,7 +199,7 @@ class ReportsNotifier extends Notifier<ReportState> {
 
     state = state.copyWith(isLoading: true);
 
-    final totalOrders = await isar.orderCollections
+    final allOrdersCount = await isar.orderCollections
         .filter()
         .storeIdEqualTo(storeId)
         .and()
@@ -200,12 +208,15 @@ class ReportsNotifier extends Notifier<ReportState> {
         .isDeletedEqualTo(false)
         .count();
 
-    if (totalOrders == 0) {
+    if (allOrdersCount == 0) {
       state = state.copyWith(
         isLoading: false,
         totalOrders: 0,
         totalSales: 0.0,
         averageOrderValue: 0.0,
+        highestSale: 0.0,
+        totalVoids: 0.0,
+        totalRefunds: 0.0,
         topCashierName: '—',
         paymentBreakdown: const [],
         topItems: const [],
@@ -214,8 +225,11 @@ class ReportsNotifier extends Notifier<ReportState> {
       return;
     }
 
+    int completedOrdersCount = 0;
     double totalSales = 0.0;
     double highestSale = 0.0;
+    double totalVoids = 0.0;
+    double totalRefunds = 0.0;
     final cashierCounts = <String, int>{};
     final paymentTotals = <String, double>{};
     final itemRevenue = <String, double>{};
@@ -264,45 +278,52 @@ class ReportsNotifier extends Notifier<ReportState> {
       if (batch.isEmpty) break;
 
       for (final o in batch) {
-        totalSales += o.totalAmount;
-        if (o.totalAmount > highestSale) highestSale = o.totalAmount;
-        cashierCounts[o.cashierName] = (cashierCounts[o.cashierName] ?? 0) + 1;
-        
-        final method = o.paymentMethod.toLowerCase();
-        paymentTotals[method] = (paymentTotals[method] ?? 0) + o.totalAmount;
+        if (o.status == 'completed') {
+          completedOrdersCount++;
+          totalSales += o.totalAmount;
+          if (o.totalAmount > highestSale) highestSale = o.totalAmount;
+          cashierCounts[o.cashierName] = (cashierCounts[o.cashierName] ?? 0) + 1;
+          
+          final method = o.paymentMethod.toLowerCase();
+          paymentTotals[method] = (paymentTotals[method] ?? 0) + o.totalAmount;
 
-        for (final json in o.orderItemsJson) {
-          try {
-            final map = jsonDecode(json);
-            final name = map['itemName'] as String?;
-            final price = (map['subtotal'] as num?)?.toDouble() ?? 0.0;
-            final count = (map['quantity'] as num?)?.toInt() ?? 1;
+          for (final json in o.orderItemsJson) {
+            try {
+              final map = jsonDecode(json);
+              final name = map['itemName'] as String?;
+              final price = (map['subtotal'] as num?)?.toDouble() ?? 0.0;
+              final count = (map['quantity'] as num?)?.toInt() ?? 1;
 
-            if (name == null) continue;
+              if (name == null) continue;
 
-            itemRevenue[name] = (itemRevenue[name] ?? 0) + price;
-            itemQty[name] = (itemQty[name] ?? 0) + count;
-          } catch (_) {
-            continue;
+              itemRevenue[name] = (itemRevenue[name] ?? 0) + price;
+              itemQty[name] = (itemQty[name] ?? 0) + count;
+            } catch (_) {
+              continue;
+            }
           }
-        }
 
-        if (isHourly) {
-          if (o.orderedAt.year == now.year &&
-              o.orderedAt.month == now.month &&
-              o.orderedAt.day == now.day) {
-            buckets[o.orderedAt.hour] += o.totalAmount;
+          if (isHourly) {
+            if (o.orderedAt.year == now.year &&
+                o.orderedAt.month == now.month &&
+                o.orderedAt.day == now.day) {
+              buckets[o.orderedAt.hour] += o.totalAmount;
+            }
+          } else if (isMonthly) {
+            final month = o.orderedAt.month - 1;
+            if (month >= 0 && month < 12) {
+              buckets[month] += o.totalAmount;
+            }
+          } else {
+            final diff = o.orderedAt.difference(start).inDays;
+            if (diff >= 0 && diff < buckets.length) {
+              buckets[diff] += o.totalAmount;
+            }
           }
-        } else if (isMonthly) {
-          final month = o.orderedAt.month - 1;
-          if (month >= 0 && month < 12) {
-            buckets[month] += o.totalAmount;
-          }
-        } else {
-          final diff = o.orderedAt.difference(start).inDays;
-          if (diff >= 0 && diff < buckets.length) {
-            buckets[diff] += o.totalAmount;
-          }
+        } else if (o.status == 'voided') {
+          totalVoids += o.totalAmount;
+        } else if (o.status == 'refunded') {
+          totalRefunds += o.refundAmount ?? o.totalAmount;
         }
       }
 
@@ -318,7 +339,7 @@ class ReportsNotifier extends Notifier<ReportState> {
         .map((e) => PaymentBreakdownItem(
               method: e.key,
               amount: e.value,
-              percentage: (e.value / totalSales) * 100,
+              percentage: totalSales > 0 ? (e.value / totalSales) * 100 : 0.0,
             ))
         .toList()
       ..sort((a, b) => b.amount.compareTo(a.amount));
@@ -339,10 +360,12 @@ class ReportsNotifier extends Notifier<ReportState> {
 
     state = state.copyWith(
       isLoading: false,
-      totalOrders: totalOrders,
+      totalOrders: completedOrdersCount,
       totalSales: totalSales,
-      averageOrderValue: totalSales / totalOrders,
+      averageOrderValue: completedOrdersCount > 0 ? (totalSales / completedOrdersCount) : 0.0,
       highestSale: highestSale,
+      totalVoids: totalVoids,
+      totalRefunds: totalRefunds,
       topCashierName: topCashier,
       paymentBreakdown: breakdownItems,
       topItems: topItemList.take(5).toList(),

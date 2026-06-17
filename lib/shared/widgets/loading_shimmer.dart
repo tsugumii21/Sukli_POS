@@ -75,9 +75,10 @@ class ShimmerOrderList extends StatelessWidget {
 
 /// Shimmer loader for menu grids.
 class ShimmerMenuGrid extends StatelessWidget {
-  const ShimmerMenuGrid({super.key, this.itemCount = 6});
+  const ShimmerMenuGrid({super.key, this.itemCount = 6, this.aspectRatio});
 
   final int itemCount;
+  final double? aspectRatio;
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +94,7 @@ class ShimmerMenuGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: ResponsiveLayout.gridColumns(context),
-          childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.70),
+          childAspectRatio: aspectRatio ?? ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.60),
           crossAxisSpacing: AppSpacing.sm,
           mainAxisSpacing: AppSpacing.sm,
         ),

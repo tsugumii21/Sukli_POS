@@ -248,6 +248,20 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
 
   /// Clears any stored error message.
   void clearError() => state = state.copyWith(clearError: true);
+
+  /// Forces a sync of remote orders and reloads the local data.
+  Future<void> refresh() async {
+    final storeId = ref.read(currentStoreIdProvider);
+    if (storeId.isEmpty) return;
+
+    state = state.copyWith(isLoading: true);
+    try {
+      await _sync.syncAll();
+    } catch (_) {
+      // Ignore sync failures to allow offline loading
+    }
+    await _load();
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -14,6 +14,8 @@ import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../providers/void_refund_provider.dart';
 import '../widgets/refund_sheet.dart';
+import '../widgets/void_sheet.dart';
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VoidRefundScreen — 3-tab view: Void Orders | Refunds | History
@@ -31,7 +33,7 @@ class _VoidRefundScreenState extends ConsumerState<VoidRefundScreen>
   late final TabController _tabCtrl;
 
   static const _tabs = [
-    Tab(text: 'Void Orders'),
+    Tab(text: 'Voids'),
     Tab(text: 'Refunds'),
     Tab(text: 'History'),
   ];
@@ -115,6 +117,8 @@ class _VoidRefundScreenState extends ConsumerState<VoidRefundScreen>
             ),
             child: TabBar(
               controller: _tabCtrl,
+              isScrollable: true,
+              tabAlignment: TabAlignment.center,
               tabs: _tabs,
               labelStyle: AppTextStyles.bodySemiBold(context)
                   .copyWith(color: textPrimary),
@@ -273,8 +277,7 @@ class _OrdersTabState extends ConsumerState<_OrdersTab> {
             color: primaryColor,
             backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
             onRefresh: () async {
-              // Provider auto-refreshes via watchLazy — force a UI rebuild
-              ref.invalidate(voidRefundProvider);
+              await ref.read(voidRefundProvider.notifier).refresh();
             },
             child: ListView.builder(
               padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: 24),
@@ -451,8 +454,8 @@ class _OrderRow extends ConsumerWidget {
   Future<void> _handleVoid(BuildContext context, WidgetRef ref) async {
     final notifier = ref.read(voidRefundProvider.notifier);
 
-    // Step 1 — Reason dialog
-    final reason = await _showReasonDialog(context);
+    // Step 1 — VoidSheet (choose reason)
+    final reason = await VoidSheet.show(context, order);
     if (reason == null || !context.mounted) return;
 
     // Step 2 — Confirmation popup
@@ -488,94 +491,6 @@ class _OrderRow extends ConsumerWidget {
     }
   }
 
-  Future<String?> _showReasonDialog(BuildContext context) async {
-    final ctrl = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (dialogCtx) {
-        final isDark = Theme.of(dialogCtx).brightness == Brightness.dark;
-        final dialogBg =
-            isDark ? AppColors.surfaceDark : AppColors.backgroundLight;
-        final textSecondary =
-            isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
-
-        return Dialog(
-          backgroundColor: dialogBg,
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.largeBR),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Void Reason',
-                  style: AppTextStyles.h3(context),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                TextField(
-                  controller: ctrl,
-                  autofocus: true,
-                  maxLines: 3,
-                  style: AppTextStyles.body(context),
-                  decoration: InputDecoration(
-                    hintText: 'Enter void reason (required)',
-                    hintStyle: AppTextStyles.body(context).copyWith(color: textSecondary),
-                    filled: true,
-                    fillColor: isDark ? AppColors.cardDark : AppColors.cardLight,
-                    border: OutlineInputBorder(
-                      borderRadius: AppRadius.mediumBR,
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: AppRadius.mediumBR,
-                      borderSide: BorderSide(
-                        color: isDark ? AppColors.errorDark : AppColors.errorLight,
-                        width: 1.5,
-                      ),
-                    ),
-                    contentPadding: const EdgeInsets.all(AppSpacing.md),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogCtx).pop(null),
-                      child: Text(
-                        'Cancel',
-                        style: AppTextStyles.bodySemiBold(context).copyWith(color: textSecondary),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    ElevatedButton(
-                      onPressed: () {
-                        final reason = ctrl.text.trim();
-                        if (reason.isEmpty) return;
-                        Navigator.of(dialogCtx).pop(reason);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.errorLight,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                        shape: RoundedRectangleBorder(borderRadius: AppRadius.mediumBR),
-                      ),
-                      child: Text(
-                        'Confirm Void',
-                        style: AppTextStyles.bodySemiBold(context).copyWith(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   // ── Refund flow ──────────────────────────────────────────────────────────
 
@@ -646,28 +561,44 @@ class _OrderRow extends ConsumerWidget {
           message,
           style: AppTextStyles.body(context).copyWith(color: textSecondary),
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(
-              'Cancel',
-              style: AppTextStyles.bodySemiBold(context)
-                  .copyWith(color: textSecondary),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              style: TextButton.styleFrom(
+                foregroundColor: textSecondary,
+                shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.pillBR),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.bodySemiBold(context)
+                    .copyWith(color: textSecondary),
+              ),
             ),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: confirmColor,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: AppRadius.mediumBR),
-            ),
-            child: Text(
-              confirmLabel,
-              style: AppTextStyles.bodySemiBold(context)
-                  .copyWith(color: Colors.white),
+          const SizedBox(height: AppSpacing.xs),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: confirmColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.pillBR),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: Text(
+                confirmLabel,
+                style: AppTextStyles.bodySemiBold(context)
+                    .copyWith(color: Colors.white),
+              ),
             ),
           ),
         ],

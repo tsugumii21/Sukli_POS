@@ -65,14 +65,14 @@ class SupabaseService {
     }
   }
 
-  Future<void> softDelete(String table, String syncId) async {
+  Future<void> deleteRecord(String table, String syncId) async {
     try {
-      await client.from(table).update({SupabaseConstants.isDeleted: true}).eq(
-          SupabaseConstants.syncId, syncId);
+      await client.from(table).delete().eq(SupabaseConstants.syncId, syncId);
     } catch (e) {
-      throw DatabaseException('Failed to soft delete in Supabase: $e');
+      throw DatabaseException('Failed to delete in Supabase: $e');
     }
   }
+
 
   // --- STORAGE METHODS ---
 

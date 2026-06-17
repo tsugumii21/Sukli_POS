@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../../../core/services/sync_service.dart';
 
 import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/providers/isar_provider.dart';
@@ -122,6 +123,9 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
   // ── Public API ─────────────────────────────────────────────────────────────
 
   Future<void> refresh() async {
+    try {
+      await SyncService.instance.syncAll();
+    } catch (_) {}
     await loadFirstPage();
   }
 

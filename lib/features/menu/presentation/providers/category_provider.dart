@@ -39,8 +39,12 @@ class CategoryNotifier extends Notifier<AsyncValue<List<CategoryWithCount>>> {
 
   void _init(String storeId) {
     Future.microtask(() => _load(storeId));
-    _isar.isar.categoryCollections.watchLazy().listen((_) => _load(storeId));
-    _isar.isar.menuItemCollections.watchLazy().listen((_) => _load(storeId));
+    final sub1 = _isar.isar.categoryCollections.watchLazy().listen((_) => _load(storeId));
+    final sub2 = _isar.isar.menuItemCollections.watchLazy().listen((_) => _load(storeId));
+    ref.onDispose(() {
+      sub1.cancel();
+      sub2.cancel();
+    });
   }
 
   // ── Load ────────────────────────────────────────────────────────────────────
@@ -276,21 +280,79 @@ class CategoryNotifier extends Notifier<AsyncValue<List<CategoryWithCount>>> {
   }
 
   Future<void> softDelete(CategoryCollection category) async {
-    category
-      ..isDeleted = true
-      ..updatedAt = DateTime.now()
-      ..isSynced = false;
+    final storeId = ref.read(currentStoreIdProvider);
 
+    // 1. Find all subcategories in Isar
+    final subcategories = await _isar.isar.categoryCollections
+        .filter()
+        .parentIdEqualTo(category.syncId)
+        .findAll();
+
+    // 2. Build list of category IDs to delete (parent + subcategories)
+    final List<String> targetCategoryIds = [category.syncId];
+    final subIds = subcategories.map((c) => c.syncId).toList();
+    targetCategoryIds.addAll(subIds);
+
+    // 3. Find all items belonging to these categories in Isar
+    var itemsQuery = _isar.isar.menuItemCollections
+        .filter()
+        .storeIdEqualTo(storeId);
+    
+    if (targetCategoryIds.length == 1) {
+      itemsQuery = itemsQuery.and().categoryIdEqualTo(targetCategoryIds.first);
+    } else {
+      itemsQuery = itemsQuery.and().group((q) {
+        var subQuery = q.categoryIdEqualTo(targetCategoryIds.first);
+        for (var i = 1; i < targetCategoryIds.length; i++) {
+          subQuery = subQuery.or().categoryIdEqualTo(targetCategoryIds[i]);
+        }
+        return subQuery;
+      });
+    }
+    
+    final items = await itemsQuery.findAll();
+
+    // 4. Perform hard deletes in Isar in a transaction
     await _isar.isar.writeTxn(() async {
-      await _isar.isar.categoryCollections.put(category);
+      // Delete menu items
+      for (final item in items) {
+        await _isar.isar.menuItemCollections.delete(item.id);
+      }
+      // Delete subcategories
+      for (final sub in subcategories) {
+        await _isar.isar.categoryCollections.delete(sub.id);
+      }
+      // Delete parent category
+      await _isar.isar.categoryCollections.delete(category.id);
     });
+
+    // 5. Add deletions to Sync Queue in order of dependencies (items first, then subcategories, then parent)
+    for (final item in items) {
+      await SyncService.instance.addToQueue(
+        tableName: SupabaseConstants.menuItemsTable,
+        recordSyncId: item.syncId,
+        operation: 'delete',
+        payload: {},
+      );
+    }
+
+    for (final sub in subcategories) {
+      await SyncService.instance.addToQueue(
+        tableName: SupabaseConstants.categoriesTable,
+        recordSyncId: sub.syncId,
+        operation: 'delete',
+        payload: {},
+      );
+    }
+
     await SyncService.instance.addToQueue(
       tableName: SupabaseConstants.categoriesTable,
       recordSyncId: category.syncId,
       operation: 'delete',
-      payload: _toPayload(category),
+      payload: {},
     );
   }
+
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 

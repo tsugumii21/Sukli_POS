@@ -187,7 +187,9 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
           .slideY(begin: 0.3, end: 0, duration: 400.ms)
           .fadeIn(duration: 400.ms),
       body: itemsAsync.when(
-        loading: () => const ShimmerMenuGrid(),
+        loading: () => ShimmerMenuGrid(
+          aspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.80),
+        ),
         error: (e, _) => Center(
           child: Text('Error loading items: $e',
               style: AppTextStyles.body(context)),
@@ -207,21 +209,59 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
     final categories = state.categories;
     final filtered = state.filtered;
 
+    // Filter categories hierarchically
+    final topLevelCategories = categories
+        .where((cat) => cat.parentId == null || cat.parentId!.isEmpty)
+        .toList();
+
+    final selectedCategory = state.selectedCategoryId != null
+        ? categories.firstWhere(
+            (c) => c.syncId == state.selectedCategoryId,
+            orElse: () => CategoryCollection()
+              ..syncId = ''
+              ..name = '',
+          )
+        : null;
+
+    final activeParentId = (selectedCategory != null &&
+            selectedCategory.parentId != null &&
+            selectedCategory.parentId!.isNotEmpty)
+        ? selectedCategory.parentId
+        : state.selectedCategoryId;
+
+    final subCategories = activeParentId != null
+        ? categories
+            .where((c) => c.parentId == activeParentId)
+            .toList()
+        : <CategoryCollection>[];
+
     // Tab count = total (index 0 = All)
     final allCount = state.allItems.length;
 
     return Column(
       children: [
         // ── Category Tabs ──────────────────────────────────────────
-        if (categories.isNotEmpty)
+        if (topLevelCategories.isNotEmpty)
           _CategoryTabsRow(
-            categories: categories,
-            selectedId: state.selectedCategoryId,
+            categories: topLevelCategories,
+            selectedId: activeParentId,
             allCount: allCount,
             countForCategory: state.countForCategory,
             onSelect: ref.read(itemProvider.notifier).selectCategory,
             isDark: isDark,
           ),
+
+        if (subCategories.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xs),
+          _SubCategoryTabsRow(
+            categories: subCategories,
+            selectedId: state.selectedCategoryId,
+            parentId: activeParentId!,
+            countForCategory: state.countForCategory,
+            onSelect: ref.read(itemProvider.notifier).selectCategory,
+            isDark: isDark,
+          ),
+        ],
 
         // ── Item List ──────────────────────────────────────────────
         Expanded(
@@ -239,7 +279,7 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
                           padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 80),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: ResponsiveLayout.gridColumns(context),
-                            childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.65),
+                            childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.80),
                             crossAxisSpacing: AppSpacing.sm,
                             mainAxisSpacing: AppSpacing.sm,
                           ),
@@ -318,10 +358,10 @@ class _CategoryTabsRow extends StatelessWidget {
     final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
 
     return SizedBox(
-      height: 48,
+      height: 56,
       child: ListView(
         padding:
-            const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
+            const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
         scrollDirection: Axis.horizontal,
         children: [
           // All tab
@@ -352,6 +392,67 @@ class _CategoryTabsRow extends StatelessWidget {
   }
 }
 
+class _SubCategoryTabsRow extends StatelessWidget {
+  const _SubCategoryTabsRow({
+    required this.categories,
+    required this.selectedId,
+    required this.parentId,
+    required this.countForCategory,
+    required this.onSelect,
+    required this.isDark,
+  });
+
+  final List<CategoryCollection> categories;
+  final String? selectedId;
+  final String parentId;
+  final int Function(String) countForCategory;
+  final ValueChanged<String?> onSelect;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final unselectedBg = isDark ? AppColors.cardDark : AppColors.cardLight;
+    final _maroon = isDark ? AppColors.secondaryDark : AppColors.secondaryLight;
+
+    return SizedBox(
+      height: 56,
+      child: ListView(
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
+        scrollDirection: Axis.horizontal,
+        children: [
+          // "All" tab pointing to parentId
+          _Tab(
+            label: 'All',
+            count: countForCategory(parentId),
+            isSelected: selectedId == parentId,
+            onTap: () => onSelect(parentId),
+            maroon: _maroon,
+            unselectedBg: unselectedBg,
+            textPrimary: textPrimary,
+            isSecondary: true,
+          ),
+          ...categories.map((cat) {
+            final count = countForCategory(cat.syncId);
+            return _Tab(
+              label: cat.name,
+              count: count,
+              isSelected: selectedId == cat.syncId,
+              onTap: () => onSelect(cat.syncId),
+              maroon: _maroon,
+              unselectedBg: unselectedBg,
+              textPrimary: textPrimary,
+              isSecondary: true,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
 class _Tab extends StatelessWidget {
   const _Tab({
     required this.label,
@@ -361,6 +462,7 @@ class _Tab extends StatelessWidget {
     required this.maroon,
     required this.unselectedBg,
     required this.textPrimary,
+    this.isSecondary = false,
   });
 
   final String label;
@@ -370,53 +472,72 @@ class _Tab extends StatelessWidget {
   final Color maroon;
   final Color unselectedBg;
   final Color textPrimary;
+  final bool isSecondary;
 
   @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.only(right: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
-          decoration: BoxDecoration(
-            color: isSelected ? maroon : unselectedBg,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: AppTextStyles.captionMedium(context).copyWith(
-                  color: isSelected
-                      ? Colors.white
-                      : (Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.7)),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.2)
-                      : maroon.withValues(alpha: 0.12),
-                  borderRadius: AppRadius.pillBR,
-                ),
-                child: Text(
-                  '$count',
-                  style: AppTextStyles.captionMedium(context).copyWith(
-                    color: isSelected ? Colors.white : maroon,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) {
+    final bg = isSelected
+        ? maroon
+        : (isSecondary ? Colors.transparent : unselectedBg);
+    final border = isSelected
+        ? Border.all(color: Colors.transparent)
+        : (isSecondary
+            ? Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : textPrimary.withValues(alpha: 0.2))
+            : Border.all(color: Colors.transparent));
+
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(right: 8),
+        padding: EdgeInsets.symmetric(horizontal: isSecondary ? 10 : 14, vertical: 0),
+        decoration: BoxDecoration(
+          color: bg,
+          border: border,
+          borderRadius: BorderRadius.circular(999),
         ),
-      );
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: AppTextStyles.captionMedium(context).copyWith(
+                fontSize: isSecondary ? 12 : 13,
+                color: isSelected
+                    ? Colors.white
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textSecondaryDark
+                        : textPrimary.withValues(alpha: 0.7)),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : maroon.withValues(alpha: 0.12),
+                borderRadius: AppRadius.pillBR,
+              ),
+              child: Text(
+                '$count',
+                style: AppTextStyles.captionMedium(context).copyWith(
+                  color: isSelected ? Colors.white : maroon,
+                  fontSize: isSecondary ? 10 : 11,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Empty State ───────────────────────────────────────────────────────────────

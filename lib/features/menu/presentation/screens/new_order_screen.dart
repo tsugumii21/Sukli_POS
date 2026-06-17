@@ -8,6 +8,7 @@ import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../shared/isar_collections/category_collection.dart';
 import '../../../../shared/isar_collections/menu_item_collection.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/shimmer_list.dart';
@@ -45,6 +46,11 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    // Reset category and search filters when leaving NewOrderScreen
+    Future.microtask(() {
+      ref.read(menuProvider.notifier).selectCategory(null);
+      ref.read(menuProvider.notifier).updateSearch('');
+    });
     super.dispose();
   }
 
@@ -156,6 +162,31 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
 
+    final topLevelCategories = menuState.categories
+        .where((cat) => cat.parentId == null || cat.parentId!.isEmpty)
+        .toList();
+
+    final selectedCategory = menuState.selectedCategoryId != null
+        ? menuState.categories.firstWhere(
+            (c) => c.syncId == menuState.selectedCategoryId,
+            orElse: () => CategoryCollection()
+              ..syncId = ''
+              ..name = '',
+          )
+        : null;
+
+    final activeParentId = (selectedCategory != null &&
+            selectedCategory.parentId != null &&
+            selectedCategory.parentId!.isNotEmpty)
+        ? selectedCategory.parentId
+        : menuState.selectedCategoryId;
+
+    final subCategories = activeParentId != null
+        ? menuState.categories
+            .where((c) => c.parentId == activeParentId)
+            .toList()
+        : <CategoryCollection>[];
+
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
@@ -219,12 +250,22 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
         children: [
           // ── Search Bar ──────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            padding: const EdgeInsets.only(
+              left: AppSpacing.md,
+              right: AppSpacing.md,
+              top: AppSpacing.sm,
+              bottom: AppSpacing.md,
+            ),
             child: Container(
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDarkElevated : AppColors.white,
                 borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.accentDark.withValues(alpha: 0.5)
+                      : AppColors.secondaryLight.withValues(alpha: 0.35),
+                  width: 1.5,
+                ),
               ),
               child: TextField(
                 controller: _searchController,
@@ -264,10 +305,10 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
 
           // ── Category Pills ──────────────────────────────────────────────
           SizedBox(
-            height: 48,
+            height: 56,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
               children: [
                 CategoryPill(
                   label: 'All',
@@ -276,19 +317,60 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                       ref.read(menuProvider.notifier).selectCategory(null),
                 ),
                 const SizedBox(width: 10),
-                ...menuState.categories.map((cat) => Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: CategoryPill(
-                        label: cat.name,
-                        isSelected: menuState.selectedCategoryId == cat.syncId,
-                        onTap: () => ref
-                            .read(menuProvider.notifier)
-                            .selectCategory(cat.syncId),
-                      ),
-                    )),
+                ...topLevelCategories.map((cat) {
+                  final isSelected = activeParentId == cat.syncId;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: CategoryPill(
+                      label: cat.name,
+                      isSelected: isSelected,
+                      onTap: () => ref
+                          .read(menuProvider.notifier)
+                          .selectCategory(cat.syncId),
+                    ),
+                  );
+                }),
               ],
             ),
           ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
+
+          if (subCategories.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            SizedBox(
+              height: 56,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
+                children: [
+                  CategoryPill(
+                    label: 'All',
+                    isSelected: menuState.selectedCategoryId == activeParentId,
+                    onTap: () => ref
+                        .read(menuProvider.notifier)
+                        .selectCategory(activeParentId),
+                    isSecondary: true,
+                  ),
+                  const SizedBox(width: 10),
+                  ...subCategories.map((subCat) {
+                    final isSelected =
+                        menuState.selectedCategoryId == subCat.syncId;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: CategoryPill(
+                        label: subCat.name,
+                        isSelected: isSelected,
+                        onTap: () => ref
+                            .read(menuProvider.notifier)
+                            .selectCategory(subCat.syncId),
+                        isSecondary: true,
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ).animate().fadeIn(duration: 300.ms),
+          ],
+
 
           const SizedBox(height: AppSpacing.md),
 
@@ -310,7 +392,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                           crossAxisCount: ResponsiveLayout.gridColumns(context),
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.70),
+                          childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.60),
                         ),
                         itemCount: menuState.items.length,
                         itemBuilder: (context, index) {

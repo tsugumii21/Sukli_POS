@@ -61,7 +61,7 @@ class ItemCard extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: SizedBox(
-                        height: 80,
+                        height: 110,
                         width: double.infinity,
                         child:
                             item.imageUrl != null && item.imageUrl!.isNotEmpty

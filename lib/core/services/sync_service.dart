@@ -140,7 +140,15 @@ class SyncService {
       // 1. Push local changes
       final pushResult = await syncPendingQueue();
 
-      // 2. Pull remote changes (future enhancement)
+      // 2. Pull remote changes
+      final activeStore = await _isar.isar.storeCollections
+          .filter()
+          .isDeletedEqualTo(false)
+          .isActiveEqualTo(true)
+          .findFirst();
+      if (activeStore != null) {
+        await _pullOrders(activeStore.syncId);
+      }
 
       return pushResult;
     } finally {
@@ -181,7 +189,7 @@ class SyncService {
           if (item.operation == 'insert' || item.operation == 'update') {
             await _supabase.upsertRecord(item.tableName, payload);
           } else if (item.operation == 'delete') {
-            await _supabase.softDelete(item.tableName, item.recordSyncId);
+            await _supabase.deleteRecord(item.tableName, item.recordSyncId);
           }
 
           // Mark as completed

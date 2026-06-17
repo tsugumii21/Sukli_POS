@@ -398,6 +398,8 @@ class _KpiGrid extends StatelessWidget {
     final accent = isDark ? AppColors.accentDark : AppColors.accentLight;
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final errorColor = isDark ? AppColors.errorDark : AppColors.errorLight;
+    final warningColor = isDark ? AppColors.warningDark : AppColors.warningLight;
 
     final highestSale = state.highestSale;
 
@@ -428,6 +430,20 @@ class _KpiGrid extends StatelessWidget {
         label: 'Highest Sale',
         valueStyle: AppTextStyles.priceSmall(context).copyWith(color: accent),
       ),
+      _KpiCardData(
+        icon: Icons.cancel_outlined,
+        value: CurrencyFormatter.format(state.totalVoids),
+        label: 'Total Voids',
+        valueStyle: AppTextStyles.priceSmall(context).copyWith(color: errorColor),
+        color: errorColor,
+      ),
+      _KpiCardData(
+        icon: Icons.assignment_return_outlined,
+        value: CurrencyFormatter.format(state.totalRefunds),
+        label: 'Total Refunds',
+        valueStyle: AppTextStyles.priceSmall(context).copyWith(color: warningColor),
+        color: warningColor,
+      ),
     ];
 
     return Padding(
@@ -453,12 +469,14 @@ class _KpiCardData {
   final String value;
   final String label;
   final TextStyle valueStyle;
+  final Color? color;
 
   const _KpiCardData({
     required this.icon,
     required this.value,
     required this.label,
     required this.valueStyle,
+    this.color,
   });
 }
 
@@ -470,6 +488,7 @@ class _KpiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.accentDark : AppColors.accentLight;
+    final cardColor = data.color ?? accent;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -481,10 +500,10 @@ class _KpiCard extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
+              color: cardColor.withValues(alpha: 0.12),
               borderRadius: AppRadius.smallBR,
             ),
-            child: Icon(data.icon, size: 14, color: accent),
+            child: Icon(data.icon, size: 14, color: cardColor),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
@@ -520,7 +539,6 @@ class _RevenueChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.accentDark : AppColors.accentLight;
     final textSecondary =
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 

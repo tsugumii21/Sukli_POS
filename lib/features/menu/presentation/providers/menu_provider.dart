@@ -65,7 +65,7 @@ class MenuNotifier extends Notifier<MenuState> {
         .sortBySortOrder()
         .findAll();
 
-    final items = await _loadFilteredItems(storeId, null, '');
+    final items = await _loadFilteredItems(storeId, null, '', categories);
 
     state = state.copyWith(
       categories: categories,
@@ -79,6 +79,7 @@ class MenuNotifier extends Notifier<MenuState> {
     String storeId,
     String? categoryId,
     String search,
+    List<CategoryCollection> categories,
   ) async {
     var query = _isar.isar.menuItemCollections
         .filter()
@@ -86,7 +87,24 @@ class MenuNotifier extends Notifier<MenuState> {
         .isDeletedEqualTo(false);
 
     if (categoryId != null) {
-      query = query.and().categoryIdEqualTo(categoryId);
+      final List<String> targetCategoryIds = [categoryId];
+      final subCats = categories
+          .where((cat) => cat.parentId == categoryId)
+          .map((cat) => cat.syncId)
+          .toList();
+      targetCategoryIds.addAll(subCats);
+
+      if (targetCategoryIds.length == 1) {
+        query = query.and().categoryIdEqualTo(targetCategoryIds.first);
+      } else {
+        query = query.and().group((q) {
+          var subQuery = q.categoryIdEqualTo(targetCategoryIds.first);
+          for (var i = 1; i < targetCategoryIds.length; i++) {
+            subQuery = subQuery.or().categoryIdEqualTo(targetCategoryIds[i]);
+          }
+          return subQuery;
+        });
+      }
     }
 
     final allItems = await query.sortBySortOrder().findAll();
@@ -106,7 +124,7 @@ class MenuNotifier extends Notifier<MenuState> {
 
     state = state.copyWith(isLoading: true);
     final items =
-        await _loadFilteredItems(storeId, categoryId, state.searchQuery);
+        await _loadFilteredItems(storeId, categoryId, state.searchQuery, state.categories);
     state = state.copyWith(
       selectedCategoryId: categoryId,
       clearCategory: categoryId == null,
@@ -121,7 +139,7 @@ class MenuNotifier extends Notifier<MenuState> {
     if (storeId.isEmpty) return;
 
     final items =
-        await _loadFilteredItems(storeId, state.selectedCategoryId, query);
+        await _loadFilteredItems(storeId, state.selectedCategoryId, query, state.categories);
     state = state.copyWith(
       searchQuery: query,
       items: items,

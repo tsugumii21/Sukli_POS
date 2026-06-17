@@ -134,7 +134,24 @@ class ItemManageState {
   List<MenuItemCollection> get filtered {
     var result = allItems;
     if (selectedCategoryId != null) {
-      result = result.where((i) => i.categoryId == selectedCategoryId).toList();
+      // Find selected category to see if it is a parent or subcategory
+      final selectedCat = categories.firstWhere(
+        (c) => c.syncId == selectedCategoryId,
+        orElse: () => CategoryCollection()..syncId = '',
+      );
+
+      if (selectedCat.parentId != null && selectedCat.parentId!.isNotEmpty) {
+        // It's a subcategory, filter by this specific subcategory only
+        result = result.where((i) => i.categoryId == selectedCategoryId).toList();
+      } else {
+        // It's a parent category, find all its subcategory IDs
+        final subCatIds = categories
+            .where((c) => c.parentId == selectedCategoryId)
+            .map((c) => c.syncId)
+            .toList();
+        final targetIds = [selectedCategoryId!, ...subCatIds];
+        result = result.where((i) => targetIds.contains(i.categoryId)).toList();
+      }
     }
     final q = searchQuery.trim().toLowerCase();
     if (q.isNotEmpty) {
@@ -143,9 +160,26 @@ class ItemManageState {
     return result;
   }
 
-  /// Returns item count for a given category syncId.
-  int countForCategory(String categoryId) =>
-      allItems.where((i) => i.categoryId == categoryId).length;
+  /// Returns item count for a given category syncId (hierarchical).
+  int countForCategory(String categoryId) {
+    final cat = categories.firstWhere(
+      (c) => c.syncId == categoryId,
+      orElse: () => CategoryCollection()..syncId = '',
+    );
+    if (cat.parentId != null && cat.parentId!.isNotEmpty) {
+      // Subcategory, count only direct items
+      return allItems.where((i) => i.categoryId == categoryId).length;
+    } else {
+      // Parent category, count items in parent + all subcategories
+      final subCatIds = categories
+          .where((c) => c.parentId == categoryId)
+          .map((c) => c.syncId)
+          .toList();
+      final targetIds = [categoryId, ...subCatIds];
+      return allItems.where((i) => targetIds.contains(i.categoryId)).length;
+    }
+  }
+
 }
 
 /// ItemNotifier manages CRUD + toggle operations for menu items.
@@ -165,8 +199,12 @@ class ItemNotifier extends Notifier<AsyncValue<ItemManageState>> {
 
   void _init(String storeId) {
     Future.microtask(() => _load(storeId));
-    _isar.isar.menuItemCollections.watchLazy().listen((_) => _load(storeId));
-    _isar.isar.categoryCollections.watchLazy().listen((_) => _load(storeId));
+    final sub1 = _isar.isar.menuItemCollections.watchLazy().listen((_) => _load(storeId));
+    final sub2 = _isar.isar.categoryCollections.watchLazy().listen((_) => _load(storeId));
+    ref.onDispose(() {
+      sub1.cancel();
+      sub2.cancel();
+    });
   }
 
   // ── Load ────────────────────────────────────────────────────────────────────
@@ -365,20 +403,17 @@ class ItemNotifier extends Notifier<AsyncValue<ItemManageState>> {
   // ── Soft Delete ──────────────────────────────────────────────────────────
 
   Future<void> softDelete(MenuItemCollection item) async {
-    item
-      ..isDeleted = true
-      ..updatedAt = DateTime.now()
-      ..isSynced = false;
     await _isar.isar.writeTxn(() async {
-      await _isar.isar.menuItemCollections.put(item);
+      await _isar.isar.menuItemCollections.delete(item.id);
     });
     await SyncService.instance.addToQueue(
       tableName: SupabaseConstants.menuItemsTable,
       recordSyncId: item.syncId,
       operation: 'delete',
-      payload: _toPayload(item),
+      payload: {},
     );
   }
+
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
