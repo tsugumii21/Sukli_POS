@@ -29,10 +29,12 @@ class NewOrderScreen extends ConsumerStatefulWidget {
 
 class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
   final _searchController = TextEditingController();
+  late final MenuNotifier _menuNotifier;
 
   @override
   void initState() {
     super.initState();
+    _menuNotifier = ref.read(menuProvider.notifier);
     // If items are already in the cart from a previous session, ask the user
     // whether they want to continue or start fresh.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -45,11 +47,9 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
   @override
   void dispose() {
     _searchController.dispose();
-    // Capture notifier before widget is unmounted, then reset filters.
-    final notifier = ref.read(menuProvider.notifier);
     Future.microtask(() {
-      notifier.selectCategory(null);
-      notifier.updateSearch('');
+      _menuNotifier.selectCategory(null);
+      _menuNotifier.updateSearch('');
     });
     super.dispose();
   }
