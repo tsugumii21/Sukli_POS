@@ -930,9 +930,10 @@ class _AdminNavDrawer extends ConsumerWidget {
             textColor: isDark ? const Color(0xFFFF453A) : AppColors.errorLight,
             hoverBg: AppColors.errorLight.withValues(alpha: 0.07),
             onTap: () async {
+              final router = GoRouter.of(context);
               Navigator.pop(context);
               await ref.read(adminAuthProvider.notifier).signOut();
-              if (context.mounted) context.go(RouteConstants.adminLogin);
+              router.go(RouteConstants.adminLogin);
             },
           ),
           SizedBox(
