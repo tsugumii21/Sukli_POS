@@ -85,7 +85,13 @@ class SupabaseService {
 
   Future<void> deleteRecord(String table, String syncId) async {
     try {
-      await client.from(table).delete().eq(SupabaseConstants.syncId, syncId);
+      await client
+          .from(table)
+          .update({
+            'is_deleted': true,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq(SupabaseConstants.syncId, syncId);
     } catch (e) {
       throw DatabaseException('Failed to delete in Supabase: $e');
     }

@@ -271,20 +271,14 @@ class UsersNotifier extends Notifier<AsyncValue<UsersState>> {
   // ── Soft Delete ─────────────────────────────────────────────────────────────
 
   Future<void> softDelete(UserCollection user) async {
-    final now = DateTime.now();
-    user
-      ..isDeleted = true
-      ..updatedAt = now
-      ..isSynced = false;
-
     await _isar.isar.writeTxn(() async {
-      await _isar.isar.userCollections.put(user);
+      await _isar.isar.userCollections.delete(user.id);
     });
     await SyncService.instance.addToQueue(
       tableName: SupabaseConstants.usersTable,
       recordSyncId: user.syncId,
       operation: 'delete',
-      payload: _toPayload(user),
+      payload: {},
     );
   }
 
