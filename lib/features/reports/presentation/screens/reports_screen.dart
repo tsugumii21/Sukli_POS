@@ -67,8 +67,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   DateTimeRange _getDateRange() {
     final start = DateTime(_startDate.year, _startDate.month, _startDate.day);
     if (!_isRangeMode || _endDate == null) {
-      return DateTimeRange(
-          start: start, end: start.add(const Duration(days: 1)));
+      final end = DateTime(start.year, start.month, start.day, 23, 59, 59);
+      return DateTimeRange(start: start, end: end);
     }
     final end =
         DateTime(_endDate!.year, _endDate!.month, _endDate!.day, 23, 59, 59);

@@ -180,7 +180,12 @@ class ReportsNotifier extends Notifier<ReportState> {
 
     switch (state.period) {
       case ReportPeriod.day:
-        start = DateTime(end.year, end.month, end.day);
+        if (state.customStart != null && state.customEnd != null) {
+          start = state.customStart!;
+          end = state.customEnd!;
+        } else {
+          start = DateTime(end.year, end.month, end.day);
+        }
         break;
       case ReportPeriod.week:
         start = end.subtract(const Duration(days: 7));
@@ -236,7 +241,6 @@ class ReportsNotifier extends Notifier<ReportState> {
     final itemQty = <String, int>{};
 
     List<double> buckets;
-    final now = DateTime.now();
     bool isHourly = false;
     bool isMonthly = false;
 
@@ -304,9 +308,9 @@ class ReportsNotifier extends Notifier<ReportState> {
           }
 
           if (isHourly) {
-            if (o.orderedAt.year == now.year &&
-                o.orderedAt.month == now.month &&
-                o.orderedAt.day == now.day) {
+            if (o.orderedAt.year == start.year &&
+                o.orderedAt.month == start.month &&
+                o.orderedAt.day == start.day) {
               buckets[o.orderedAt.hour] += o.totalAmount;
             }
           } else if (isMonthly) {
@@ -323,7 +327,53 @@ class ReportsNotifier extends Notifier<ReportState> {
         } else if (o.status == 'voided') {
           totalVoids += o.totalAmount;
         } else if (o.status == 'refunded') {
-          totalRefunds += o.refundAmount ?? o.totalAmount;
+          final refundAmt = o.refundAmount ?? o.totalAmount;
+          totalRefunds += refundAmt;
+          
+          final netAmount = o.totalAmount - refundAmt;
+          totalSales += netAmount;
+          completedOrdersCount++;
+          
+          if (netAmount > highestSale) highestSale = netAmount;
+          cashierCounts[o.cashierName] = (cashierCounts[o.cashierName] ?? 0) + 1;
+
+          final method = o.paymentMethod.toLowerCase();
+          paymentTotals[method] = (paymentTotals[method] ?? 0) + netAmount;
+
+          for (final json in o.orderItemsJson) {
+            try {
+              final map = jsonDecode(json);
+              final name = map['itemName'] as String?;
+              final price = (map['subtotal'] as num?)?.toDouble() ?? 0.0;
+              final count = (map['quantity'] as num?)?.toInt() ?? 1;
+
+              if (name == null) continue;
+
+              final scale = o.totalAmount > 0 ? netAmount / o.totalAmount : 0.0;
+              itemRevenue[name] = (itemRevenue[name] ?? 0) + (price * scale);
+              itemQty[name] = (itemQty[name] ?? 0) + (count * scale).round();
+            } catch (_) {
+              continue;
+            }
+          }
+
+          if (isHourly) {
+            if (o.orderedAt.year == start.year &&
+                o.orderedAt.month == start.month &&
+                o.orderedAt.day == start.day) {
+              buckets[o.orderedAt.hour] += netAmount;
+            }
+          } else if (isMonthly) {
+            final month = o.orderedAt.month - 1;
+            if (month >= 0 && month < 12) {
+              buckets[month] += netAmount;
+            }
+          } else {
+            final diff = o.orderedAt.difference(start).inDays;
+            if (diff >= 0 && diff < buckets.length) {
+              buckets[diff] += netAmount;
+            }
+          }
         }
       }
 
