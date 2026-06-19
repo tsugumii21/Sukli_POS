@@ -661,7 +661,10 @@ class _RevenueChart extends StatelessWidget {
     switch (period) {
       case ReportPeriod.day:
         if (i % 4 != 0) return '';
-        return '${i.toString().padLeft(2, '0')}:00';
+        if (i == 0) return '12 AM';
+        if (i == 12) return '12 PM';
+        if (i < 12) return '$i AM';
+        return '${i - 12} PM';
       case ReportPeriod.week:
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         return i < days.length ? days[i] : '';
