@@ -160,6 +160,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           RouteConstants.cashierSelect,
           RouteConstants.cashierPin,
           RouteConstants.adminLogin,
+          RouteConstants.switchToAdmin,
         ];
 
         if (!allowedGuestRoutes.contains(path)) {

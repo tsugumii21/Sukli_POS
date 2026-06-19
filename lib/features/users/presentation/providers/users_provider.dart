@@ -168,11 +168,17 @@ class UsersNotifier extends Notifier<AsyncValue<UsersState>> {
 
     final now = DateTime.now();
     final syncId = _uuid.v4();
+    
+    // For cashiers, generate a unique dummy email to avoid unique constraint violations in the database
+    final finalEmail = (role == 'cashier' && email.trim().isEmpty)
+        ? '$syncId@cashier.local'
+        : email.trim().toLowerCase();
+
     final user = UserCollection()
       ..syncId = syncId
       ..storeId = storeId
       ..name = name.trim()
-      ..email = email.trim().toLowerCase()
+      ..email = finalEmail
       ..role = role
       ..status = status
       ..pinHash = (role == 'cashier' && pin != null && pin.length == 4)
@@ -205,9 +211,15 @@ class UsersNotifier extends Notifier<AsyncValue<UsersState>> {
     String? newPin,
   }) async {
     final now = DateTime.now();
+
+    // For cashiers, preserve or generate a unique dummy email if empty to avoid unique constraint violations
+    final finalEmail = (role == 'cashier' && email.trim().isEmpty)
+        ? (user.email.contains('@cashier.local') ? user.email : '${user.syncId}@cashier.local')
+        : email.trim().toLowerCase();
+
     user
       ..name = name.trim()
-      ..email = email.trim().toLowerCase()
+      ..email = finalEmail
       ..role = role
       ..status = status
       ..updatedAt = now

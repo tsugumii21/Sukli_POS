@@ -290,8 +290,8 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                 ),
                 const SizedBox(height: AppSpacing.md),
 
-                // ── Email (edit mode only) ─────────────────────────────────
-                if (_isEdit) ...[
+                // ── Email (edit mode only for Admin) ───────────────────────
+                if (_isEdit && _role == 'admin') ...[
                   AppTextField(
                     controller: _emailCtrl,
                     label: 'Email',
@@ -301,7 +301,7 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                         color: textPrimary.withValues(alpha: 0.4), size: 20),
                     textInputAction: TextInputAction.next,
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty) return null;
+                      if (v == null || v.trim().isEmpty) return 'Email is required';
                       if (!v.contains('@')) return 'Enter a valid email';
                       return null;
                     },

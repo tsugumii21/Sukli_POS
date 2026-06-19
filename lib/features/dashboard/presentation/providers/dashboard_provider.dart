@@ -83,7 +83,7 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardData>> {
           .filter()
           .storeIdEqualTo(storeId)
           .sortByOrderedAtDesc()
-          .limit(5)
+          .limit(10)
           .findAll();
 
       state = AsyncValue.data(DashboardData(

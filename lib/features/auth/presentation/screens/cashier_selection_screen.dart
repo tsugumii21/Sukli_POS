@@ -8,6 +8,7 @@ import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
+import '../../../../shared/providers/active_role_provider.dart';
 import '../../../../core/services/supabase_service.dart';
 import '../providers/admin_auth_provider.dart';
 import '../providers/auth_provider.dart';
@@ -77,6 +78,7 @@ class _CashierSelectionScreenState
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         if (isAdminLoggedIn) {
+          ref.read(activeRoleProvider.notifier).setRole(ActiveRole.admin);
           context.go(RouteConstants.adminHome);
         } else {
           if (context.canPop()) {

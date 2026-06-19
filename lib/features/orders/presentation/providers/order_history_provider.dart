@@ -10,7 +10,6 @@ import '../../../../core/services/sync_service.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/providers/isar_provider.dart';
 import '../../../../shared/providers/store_provider.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Filter model
@@ -208,17 +207,12 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
     if (storeId.isEmpty) return [];
 
     final db = ref.read(isarProvider);
-    final cashierId = ref.read(authProvider).selectedCashier?.syncId;
     final f = state.filter;
 
     var query = db.orderCollections
         .filter()
         .storeIdEqualTo(storeId)
         .isDeletedEqualTo(false);
-
-    if (cashierId != null && cashierId.isNotEmpty) {
-      query = query.cashierIdEqualTo(cashierId);
-    }
 
     if (f.searchQuery.isNotEmpty) {
       query = query.orderNumberContains(f.searchQuery, caseSensitive: false);
@@ -323,17 +317,12 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
     required String storeId,
   }) async {
     final db = ref.read(isarProvider);
-    final cashierId = ref.read(authProvider).selectedCashier?.syncId;
     final f = state.filter;
 
     var query = db.orderCollections
         .filter()
         .storeIdEqualTo(storeId)
         .isDeletedEqualTo(false);
-
-    if (cashierId != null && cashierId.isNotEmpty) {
-      query = query.cashierIdEqualTo(cashierId);
-    }
 
     if (f.searchQuery.isNotEmpty) {
       query = query.orderNumberContains(f.searchQuery, caseSensitive: false);
