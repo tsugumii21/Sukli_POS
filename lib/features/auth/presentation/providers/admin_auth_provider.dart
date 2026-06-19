@@ -12,6 +12,7 @@ import '../../../../shared/isar_collections/category_collection.dart';
 import '../../../../shared/isar_collections/menu_item_collection.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/isar_collections/sync_queue_collection.dart';
+import '../../../../shared/providers/active_role_provider.dart';
 
 /// AdminAuthNotifier manages Supabase admin authentication state.
 /// Uses AsyncNotifier so the UI can reactively show loading/error/data states.
@@ -36,6 +37,10 @@ class AdminAuthNotifier extends AsyncNotifier<User?> {
         await SyncService.instance.pullStoreData(email);
       }
       state = AsyncData(user);
+
+      if (user != null) {
+        ref.read(activeRoleProvider.notifier).setRole(ActiveRole.admin);
+      }
 
       // Start background sync as soon as admin is authenticated
       SyncService.instance.startPeriodicSync();

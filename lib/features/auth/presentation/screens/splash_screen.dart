@@ -11,6 +11,7 @@ import '../../../../core/services/supabase_service.dart';
 import '../../../../core/services/sync_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/isar_collections/store_collection.dart';
+import '../../../../shared/providers/active_role_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/admin_auth_provider.dart';
 import 'package:sukli_pos/core/theme/app_text_styles.dart';
@@ -108,6 +109,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       final lastActiveRole = prefs.getString('last_active_role');
 
       if (lastActiveRole == 'cashier') {
+        ref.read(activeRoleProvider.notifier).setRole(ActiveRole.cashier);
         if (cashierAuth.isAuthenticated) {
           context.go(RouteConstants.cashierHome);
         } else {
@@ -117,16 +119,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       }
 
       if (adminAuth.value != null) {
+        ref.read(activeRoleProvider.notifier).setRole(ActiveRole.admin);
         context.go(RouteConstants.adminHome);
         return;
       }
 
       if (cashierAuth.isAuthenticated) {
+        ref.read(activeRoleProvider.notifier).setRole(ActiveRole.cashier);
         context.go(RouteConstants.cashierHome);
         return;
       }
 
-      // Store exists but no one logged in → Cashier Select
+      // Store exists but no one logged in → default to cashier selection and cashier role
+      ref.read(activeRoleProvider.notifier).setRole(ActiveRole.cashier);
       context.go(RouteConstants.cashierSelect);
 
     } catch (e) {

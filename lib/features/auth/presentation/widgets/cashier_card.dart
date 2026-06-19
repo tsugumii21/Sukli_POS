@@ -68,7 +68,7 @@ class _CashierCardState extends State<CashierCard> {
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
-              vertical: AppSpacing.xl,
+              vertical: AppSpacing.xs,
               horizontal: AppSpacing.md,
             ),
             child: Column(
@@ -76,8 +76,8 @@ class _CashierCardState extends State<CashierCard> {
               children: [
                 // Avatar circle with gradient and white border
                 Container(
-                  width: 72,
-                  height: 72,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
                     gradient: avatarGradient,
                     shape: BoxShape.circle,
@@ -94,11 +94,11 @@ class _CashierCardState extends State<CashierCard> {
                   child: Center(
                     child: Text(
                       _initial,
-                      style: AppTextStyles.priceDisplay(context).copyWith(color: Colors.white),
+                      style: AppTextStyles.priceDisplay(context).copyWith(color: Colors.white, fontSize: 20),
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.xs),
 
                 // Cashier name: Plus Jakarta Sans
                 Text(

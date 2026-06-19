@@ -48,8 +48,6 @@ class AppTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final fillColor =
-        isDark ? AppColors.surfaceDark : AppColors.backgroundLight;
     final focusedBorderColor =
         isDark ? AppColors.accentDark : AppColors.accentLight;
     final hintColor =

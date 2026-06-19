@@ -11,6 +11,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
 import '../../../../shared/providers/store_provider.dart';
+import '../../../../shared/providers/active_role_provider.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../providers/auth_provider.dart';
 import '../providers/admin_auth_provider.dart';
@@ -88,6 +89,8 @@ class _SwitchToAdminScreenState extends ConsumerState<SwitchToAdminScreen> {
       // Do NOT log out cashier session — just elevate to admin
       await ref.read(adminAuthProvider.notifier)
           .signIn(_emailCtrl.text.trim(), _passwordCtrl.text);
+
+      ref.read(activeRoleProvider.notifier).setRole(ActiveRole.admin);
 
       if (mounted) context.go(RouteConstants.adminHome);
 

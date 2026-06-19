@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'core/constants/route_constants.dart';
 import 'features/auth/presentation/providers/admin_auth_provider.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
+import 'shared/providers/active_role_provider.dart';
 import 'shared/providers/store_provider.dart';
 
 // ── Auth Screens ──────────────────────────────────────────────────────────────
@@ -85,6 +85,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final adminUser = adminState.value;
       final cashierAuth = ref.read(authProvider);
       final hasStore = ref.read(currentStoreIdProvider).isNotEmpty;
+      final activeRole = ref.read(activeRoleProvider);
 
       final isAdminLoggedIn = adminUser != null && !adminState.isLoading;
       final isCashierLoggedIn = cashierAuth.isAuthenticated;
@@ -105,8 +106,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // ── Store Exists: Routing Rules ──
       
-      // 1. If Admin is logged in:
-      if (isAdminLoggedIn) {
+      // 1. If Admin is the active role:
+      if (activeRole == ActiveRole.admin) {
+        if (!isAdminLoggedIn) {
+          if (path != RouteConstants.adminLogin) {
+            return RouteConstants.adminLogin;
+          }
+          return null;
+        }
+
         final allowedForAdmin = [
           RouteConstants.cashierSelect,
           RouteConstants.cashierPin,
@@ -122,49 +130,43 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
         // Allow any admin route or allowedForAdmin routes, otherwise redirect to adminHome
         if (path.startsWith('/admin') || allowedForAdmin.contains(path)) {
-          if (path.startsWith('/admin')) {
-            SharedPreferences.getInstance().then((prefs) {
-              prefs.setString('last_active_role', 'admin');
-            });
-          }
           return null;
         }
 
         return RouteConstants.adminHome;
       }
 
-      // 2. If Cashier is logged in:
-      if (isCashierLoggedIn) {
-        // Prevent going to welcome, signup, admin login, or cashier select
-        if (path == RouteConstants.welcome ||
-            path == RouteConstants.signup ||
-            path == RouteConstants.adminLogin ||
-            path == RouteConstants.cashierSelect) {
+      // 2. If Cashier is the active role:
+      if (activeRole == ActiveRole.cashier) {
+        if (isCashierLoggedIn) {
+          // Prevent going to welcome, signup, admin login, or cashier select
+          if (path == RouteConstants.welcome ||
+              path == RouteConstants.signup ||
+              path == RouteConstants.adminLogin ||
+              path == RouteConstants.cashierSelect) {
+            return RouteConstants.cashierHome;
+          }
+
+          // Allow cashier home/routes or switch-to-admin
+          if (path.startsWith('/cashier') || path == RouteConstants.switchToAdmin) {
+            return null;
+          }
+
           return RouteConstants.cashierHome;
         }
 
-        // Allow cashier home/routes or switch-to-admin
-        if (path.startsWith('/cashier') || path == RouteConstants.switchToAdmin) {
-          if (path.startsWith('/cashier')) {
-            SharedPreferences.getInstance().then((prefs) {
-              prefs.setString('last_active_role', 'cashier');
-            });
-          }
-          return null;
+        // Cashier is not logged in:
+        final allowedGuestRoutes = [
+          RouteConstants.cashierSelect,
+          RouteConstants.cashierPin,
+          RouteConstants.adminLogin,
+        ];
+
+        if (!allowedGuestRoutes.contains(path)) {
+          return RouteConstants.cashierSelect;
         }
 
-        return RouteConstants.cashierHome;
-      }
-
-      // 3. No one is logged in (but store exists):
-      final allowedGuestRoutes = [
-        RouteConstants.cashierSelect,
-        RouteConstants.cashierPin,
-        RouteConstants.adminLogin,
-      ];
-
-      if (!allowedGuestRoutes.contains(path)) {
-        return RouteConstants.cashierSelect;
+        return null;
       }
 
       return null;
@@ -382,5 +384,6 @@ class RouterTransitionNotifier extends ChangeNotifier {
     _ref.listen(adminAuthProvider, (_, __) => notifyListeners());
     _ref.listen(authProvider, (_, __) => notifyListeners());
     _ref.listen(currentStoreProvider, (_, __) => notifyListeners());
+    _ref.listen(activeRoleProvider, (_, __) => notifyListeners());
   }
 }

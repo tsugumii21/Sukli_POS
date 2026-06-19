@@ -11,6 +11,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/providers/sync_provider.dart';
+import '../../../../shared/providers/active_role_provider.dart';
 import '../../../auth/presentation/providers/admin_auth_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/admin_dashboard_provider.dart';
@@ -918,6 +919,7 @@ class _AdminNavDrawer extends ConsumerWidget {
             onTap: () {
               HapticFeedback.lightImpact();
               Navigator.pop(context);
+              ref.read(activeRoleProvider.notifier).setRole(ActiveRole.cashier);
               ref.read(authProvider.notifier).logout();
               context.go(RouteConstants.cashierSelect);
             },
@@ -932,8 +934,9 @@ class _AdminNavDrawer extends ConsumerWidget {
             onTap: () async {
               final router = GoRouter.of(context);
               Navigator.pop(context);
+              final signOutFuture = ref.read(adminAuthProvider.notifier).signOut();
               router.go(RouteConstants.adminLogin);
-              await ref.read(adminAuthProvider.notifier).signOut();
+              await signOutFuture;
             },
           ),
           SizedBox(
