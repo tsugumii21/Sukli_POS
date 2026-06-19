@@ -144,8 +144,6 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
               const SizedBox(height: AppSpacing.sm),
               _topItemsSection(ctx, s, accent, textPrimary, textSec),
               const SizedBox(height: AppSpacing.sm),
-              _categorySection(ctx, s, accent, textPrimary, textSec),
-              const SizedBox(height: AppSpacing.sm),
               _voidsSection(ctx, s, textPrimary, textSec),
               const SizedBox(height: AppSpacing.sm),
               _cashReconSection(ctx, s, isDark, accent, textPrimary, textSec),
@@ -239,35 +237,7 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
     );
   }
 
-  // ── Section 3: Category Performance ───────────────────────────────────
-  Widget _categorySection(
-      BuildContext ctx, EndOfDayState s, Color accent, Color tp, Color ts) {
-    return AppCard(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _sectionTitle(
-            ctx, Icons.category_rounded, 'Category Performance', accent),
-        const SizedBox(height: AppSpacing.sm),
-        if (s.categoryPerformance.isEmpty)
-          _emptyLabel(ctx, 'No category data')
-        else
-          ...s.categoryPerformance.map((c) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(children: [
-                  Expanded(
-                      child:
-                          Text(c.categoryName, style: AppTextStyles.body(ctx))),
-                  Text('${c.orderCount} orders',
-                      style: AppTextStyles.caption(ctx).copyWith(color: ts)),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(CurrencyFormatter.format(c.totalRevenue),
-                      style: AppTextStyles.bodySemiBold(ctx).copyWith(
-                        fontFeatures: [const FontFeature.tabularFigures()],
-                      )),
-                ]),
-              )),
-      ]),
-    );
-  }
+
 
   // ── Section 4: Voids & Refunds ────────────────────────────────────────
   Widget _voidsSection(BuildContext ctx, EndOfDayState s, Color tp, Color ts) {
@@ -544,17 +514,7 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
     }
     buf.writeln();
 
-    // Category Performance
-    buf.writeln('── Category Performance ──');
-    if (s.categoryPerformance.isEmpty) {
-      buf.writeln('  No category data');
-    } else {
-      for (final c in s.categoryPerformance) {
-        buf.writeln(
-            '  ${c.categoryName}: ${c.orderCount} orders — ${CurrencyFormatter.format(c.totalRevenue)}');
-      }
-    }
-    buf.writeln();
+
 
     // Voids & Refunds
     buf.writeln('── Voids & Refunds ──');

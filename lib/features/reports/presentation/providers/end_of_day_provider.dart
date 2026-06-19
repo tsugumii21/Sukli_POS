@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 
-import '../../../../shared/isar_collections/category_collection.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/providers/isar_provider.dart';
 import '../../../../shared/providers/store_provider.dart';
@@ -53,18 +52,7 @@ class TopSellingItem {
   });
 }
 
-/// Category performance entry.
-class CategoryPerformance {
-  final String categoryName;
-  final double totalRevenue;
-  final int orderCount;
 
-  const CategoryPerformance({
-    required this.categoryName,
-    required this.totalRevenue,
-    required this.orderCount,
-  });
-}
 
 /// Voids & refunds summary.
 class VoidRefundSummary {
@@ -116,9 +104,6 @@ class EndOfDayState {
   // Section 2 — Top Selling Items
   final List<TopSellingItem> topItems;
 
-  // Section 3 — Category Performance
-  final List<CategoryPerformance> categoryPerformance;
-
   // Section 4 — Voids & Refunds
   final VoidRefundSummary voidRefund;
 
@@ -138,7 +123,6 @@ class EndOfDayState {
     this.avgOrderValue = 0,
     this.paymentBreakdown = const [],
     this.topItems = const [],
-    this.categoryPerformance = const [],
     this.voidRefund = const VoidRefundSummary(),
     this.cashRecon = const CashReconciliation(expectedCash: 0),
     this.orders = const [],
@@ -154,7 +138,6 @@ class EndOfDayState {
     double? avgOrderValue,
     List<PaymentMethodEntry>? paymentBreakdown,
     List<TopSellingItem>? topItems,
-    List<CategoryPerformance>? categoryPerformance,
     VoidRefundSummary? voidRefund,
     CashReconciliation? cashRecon,
     List<OrderCollection>? orders,
@@ -169,7 +152,6 @@ class EndOfDayState {
       avgOrderValue: avgOrderValue ?? this.avgOrderValue,
       paymentBreakdown: paymentBreakdown ?? this.paymentBreakdown,
       topItems: topItems ?? this.topItems,
-      categoryPerformance: categoryPerformance ?? this.categoryPerformance,
       voidRefund: voidRefund ?? this.voidRefund,
       cashRecon: cashRecon ?? this.cashRecon,
       orders: orders ?? this.orders,
@@ -219,9 +201,15 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
         allOrders.where((o) => o.status == 'refunded').toList();
 
     // ── Section 1: Sales Overview ─────────────────────────────────────────
-    final totalSales =
-        completedOrders.fold<double>(0, (s, o) => s + o.totalAmount);
-    final orderCount = completedOrders.length;
+    final voidTotal = voidedOrders.fold<double>(0, (s, o) => s + o.totalAmount);
+    final refundTotal = refundedOrders.fold<double>(
+        0, (s, o) => s + (o.refundAmount ?? o.totalAmount));
+
+    final completedTotal = completedOrders.fold<double>(0, (s, o) => s + o.totalAmount);
+    final refundedOrdersTotal = refundedOrders.fold<double>(0, (s, o) => s + o.totalAmount);
+    final totalSales = completedTotal + refundedOrdersTotal - refundTotal;
+
+    final orderCount = completedOrders.length + refundedOrders.length;
     final avgOrder = orderCount > 0 ? totalSales / orderCount : 0.0;
 
     // Payment breakdown
@@ -231,6 +219,13 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
       paymentMap.putIfAbsent(m, () => _PayAgg());
       paymentMap[m]!.count++;
       paymentMap[m]!.total += o.totalAmount;
+    }
+    for (final o in refundedOrders) {
+      final m = o.paymentMethod.toLowerCase();
+      paymentMap.putIfAbsent(m, () => _PayAgg());
+      paymentMap[m]!.count++;
+      final refundAmt = o.refundAmount ?? o.totalAmount;
+      paymentMap[m]!.total += (o.totalAmount - refundAmt);
     }
     final paymentBreakdown = paymentMap.entries
         .map((e) => PaymentMethodEntry(
@@ -245,7 +240,12 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
     final revenueMap = <String, double>{};
     final qtyMap = <String, int>{};
 
-    for (final order in completedOrders) {
+    for (final order in [...completedOrders, ...refundedOrders]) {
+      final isRefunded = order.status == 'refunded';
+      final scale = isRefunded 
+          ? (order.totalAmount > 0 ? (order.totalAmount - (order.refundAmount ?? order.totalAmount)) / order.totalAmount : 0.0)
+          : 1.0;
+
       for (final jsonStr in order.orderItemsJson) {
         try {
           final parsed = jsonDecode(jsonStr);
@@ -254,8 +254,8 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
             final price = (parsed['totalPrice'] as num?)?.toDouble() ?? 0;
             final qty = (parsed['quantity'] as num?)?.toInt() ?? 1;
 
-            revenueMap[name] = (revenueMap[name] ?? 0) + price;
-            qtyMap[name] = (qtyMap[name] ?? 0) + qty;
+            revenueMap[name] = (revenueMap[name] ?? 0) + (price * scale);
+            qtyMap[name] = (qtyMap[name] ?? 0) + (qty * scale).round();
           }
         } catch (_) {
           // Fallback: try regex parse for older format
@@ -270,8 +270,8 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
             final name = nameMatch.group(1)!;
             final price = double.tryParse(priceMatch?.group(1) ?? '0') ?? 0;
             final qty = int.tryParse(qtyMatch?.group(1) ?? '1') ?? 1;
-            revenueMap[name] = (revenueMap[name] ?? 0) + price;
-            qtyMap[name] = (qtyMap[name] ?? 0) + qty;
+            revenueMap[name] = (revenueMap[name] ?? 0) + (price * scale);
+            qtyMap[name] = (qtyMap[name] ?? 0) + (qty * scale).round();
           }
         }
       }
@@ -286,56 +286,7 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
         .toList()
       ..sort((a, b) => b.quantity.compareTo(a.quantity));
 
-    // ── Section 3: Category Performance for THIS store ────────────────────
-    final categories = await _isar.categoryCollections
-        .filter()
-        .storeIdEqualTo(storeId)
-        .and()
-        .isDeletedEqualTo(false)
-        .findAll();
-
-    final catNameMap = <String, String>{};
-    for (final c in categories) {
-      catNameMap[c.syncId] = c.name;
-    }
-
-    final catRevenue = <String, double>{};
-    final catOrders = <String, Set<int>>{};
-
-    for (final order in completedOrders) {
-      for (final jsonStr in order.orderItemsJson) {
-        try {
-          final parsed = jsonDecode(jsonStr);
-          if (parsed is Map<String, dynamic>) {
-            final catId = parsed['categoryId'] as String? ?? '';
-            final price = (parsed['totalPrice'] as num?)?.toDouble() ?? 0;
-            if (catId.isNotEmpty) {
-              final catName = catNameMap[catId] ?? 'Uncategorized';
-              catRevenue[catName] = (catRevenue[catName] ?? 0) + price;
-              catOrders.putIfAbsent(catName, () => {});
-              catOrders[catName]!.add(order.id);
-            }
-          }
-        } catch (_) {
-          // skip
-        }
-      }
-    }
-
-    final categoryPerformance = catRevenue.entries
-        .map((e) => CategoryPerformance(
-              categoryName: e.key,
-              totalRevenue: e.value,
-              orderCount: catOrders[e.key]?.length ?? 0,
-            ))
-        .toList()
-      ..sort((a, b) => b.totalRevenue.compareTo(a.totalRevenue));
-
     // ── Section 4: Voids & Refunds ────────────────────────────────────────
-    final voidTotal = voidedOrders.fold<double>(0, (s, o) => s + o.totalAmount);
-    final refundTotal = refundedOrders.fold<double>(
-        0, (s, o) => s + (o.refundAmount ?? o.totalAmount));
-
     final voidRefund = VoidRefundSummary(
       voidCount: voidedOrders.length,
       voidTotal: voidTotal,
@@ -344,9 +295,16 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
     );
 
     // ── Section 6: Cash Reconciliation ────────────────────────────────────
-    final expectedCash = completedOrders
+    final expectedCashCompleted = completedOrders
         .where((o) => o.paymentMethod.toLowerCase() == 'cash')
         .fold<double>(0, (s, o) => s + o.totalAmount);
+    final expectedCashRefundedTotal = refundedOrders
+        .where((o) => o.paymentMethod.toLowerCase() == 'cash')
+        .fold<double>(0, (s, o) => s + o.totalAmount);
+    final cashRefundAmount = refundedOrders
+        .where((o) => o.paymentMethod.toLowerCase() == 'cash')
+        .fold<double>(0, (s, o) => s + (o.refundAmount ?? o.totalAmount));
+    final expectedCash = expectedCashCompleted + expectedCashRefundedTotal - cashRefundAmount;
 
     final cashRecon = CashReconciliation(expectedCash: expectedCash);
 
@@ -358,7 +316,6 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
       avgOrderValue: avgOrder,
       paymentBreakdown: paymentBreakdown,
       topItems: topItems.take(5).toList(),
-      categoryPerformance: categoryPerformance,
       voidRefund: voidRefund,
       cashRecon: cashRecon,
       orders: allOrders,
