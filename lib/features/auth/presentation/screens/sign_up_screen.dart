@@ -13,6 +13,9 @@ import '../../../../core/services/isar_service.dart';
 import '../../../../core/services/supabase_service.dart';
 import '../../../../core/utils/image_compress_helper.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/isar_collections/category_collection.dart';
+import '../../../../shared/isar_collections/menu_item_collection.dart';
+import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/isar_collections/store_collection.dart';
 import '../../../../shared/isar_collections/sync_queue_collection.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
@@ -148,6 +151,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       final isar = IsarService.instance.isar;
       await isar.writeTxn(() async {
+        // Clear all local database collections to prevent data leakage from other accounts
+        await isar.storeCollections.clear();
+        await isar.userCollections.clear();
+        await isar.categoryCollections.clear();
+        await isar.menuItemCollections.clear();
+        await isar.orderCollections.clear();
+        await isar.syncQueueCollections.clear();
+
         await isar.storeCollections.put(store);
         await isar.userCollections.put(admin);
       });

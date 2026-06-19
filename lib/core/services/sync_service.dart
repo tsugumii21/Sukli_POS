@@ -316,11 +316,13 @@ class SyncService {
 
       // 3. Save to Isar in a transaction
       await _isar.isar.writeTxn(() async {
-        // Clear existing local store, users, categories, and menu items to prevent duplicate IDs or stale data
+        // Clear existing local store, users, categories, menu items, orders, and sync queue to prevent duplicate IDs or stale data
         await _isar.isar.storeCollections.clear();
         await _isar.isar.userCollections.clear();
         await _isar.isar.categoryCollections.clear();
         await _isar.isar.menuItemCollections.clear();
+        await _isar.isar.orderCollections.clear();
+        await _isar.isar.syncQueueCollections.clear();
 
         // Save store (ensure isActive = true)
         final store = StoreCollection()

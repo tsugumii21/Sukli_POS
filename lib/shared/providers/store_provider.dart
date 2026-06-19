@@ -5,17 +5,15 @@ import 'isar_provider.dart';
 
 /// Loads the current store from Isar.
 /// This is the single source of truth for the active store identity.
-final currentStoreProvider = FutureProvider<StoreCollection?>((ref) async {
+final currentStoreProvider = StreamProvider<StoreCollection?>((ref) {
   final isar = ref.watch(isarProvider);
 
-  // Find the active, non-deleted store record.
-  // In a multi-tenant local DB, there should only be one 'active' store
-  // marked at any given time after login.
   return isar.storeCollections
       .filter()
       .isDeletedEqualTo(false)
       .isActiveEqualTo(true)
-      .findFirst();
+      .watch(fireImmediately: true)
+      .map((list) => list.isEmpty ? null : list.first);
 });
 
 /// Convenience provider — returns the current storeId string or an empty string.
