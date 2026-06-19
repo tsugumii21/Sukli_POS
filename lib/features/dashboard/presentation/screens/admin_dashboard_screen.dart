@@ -932,8 +932,8 @@ class _AdminNavDrawer extends ConsumerWidget {
             onTap: () async {
               final router = GoRouter.of(context);
               Navigator.pop(context);
-              await ref.read(adminAuthProvider.notifier).signOut();
               router.go(RouteConstants.adminLogin);
+              await ref.read(adminAuthProvider.notifier).signOut();
             },
           ),
           SizedBox(

@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/constants/route_constants.dart';
+import 'features/auth/presentation/providers/admin_auth_provider.dart';
+import 'features/auth/presentation/providers/auth_provider.dart';
+import 'shared/providers/store_provider.dart';
 
 // ── Auth Screens ──────────────────────────────────────────────────────────────
 import 'features/auth/presentation/screens/splash_screen.dart';
@@ -64,20 +67,106 @@ CustomTransitionPage<void> _buildFadeSlideTransitionPage({
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final listenable = RouterTransitionNotifier(ref);
+  ref.onDispose(() => listenable.dispose());
+
   return GoRouter(
     initialLocation: RouteConstants.splash,
+    refreshListenable: listenable,
     debugLogDiagnostics: true,
     redirect: (context, state) {
       final path = state.matchedLocation;
-      if (path.startsWith('/cashier')) {
-        SharedPreferences.getInstance().then((prefs) {
-          prefs.setString('last_active_role', 'cashier');
-        });
-      } else if (path.startsWith('/admin')) {
-        SharedPreferences.getInstance().then((prefs) {
-          prefs.setString('last_active_role', 'admin');
-        });
+
+      // Skip redirect on splash screen
+      if (path == RouteConstants.splash) return null;
+
+      // Get current auth states
+      final adminState = ref.read(adminAuthProvider);
+      final adminUser = adminState.value;
+      final cashierAuth = ref.read(authProvider);
+      final hasStore = ref.read(currentStoreIdProvider).isNotEmpty;
+
+      final isAdminLoggedIn = adminUser != null && !adminState.isLoading;
+      final isCashierLoggedIn = cashierAuth.isAuthenticated;
+
+      // ── Onboarding / Welcome Redirects ──
+      if (!hasStore) {
+        final allowedWithoutStore = [
+          RouteConstants.welcome,
+          RouteConstants.signup,
+          RouteConstants.verifyEmail,
+          RouteConstants.adminLogin,
+        ];
+        if (!allowedWithoutStore.contains(path)) {
+          return RouteConstants.welcome;
+        }
+        return null;
       }
+
+      // ── Store Exists: Routing Rules ──
+      
+      // 1. If Admin is logged in:
+      if (isAdminLoggedIn) {
+        final allowedForAdmin = [
+          RouteConstants.cashierSelect,
+          RouteConstants.cashierPin,
+          RouteConstants.switchToAdmin,
+        ];
+        
+        // Prevent going to welcome, signup, or admin login
+        if (path == RouteConstants.welcome || 
+            path == RouteConstants.signup || 
+            path == RouteConstants.adminLogin) {
+          return RouteConstants.adminHome;
+        }
+
+        // Allow any admin route or allowedForAdmin routes, otherwise redirect to adminHome
+        if (path.startsWith('/admin') || allowedForAdmin.contains(path)) {
+          if (path.startsWith('/admin')) {
+            SharedPreferences.getInstance().then((prefs) {
+              prefs.setString('last_active_role', 'admin');
+            });
+          }
+          return null;
+        }
+
+        return RouteConstants.adminHome;
+      }
+
+      // 2. If Cashier is logged in:
+      if (isCashierLoggedIn) {
+        // Prevent going to welcome, signup, admin login, or cashier select
+        if (path == RouteConstants.welcome ||
+            path == RouteConstants.signup ||
+            path == RouteConstants.adminLogin ||
+            path == RouteConstants.cashierSelect) {
+          return RouteConstants.cashierHome;
+        }
+
+        // Allow cashier home/routes or switch-to-admin
+        if (path.startsWith('/cashier') || path == RouteConstants.switchToAdmin) {
+          if (path.startsWith('/cashier')) {
+            SharedPreferences.getInstance().then((prefs) {
+              prefs.setString('last_active_role', 'cashier');
+            });
+          }
+          return null;
+        }
+
+        return RouteConstants.cashierHome;
+      }
+
+      // 3. No one is logged in (but store exists):
+      final allowedGuestRoutes = [
+        RouteConstants.cashierSelect,
+        RouteConstants.cashierPin,
+        RouteConstants.adminLogin,
+      ];
+
+      if (!allowedGuestRoutes.contains(path)) {
+        return RouteConstants.cashierSelect;
+      }
+
       return null;
     },
     routes: [
@@ -282,4 +371,16 @@ class AdminShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => child;
+}
+
+/// A notifier that implements [Listenable] by listening to Riverpod providers.
+/// Whenever auth or store states change, it notifies GoRouter to rerun redirects.
+class RouterTransitionNotifier extends ChangeNotifier {
+  final Ref _ref;
+
+  RouterTransitionNotifier(this._ref) {
+    _ref.listen(adminAuthProvider, (_, __) => notifyListeners());
+    _ref.listen(authProvider, (_, __) => notifyListeners());
+    _ref.listen(currentStoreProvider, (_, __) => notifyListeners());
+  }
 }

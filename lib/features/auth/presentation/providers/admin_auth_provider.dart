@@ -56,7 +56,13 @@ class AdminAuthNotifier extends AsyncNotifier<User?> {
     state = const AsyncLoading();
     try {
       SyncService.instance.stopPeriodicSync();
-      await SupabaseService.instance.signOut();
+      
+      try {
+        await SupabaseService.instance.signOut();
+      } catch (e) {
+        // Suppress remote signout errors so local database wipe always completes
+      }
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('last_active_role');
 
