@@ -119,6 +119,7 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
               onChanged: ref.read(itemProvider.notifier).setSearch,
               style: AppTextStyles.body(context).copyWith(color: textPrimary),
               decoration: InputDecoration(
+                filled: false,
                 hintText: 'Search items…',
                 hintStyle: AppTextStyles.body(context)
                     .copyWith(color: textPrimary.withValues(alpha: 0.4)),
@@ -188,7 +189,7 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
           .fadeIn(duration: 400.ms),
       body: itemsAsync.when(
         loading: () => ShimmerMenuGrid(
-          aspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.80),
+          aspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.72),
         ),
         error: (e, _) => Center(
           child: Text('Error loading items: $e',
@@ -279,7 +280,7 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen>
                           padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 80),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: ResponsiveLayout.gridColumns(context),
-                            childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.80),
+                            childAspectRatio: ResponsiveLayout.adaptiveAspectRatio(context, phoneRatio: 0.72),
                             crossAxisSpacing: AppSpacing.sm,
                             mainAxisSpacing: AppSpacing.sm,
                           ),

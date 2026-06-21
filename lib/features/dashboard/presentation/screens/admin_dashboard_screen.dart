@@ -3,6 +3,7 @@ import '../../../../core/utils/responsive_layout.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/services/sync_service.dart';
@@ -168,18 +169,18 @@ class AdminDashboardScreen extends ConsumerWidget {
                         accentColor: AppColors.successLight,
                         delay: 80,
                       ),
-                      _AdminStatCard(
-                        icon: Icons.sync_rounded,
-                        value: data.pendingSyncCount.toString(),
-                        label: "Pending Sync",
-                        accentColor: data.pendingSyncCount > 0
-                            ? AppColors.warningLight
-                            : AppColors.successLight,
-                        delay: 240,
-                      ),
                     ],
                   ),
-
+                  const SizedBox(height: AppSpacing.md),
+                  _AdminHorizontalStatCard(
+                    icon: Icons.sync_rounded,
+                    value: data.pendingSyncCount.toString(),
+                    label: "Pending Sync",
+                    accentColor: data.pendingSyncCount > 0
+                        ? AppColors.warningLight
+                        : AppColors.successLight,
+                    delay: 160,
+                  ),
                   const SizedBox(height: AppSpacing.xl),
 
                   // ── Quick Actions ─────────────────────────────────────────
@@ -375,6 +376,73 @@ class _AdminStatCard extends StatelessWidget {
           Text(
             value,
             style: AppTextStyles.h2(context).copyWith(color: textPrimary),
+          ),
+        ],
+      ),
+    )
+        .animate(delay: Duration(milliseconds: delay))
+        .fadeIn(duration: 400.ms)
+        .slideY(begin: 0.08, end: 0);
+  }
+}
+
+class _AdminHorizontalStatCard extends StatelessWidget {
+  const _AdminHorizontalStatCard({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.accentColor,
+    this.delay = 0,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color accentColor;
+  final int delay;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF5D2832) : AppColors.cardLight;
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, size: 20, color: accentColor),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.bodySemiBold(context).copyWith(
+                color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.7),
+                fontSize: 14,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: AppTextStyles.h2(context).copyWith(
+              color: textPrimary,
+              fontSize: 22,
+            ),
           ),
         ],
       ),
@@ -590,9 +658,8 @@ class _RecentOrderTile extends StatelessWidget {
         statusLabel = (order.status as String).toUpperCase();
     }
 
-    final orderedAt = order.orderedAt as DateTime;
-    final timeStr =
-        '${orderedAt.hour.toString().padLeft(2, '0')}:${orderedAt.minute.toString().padLeft(2, '0')}';
+    final orderedAt = order.orderedAt;
+    final timeStr = DateFormat('h:mm a').format(orderedAt);
     final dateStr = '${orderedAt.day}/${orderedAt.month}/${orderedAt.year}';
 
     return Container(
@@ -849,6 +916,21 @@ class _AdminNavDrawer extends ConsumerWidget {
               Navigator.pop(context);
               if (currentPath != RouteConstants.adminMenuItems) {
                 context.push(RouteConstants.adminMenuItems);
+              }
+            },
+            hoverBg: itemHoverBg,
+            textColor: textPrimary,
+            iconColor: iconPrimary,
+          ),
+          _AdminNavItem(
+            icon: Icons.receipt_long_rounded,
+            label: 'Order History',
+            delay: 260,
+            isSelected: currentPath == RouteConstants.orderHistory,
+            onTap: () {
+              Navigator.pop(context);
+              if (currentPath != RouteConstants.orderHistory) {
+                context.push(RouteConstants.orderHistory);
               }
             },
             hoverBg: itemHoverBg,

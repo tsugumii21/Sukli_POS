@@ -301,7 +301,7 @@ class ItemManageGridTile extends ConsumerWidget {
             children: [
               // Image area — fixed height
               Container(
-                height: 95,
+                height: 80,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: cardBg,

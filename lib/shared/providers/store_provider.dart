@@ -20,5 +20,13 @@ final currentStoreProvider = StreamProvider<StoreCollection?>((ref) {
 /// This makes it easy to inject into Isar queries.
 final currentStoreIdProvider = Provider<String>((ref) {
   final storeAsync = ref.watch(currentStoreProvider);
-  return storeAsync.value?.syncId ?? '';
+  if (storeAsync.hasValue && storeAsync.value != null) {
+    return storeAsync.value!.syncId;
+  }
+
+  // Fallback: query Isar synchronously so we don't return an empty string
+  // if the stream is simply loading but the store already exists in the database.
+  final isar = ref.read(isarProvider);
+  final store = isar.storeCollections.filter().isDeletedEqualTo(false).build().findFirstSync();
+  return store?.syncId ?? '';
 });

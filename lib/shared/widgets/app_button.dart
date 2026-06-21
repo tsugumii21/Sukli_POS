@@ -14,6 +14,7 @@ class AppPrimaryButton extends StatefulWidget {
     this.isLoading = false,
     this.icon,
     this.width,
+    this.textStyle,
   });
 
   final String label;
@@ -21,6 +22,7 @@ class AppPrimaryButton extends StatefulWidget {
   final bool isLoading;
   final IconData? icon;
   final double? width;
+  final TextStyle? textStyle;
 
   @override
   State<AppPrimaryButton> createState() => _AppPrimaryButtonState();
@@ -85,7 +87,7 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
                         ],
                         Text(
                           widget.label,
-                          style: AppTextStyles.bodyLarge(context).copyWith(color: AppColors.white),
+                          style: (widget.textStyle ?? AppTextStyles.bodyLarge(context)).copyWith(color: AppColors.white),
                         ),
                       ],
                     ),
@@ -108,6 +110,7 @@ class AppSecondaryButton extends StatefulWidget {
     this.isLoading = false,
     this.icon,
     this.width,
+    this.textStyle,
   });
 
   final String label;
@@ -115,6 +118,7 @@ class AppSecondaryButton extends StatefulWidget {
   final bool isLoading;
   final IconData? icon;
   final double? width;
+  final TextStyle? textStyle;
 
   @override
   State<AppSecondaryButton> createState() => _AppSecondaryButtonState();
@@ -169,7 +173,7 @@ class _AppSecondaryButtonState extends State<AppSecondaryButton> {
                         ],
                         Text(
                           widget.label,
-                          style: AppTextStyles.bodyLarge(context).copyWith(color: color),
+                          style: (widget.textStyle ?? AppTextStyles.bodyLarge(context)).copyWith(color: color),
                         ),
                       ],
                     ),

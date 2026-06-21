@@ -6,6 +6,7 @@ import 'package:isar_community/isar.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
+import '../../../../shared/isar_collections/store_collection.dart';
 import '../../../../shared/providers/isar_provider.dart';
 import '../../../../shared/providers/store_provider.dart';
 
@@ -172,7 +173,16 @@ class ReportsNotifier extends Notifier<ReportState> {
   }
 
   Future<void> _loadData(String storeId) async {
-    if (storeId.isEmpty) return;
+    var finalStoreId = storeId;
+    if (finalStoreId.isEmpty) {
+      final db = ref.read(isarProvider);
+      final store = db.storeCollections.filter().isDeletedEqualTo(false).build().findFirstSync();
+      if (store != null) {
+        finalStoreId = store.syncId;
+      } else {
+        return;
+      }
+    }
 
     final isar = ref.read(isarProvider);
     DateTime start;
@@ -206,7 +216,7 @@ class ReportsNotifier extends Notifier<ReportState> {
 
     final allOrdersCount = await isar.orderCollections
         .filter()
-        .storeIdEqualTo(storeId)
+        .storeIdEqualTo(finalStoreId)
         .and()
         .orderedAtBetween(start, end)
         .and()
@@ -270,7 +280,7 @@ class ReportsNotifier extends Notifier<ReportState> {
     while (true) {
       final batch = await isar.orderCollections
           .filter()
-          .storeIdEqualTo(storeId)
+          .storeIdEqualTo(finalStoreId)
           .and()
           .orderedAtBetween(start, end)
           .and()
@@ -332,13 +342,15 @@ class ReportsNotifier extends Notifier<ReportState> {
           
           final netAmount = o.totalAmount - refundAmt;
           totalSales += netAmount;
-          completedOrdersCount++;
           
-          if (netAmount > highestSale) highestSale = netAmount;
-          cashierCounts[o.cashierName] = (cashierCounts[o.cashierName] ?? 0) + 1;
+          if (netAmount > 0.0) {
+            completedOrdersCount++;
+            if (netAmount > highestSale) highestSale = netAmount;
+            cashierCounts[o.cashierName] = (cashierCounts[o.cashierName] ?? 0) + 1;
 
-          final method = o.paymentMethod.toLowerCase();
-          paymentTotals[method] = (paymentTotals[method] ?? 0) + netAmount;
+            final method = o.paymentMethod.toLowerCase();
+            paymentTotals[method] = (paymentTotals[method] ?? 0) + netAmount;
+          }
 
           for (final json in o.orderItemsJson) {
             try {

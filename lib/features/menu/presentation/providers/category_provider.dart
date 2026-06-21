@@ -366,8 +366,8 @@ class CategoryNotifier extends Notifier<AsyncValue<List<CategoryWithCount>>> {
         'sort_order': c.sortOrder,
         'is_active': c.isActive,
         'is_deleted': c.isDeleted,
-        'created_at': c.createdAt.toIso8601String(),
-        'updated_at': c.updatedAt.toIso8601String(),
+        'created_at': c.createdAt.toUtc().toIso8601String(),
+        'updated_at': c.updatedAt.toUtc().toIso8601String(),
       };
 }
 

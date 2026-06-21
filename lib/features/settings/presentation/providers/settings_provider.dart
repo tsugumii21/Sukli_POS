@@ -521,8 +521,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
           ..ownerId = json['ownerId'] as String
           ..supabaseAuthUid = json['supabaseAuthUid'] as String?
           ..isActive = json['isActive'] as bool
-          ..createdAt = DateTime.parse(json['createdAt'] as String)
-          ..updatedAt = DateTime.parse(json['updatedAt'] as String)
+          ..createdAt = DateTime.parse(json['createdAt'] as String).toLocal()
+          ..updatedAt = DateTime.parse(json['updatedAt'] as String).toLocal()
           ..isSynced = json['isSynced'] as bool
           ..isDeleted = json['isDeleted'] as bool;
         await isar.storeCollections.put(s);
@@ -541,8 +541,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
           ..status = json['status'] as String
           ..avatarUrl = json['avatarUrl'] as String?
           ..storeId = json['storeId'] as String?
-          ..createdAt = DateTime.parse(json['createdAt'] as String)
-          ..updatedAt = DateTime.parse(json['updatedAt'] as String)
+          ..createdAt = DateTime.parse(json['createdAt'] as String).toLocal()
+          ..updatedAt = DateTime.parse(json['updatedAt'] as String).toLocal()
           ..isSynced = json['isSynced'] as bool
           ..isDeleted = json['isDeleted'] as bool;
         await isar.userCollections.put(u);
@@ -561,8 +561,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
           ..sortOrder = json['sortOrder'] as int
           ..isActive = json['isActive'] as bool
           ..storeId = json['storeId'] as String?
-          ..createdAt = DateTime.parse(json['createdAt'] as String)
-          ..updatedAt = DateTime.parse(json['updatedAt'] as String)
+          ..createdAt = DateTime.parse(json['createdAt'] as String).toLocal()
+          ..updatedAt = DateTime.parse(json['updatedAt'] as String).toLocal()
           ..isSynced = json['isSynced'] as bool
           ..isDeleted = json['isDeleted'] as bool;
         await isar.categoryCollections.put(c);
@@ -586,8 +586,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
           ..variantGroupsJson = List<String>.from(json['variantGroupsJson'] as List)
           ..modifiersJson = List<String>.from(json['modifiersJson'] as List)
           ..storeId = json['storeId'] as String?
-          ..createdAt = DateTime.parse(json['createdAt'] as String)
-          ..updatedAt = DateTime.parse(json['updatedAt'] as String)
+          ..createdAt = DateTime.parse(json['createdAt'] as String).toLocal()
+          ..updatedAt = DateTime.parse(json['updatedAt'] as String).toLocal()
           ..isSynced = json['isSynced'] as bool
           ..isDeleted = json['isDeleted'] as bool;
         await isar.menuItemCollections.put(m);
@@ -616,17 +616,17 @@ class SettingsNotifier extends Notifier<SettingsState> {
           ..voidReason = json['voidReason'] as String?
           ..refundReason = json['refundReason'] as String?
           ..voidedById = json['voidedById'] as String?
-          ..voidedAt = json['voidedAt'] == null ? null : DateTime.parse(json['voidedAt'] as String)
+          ..voidedAt = json['voidedAt'] == null ? null : DateTime.parse(json['voidedAt'] as String).toLocal()
           ..voidedByName = json['voidedByName'] as String?
           ..isPartialRefund = json['isPartialRefund'] as bool? ?? false
           ..refundAmount = json['refundAmount'] == null ? null : (json['refundAmount'] as num).toDouble()
-          ..refundedAt = json['refundedAt'] == null ? null : DateTime.parse(json['refundedAt'] as String)
+          ..refundedAt = json['refundedAt'] == null ? null : DateTime.parse(json['refundedAt'] as String).toLocal()
           ..refundedById = json['refundedById'] as String?
           ..refundedByName = json['refundedByName'] as String?
-          ..orderedAt = DateTime.parse(json['orderedAt'] as String)
+          ..orderedAt = DateTime.parse(json['orderedAt'] as String).toLocal()
           ..storeId = json['storeId'] as String?
-          ..createdAt = DateTime.parse(json['createdAt'] as String)
-          ..updatedAt = DateTime.parse(json['updatedAt'] as String)
+          ..createdAt = DateTime.parse(json['createdAt'] as String).toLocal()
+          ..updatedAt = DateTime.parse(json['updatedAt'] as String).toLocal()
           ..isSynced = json['isSynced'] as bool
           ..isDeleted = json['isDeleted'] as bool;
         await isar.orderCollections.put(o);

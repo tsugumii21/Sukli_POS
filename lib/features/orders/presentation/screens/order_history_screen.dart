@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/route_constants.dart';
+import '../../../../shared/providers/active_role_provider.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../shared/isar_collections/order_collection.dart';
 import '../providers/order_history_provider.dart';
 import '../widgets/order_detail_sheet.dart';
 import '../widgets/order_filter_sheet.dart';
@@ -31,13 +31,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
   final _searchController = TextEditingController();
   bool _showSearch = false;
 
-  // Export date range options
-  static const _exportOptions = [
-    (label: 'Today', id: 'today'),
-    (label: 'This Week', id: 'week'),
-    (label: 'This Month', id: 'month'),
-    (label: 'Custom Range', id: 'custom'),
-  ];
+
 
   @override
   void initState() {
@@ -97,7 +91,12 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go(RouteConstants.cashierHome);
+              final activeRole = ref.read(activeRoleProvider);
+              if (activeRole == ActiveRole.admin) {
+                context.go(RouteConstants.adminHome);
+              } else {
+                context.go(RouteConstants.cashierHome);
+              }
             }
           },
         ),
@@ -142,27 +141,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
             ],
           ),
 
-          // Export button
-          PopupMenuButton<String>(
-            icon: Icon(Icons.ios_share_rounded, color: textPrimary),
-            tooltip: 'Export to Excel',
-            color: surface,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            onSelected: (id) => _handleExport(context, id),
-            itemBuilder: (_) => _exportOptions
-                .map(
-                  (o) => PopupMenuItem<String>(
-                    value: o.id,
-                    child: Text(
-                      o.label,
-                      style:
-                          AppTextStyles.body(context).copyWith(color: textPrimary),
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
+
         ],
       ),
       body: Column(
@@ -298,129 +277,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
     }
   }
 
-  Future<void> _handleExport(BuildContext context, String rangeId) async {
-    final notifier = ref.read(orderHistoryProvider.notifier);
-    
-    // Show a loading snackbar since fetching all might take a moment
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Preparing export...', style: AppTextStyles.body(context)),
-        duration: const Duration(seconds: 1),
-      ),
-    );
 
-    final allFiltered = await notifier.fetchAllForExport();
-
-    final now = DateTime.now();
-    final List<OrderCollection> toExport;
-    String sheetLabel;
-
-    if (rangeId == 'custom') {
-      // Use the current filter's date range; if none, ask via filter sheet
-      final filter = ref.read(orderHistoryProvider).filter;
-      if (filter.startDate == null && filter.endDate == null) {
-        // Open filter sheet so the user can pick a range
-        if (!context.mounted) return;
-        final result = await OrderFilterSheet.show(
-          context,
-          filter.copyWith(paymentMethod: null, status: null),
-        );
-        if (result == null || !context.mounted) return;
-        ref.read(orderHistoryProvider.notifier).applyFilter(result);
-        return; // user will tap export again after setting range
-      }
-      toExport = allFiltered;
-      sheetLabel = 'Custom';
-    } else {
-      DateTime start;
-      DateTime end = now;
-
-      switch (rangeId) {
-        case 'today':
-          start = DateTime(now.year, now.month, now.day);
-          sheetLabel = DateFormat('yyyyMMdd').format(now);
-          break;
-        case 'week':
-          start = now.subtract(Duration(days: now.weekday - 1));
-          start = DateTime(start.year, start.month, start.day);
-          sheetLabel = 'Week${DateFormat('yyyyMMdd').format(start)}';
-          break;
-        case 'month':
-        default:
-          start = DateTime(now.year, now.month, 1);
-          sheetLabel = DateFormat('yyyyMM').format(now);
-          break;
-      }
-
-      toExport = filterByDateRange(allFiltered, start, end);
-    }
-
-    if (!context.mounted) return;
-    if (toExport.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No orders found for this period.',
-              style: AppTextStyles.body(context)),
-          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
-      return;
-    }
-
-    // Show progress indicator
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(children: [
-          const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                  color: Colors.white, strokeWidth: 2)),
-          const SizedBox(width: 12),
-          Text('Exporting ${toExport.length} orders…',
-              style: AppTextStyles.body(context)),
-        ]),
-        duration: const Duration(seconds: 10),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-
-    final path = await notifier.exportToExcel(toExport, sheetLabel: sheetLabel);
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    if (path != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Saved: $path',
-            style: AppTextStyles.body(context),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          backgroundColor: const Color(0xFF2E7D32),
-          duration: const Duration(seconds: 5),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Export failed. Please try again.',
-              style: AppTextStyles.body(context)),
-          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
-    }
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

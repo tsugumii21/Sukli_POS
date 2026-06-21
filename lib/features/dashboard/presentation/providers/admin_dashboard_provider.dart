@@ -52,18 +52,32 @@ class AdminDashboardNotifier extends Notifier<AsyncValue<AdminDashboardData>> {
       final storeId = ref.read(currentStoreIdProvider);
       if (storeId.isEmpty) return;
 
-      // 1. Today's completed orders
+      // 1. Today's Totals (Completed and Refunded)
       final todayOrders = await _isar.isar.orderCollections
           .filter()
           .storeIdEqualTo(storeId)
           .and()
           .orderedAtBetween(startOfDay, endOfDay)
           .and()
-          .statusEqualTo('completed')
+          .group((q) => q.statusEqualTo('completed').or().statusEqualTo('refunded'))
           .findAll();
 
-      final salesTotal =
-          todayOrders.fold<double>(0, (sum, o) => sum + o.totalAmount);
+      double salesTotal = 0.0;
+      int completedAndPartialRefundCount = 0;
+
+      for (final order in todayOrders) {
+        if (order.status == 'completed') {
+          salesTotal += order.totalAmount;
+          completedAndPartialRefundCount++;
+        } else if (order.status == 'refunded') {
+          final refundAmt = order.refundAmount ?? order.totalAmount;
+          final netAmount = order.totalAmount - refundAmt;
+          salesTotal += netAmount;
+          if (netAmount > 0.0) {
+            completedAndPartialRefundCount++;
+          }
+        }
+      }
 
       // 2. Pending sync queue items
       final pendingItems = await _isar.isar.syncQueueCollections
@@ -71,17 +85,17 @@ class AdminDashboardNotifier extends Notifier<AsyncValue<AdminDashboardData>> {
           .statusEqualTo('pending')
           .findAll();
 
-      // 3. Recent 10 orders (any status)
+      // 3. Recent 6 orders (any status)
       final recentOrders = await _isar.isar.orderCollections
           .filter()
           .storeIdEqualTo(storeId)
-          .sortByOrderedAtDesc()
-          .limit(10)
+          .sortByOrderNumberDesc()
+          .limit(6)
           .findAll();
 
       state = AsyncValue.data(AdminDashboardData(
         totalSalesToday: salesTotal,
-        ordersToday: todayOrders.length,
+        ordersToday: completedAndPartialRefundCount,
         pendingSyncCount: pendingItems.length,
         recentOrders: recentOrders,
       ));

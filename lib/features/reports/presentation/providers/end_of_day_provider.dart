@@ -200,6 +200,12 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
     final refundedOrders =
         allOrders.where((o) => o.status == 'refunded').toList();
 
+    // Partially refunded orders (net amount > 0)
+    final partiallyRefundedOrders = refundedOrders.where((o) {
+      final refundAmt = o.refundAmount ?? o.totalAmount;
+      return (o.totalAmount - refundAmt) > 0.0;
+    }).toList();
+
     // ── Section 1: Sales Overview ─────────────────────────────────────────
     final voidTotal = voidedOrders.fold<double>(0, (s, o) => s + o.totalAmount);
     final refundTotal = refundedOrders.fold<double>(
@@ -209,7 +215,7 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
     final refundedOrdersTotal = refundedOrders.fold<double>(0, (s, o) => s + o.totalAmount);
     final totalSales = completedTotal + refundedOrdersTotal - refundTotal;
 
-    final orderCount = completedOrders.length + refundedOrders.length;
+    final orderCount = completedOrders.length + partiallyRefundedOrders.length;
     final avgOrder = orderCount > 0 ? totalSales / orderCount : 0.0;
 
     // Payment breakdown
@@ -221,11 +227,14 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
       paymentMap[m]!.total += o.totalAmount;
     }
     for (final o in refundedOrders) {
-      final m = o.paymentMethod.toLowerCase();
-      paymentMap.putIfAbsent(m, () => _PayAgg());
-      paymentMap[m]!.count++;
       final refundAmt = o.refundAmount ?? o.totalAmount;
-      paymentMap[m]!.total += (o.totalAmount - refundAmt);
+      final netAmt = o.totalAmount - refundAmt;
+      if (netAmt > 0.0) {
+        final m = o.paymentMethod.toLowerCase();
+        paymentMap.putIfAbsent(m, () => _PayAgg());
+        paymentMap[m]!.count++;
+        paymentMap[m]!.total += netAmt;
+      }
     }
     final paymentBreakdown = paymentMap.entries
         .map((e) => PaymentMethodEntry(

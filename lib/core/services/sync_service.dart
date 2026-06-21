@@ -332,8 +332,8 @@ class SyncService {
           ..ownerId = storeMap['owner_id'] as String
           ..supabaseAuthUid = storeMap['supabase_auth_uid'] as String?
           ..isActive = true // Mark as active so currentStoreProvider resolves it
-          ..createdAt = DateTime.parse(storeMap['created_at'] as String)
-          ..updatedAt = DateTime.parse(storeMap['updated_at'] as String)
+          ..createdAt = DateTime.parse(storeMap['created_at'] as String).toLocal()
+          ..updatedAt = DateTime.parse(storeMap['updated_at'] as String).toLocal()
           ..isSynced = true
           ..isDeleted = false;
         await _isar.isar.storeCollections.put(store);
@@ -349,8 +349,8 @@ class SyncService {
             ..status = row['status'] as String
             ..avatarUrl = row['avatar_url'] as String?
             ..storeId = row['store_id'] as String?
-            ..createdAt = DateTime.parse(row['created_at'] as String)
-            ..updatedAt = DateTime.parse(row['updated_at'] as String)
+            ..createdAt = DateTime.parse(row['created_at'] as String).toLocal()
+            ..updatedAt = DateTime.parse(row['updated_at'] as String).toLocal()
             ..isSynced = true
             ..isDeleted = false;
           await _isar.isar.userCollections.put(user);
@@ -367,8 +367,8 @@ class SyncService {
             ..sortOrder = (row['sort_order'] as num?)?.toInt() ?? 0
             ..isActive = row['is_active'] as bool? ?? true
             ..storeId = row['store_id'] as String?
-            ..createdAt = DateTime.parse(row['created_at'] as String)
-            ..updatedAt = DateTime.parse(row['updated_at'] as String)
+            ..createdAt = DateTime.parse(row['created_at'] as String).toLocal()
+            ..updatedAt = DateTime.parse(row['updated_at'] as String).toLocal()
             ..isSynced = true
             ..isDeleted = false;
           await _isar.isar.categoryCollections.put(cat);
@@ -413,8 +413,8 @@ class SyncService {
             ..variantGroupsJson = groupsJsonList
             ..modifiersJson = modifiersJsonList
             ..storeId = row['store_id'] as String?
-            ..createdAt = DateTime.parse(row['created_at'] as String)
-            ..updatedAt = DateTime.parse(row['updated_at'] as String)
+            ..createdAt = DateTime.parse(row['created_at'] as String).toLocal()
+            ..updatedAt = DateTime.parse(row['updated_at'] as String).toLocal()
             ..isSynced = true
             ..isDeleted = false;
           await _isar.isar.menuItemCollections.put(item);
@@ -457,7 +457,7 @@ class SyncService {
               .syncIdEqualTo(row['sync_id'] as String)
               .findFirst();
 
-          final serverUpdatedAt = DateTime.parse(row['updated_at'] as String);
+          final serverUpdatedAt = DateTime.parse(row['updated_at'] as String).toLocal();
 
           // LWW — only update if server record is newer or doesn't exist locally
           if (existing == null || serverUpdatedAt.isAfter(existing.updatedAt)) {
@@ -490,11 +490,11 @@ class SyncService {
               ..refundReason = row['refund_reason'] as String?
               ..voidedById = row['voided_by_id'] as String?
               ..voidedAt = row['voided_at'] != null
-                  ? DateTime.parse(row['voided_at'] as String)
+                  ? DateTime.parse(row['voided_at'] as String).toLocal()
                   : null
-              ..orderedAt = DateTime.parse(row['ordered_at'] as String)
-              ..createdAt = DateTime.parse(row['created_at'] as String)
-              ..updatedAt = DateTime.parse(row['updated_at'] as String)
+              ..orderedAt = DateTime.parse(row['ordered_at'] as String).toLocal()
+              ..createdAt = DateTime.parse(row['created_at'] as String).toLocal()
+              ..updatedAt = DateTime.parse(row['updated_at'] as String).toLocal()
               ..isSynced = true
               ..isDeleted = row['is_deleted'] as bool? ?? false;
 

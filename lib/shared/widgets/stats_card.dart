@@ -53,15 +53,17 @@ class StatsCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
               ],
-              Text(
-                title,
-                style: AppTextStyles.body(context).copyWith(
-                  color: isDark
-                      ? AppColors.textSecondaryDark
-                      : textPrimary.withValues(alpha: 0.5),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTextStyles.body(context).copyWith(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : textPrimary.withValues(alpha: 0.5),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],

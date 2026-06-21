@@ -52,18 +52,32 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardData>> {
       final storeId = ref.read(currentStoreIdProvider);
       if (storeId.isEmpty) return;
 
-      // 1. Today's Totals
+      // 1. Today's Totals (Completed and Refunded)
       final todayOrders = await _isar.isar.orderCollections
           .filter()
           .storeIdEqualTo(storeId)
           .and()
           .orderedAtBetween(startOfDay, endOfDay)
           .and()
-          .statusEqualTo('completed')
+          .group((q) => q.statusEqualTo('completed').or().statusEqualTo('refunded'))
           .findAll();
 
-      final salesTotal =
-          todayOrders.fold<double>(0, (sum, order) => sum + order.totalAmount);
+      double salesTotal = 0.0;
+      int completedAndPartialRefundCount = 0;
+
+      for (final order in todayOrders) {
+        if (order.status == 'completed') {
+          salesTotal += order.totalAmount;
+          completedAndPartialRefundCount++;
+        } else if (order.status == 'refunded') {
+          final refundAmt = order.refundAmount ?? order.totalAmount;
+          final netAmount = order.totalAmount - refundAmt;
+          salesTotal += netAmount;
+          if (netAmount > 0.0) {
+            completedAndPartialRefundCount++;
+          }
+        }
+      }
 
       // 2. Favorites
       final favorites = await _isar.isar.menuItemCollections
@@ -82,13 +96,13 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardData>> {
       final recent = await _isar.isar.orderCollections
           .filter()
           .storeIdEqualTo(storeId)
-          .sortByOrderedAtDesc()
+          .sortByOrderNumberDesc()
           .limit(10)
           .findAll();
 
       state = AsyncValue.data(DashboardData(
         todaySales: salesTotal,
-        todayOrders: todayOrders.length,
+        todayOrders: completedAndPartialRefundCount,
         favorites: favorites,
         recentOrders: recent,
       ));

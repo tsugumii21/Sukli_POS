@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../core/services/sync_service.dart';
 
 import '../../../../shared/isar_collections/order_collection.dart';
+import '../../../../shared/isar_collections/store_collection.dart';
 import '../../../../shared/providers/isar_provider.dart';
 import '../../../../shared/providers/store_provider.dart';
 
@@ -113,7 +114,19 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
   @override
   OrderHistoryState build() {
     final storeId = ref.watch(currentStoreIdProvider);
-    if (storeId.isEmpty) return const OrderHistoryState(isLoading: false);
+    if (storeId.isEmpty) {
+      // Fallback: check if we can query Isar synchronously so we don't start empty
+      final db = ref.read(isarProvider);
+      final store = db.storeCollections.filter().isDeletedEqualTo(false).build().findFirstSync();
+      if (store == null) return const OrderHistoryState(isLoading: false);
+    }
+
+    // Watch lazy database changes on order collections so any completed checkout refreshes list immediately
+    final db = ref.watch(isarProvider);
+    final sub = db.orderCollections.watchLazy().listen((_) {
+      loadFirstPage();
+    });
+    ref.onDispose(() => sub.cancel());
 
     Future.microtask(() => loadFirstPage());
     return const OrderHistoryState(isLoading: true);
@@ -122,15 +135,27 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
   // ── Public API ─────────────────────────────────────────────────────────────
 
   Future<void> refresh() async {
-    try {
-      await SyncService.instance.syncAll();
-    } catch (_) {}
+    // 1. Load local data first for instant responsiveness
     await loadFirstPage();
+    try {
+      // 2. Trigger sync in the background
+      await SyncService.instance.syncAll();
+      // 3. Reload local data after sync completes to show newly pulled orders
+      await loadFirstPage();
+    } catch (_) {}
   }
 
   Future<void> loadFirstPage() async {
-    final storeId = ref.read(currentStoreIdProvider);
-    if (storeId.isEmpty) return;
+    var storeId = ref.read(currentStoreIdProvider);
+    if (storeId.isEmpty) {
+      final db = ref.read(isarProvider);
+      final store = db.storeCollections.filter().isDeletedEqualTo(false).build().findFirstSync();
+      if (store != null) {
+        storeId = store.syncId;
+      } else {
+        return;
+      }
+    }
 
     state = state.copyWith(
       isLoading: true,
@@ -159,8 +184,16 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
   Future<void> loadNextPage() async {
     if (state.isLoadingMore || !state.hasMore || state.isLoading) return;
 
-    final storeId = ref.read(currentStoreIdProvider);
-    if (storeId.isEmpty) return;
+    var storeId = ref.read(currentStoreIdProvider);
+    if (storeId.isEmpty) {
+      final db = ref.read(isarProvider);
+      final store = db.storeCollections.filter().isDeletedEqualTo(false).build().findFirstSync();
+      if (store != null) {
+        storeId = store.syncId;
+      } else {
+        return;
+      }
+    }
 
     state = state.copyWith(isLoadingMore: true);
 
@@ -203,8 +236,16 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
 
   /// Returns ALL matching orders (ignoring pagination limits) for exporting.
   Future<List<OrderCollection>> fetchAllForExport() async {
-    final storeId = ref.read(currentStoreIdProvider);
-    if (storeId.isEmpty) return [];
+    var storeId = ref.read(currentStoreIdProvider);
+    if (storeId.isEmpty) {
+      final db = ref.read(isarProvider);
+      final store = db.storeCollections.filter().isDeletedEqualTo(false).build().findFirstSync();
+      if (store != null) {
+        storeId = store.syncId;
+      } else {
+        return [];
+      }
+    }
 
     final db = ref.read(isarProvider);
     final f = state.filter;
@@ -242,7 +283,7 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
       query = query.orderedAtLessThan(endInclusive.add(const Duration(milliseconds: 1)));
     }
 
-    return query.sortByOrderedAtDesc().findAll();
+    return query.sortByOrderNumberDesc().findAll();
   }
 
   /// Exports a given list of orders to an Excel file.
@@ -275,7 +316,7 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
         TextCellValue('Status'),
       ]);
 
-      final fmt = DateFormat('yyyy-MM-dd HH:mm');
+      final fmt = DateFormat('yyyy-MM-dd h:mm a');
       for (final o in orders) {
         excel.appendRow(sheetName, [
           TextCellValue(o.orderNumber),
@@ -353,7 +394,7 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
     }
 
     return query
-        .sortByOrderedAtDesc()
+        .sortByOrderNumberDesc()
         .offset(offset)
         .limit(_pageSize)
         .findAll();

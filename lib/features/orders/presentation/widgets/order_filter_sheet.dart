@@ -251,8 +251,9 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
                         ),
                         child: Text(
                           'Apply Filter',
-                          style:
-                              AppTextStyles.bodySemiBold(context),
+                          style: AppTextStyles.bodySemiBold(context).copyWith(
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),

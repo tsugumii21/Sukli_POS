@@ -3,6 +3,7 @@ import '../../../../core/utils/responsive_layout.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -337,7 +338,7 @@ class CashierDashboardScreen extends ConsumerWidget {
                                               style: AppTextStyles.bodyLarge(context).copyWith(color: textPrimary),
                                             ),
                                             Text(
-                                              '${order.orderedAt.hour}:${order.orderedAt.minute.toString().padLeft(2, '0')}',
+                                              DateFormat('h:mm a').format(order.orderedAt),
                                               style: AppTextStyles.body(context).copyWith(
                                                 color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.5),
                                                 fontSize: 12,

@@ -143,9 +143,9 @@ class OrderRepositoryImpl {
       'payment_method': order.paymentMethod,
       'payment_reference': order.paymentReference,
       'status': order.status,
-      'ordered_at': order.orderedAt.toIso8601String(),
-      'created_at': order.createdAt.toIso8601String(),
-      'updated_at': order.updatedAt.toIso8601String(),
+      'ordered_at': order.orderedAt.toUtc().toIso8601String(),
+      'created_at': order.createdAt.toUtc().toIso8601String(),
+      'updated_at': order.updatedAt.toUtc().toIso8601String(),
     });
   }
 }

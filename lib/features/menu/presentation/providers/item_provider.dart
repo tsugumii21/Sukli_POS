@@ -432,8 +432,8 @@ class ItemNotifier extends Notifier<AsyncValue<ItemManageState>> {
         'variant_groups_json': i.variantGroupsJson,
         'modifiers_json': i.modifiersJson,
         'is_deleted': i.isDeleted,
-        'created_at': i.createdAt.toIso8601String(),
-        'updated_at': i.updatedAt.toIso8601String(),
+        'created_at': i.createdAt.toUtc().toIso8601String(),
+        'updated_at': i.updatedAt.toUtc().toIso8601String(),
       };
 }
 

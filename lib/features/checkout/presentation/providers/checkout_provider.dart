@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar_community/isar.dart';
 
 import '../../../../shared/isar_collections/order_collection.dart';
+import '../../../../shared/isar_collections/store_collection.dart';
 import '../../../../shared/providers/isar_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../orders/data/repositories/order_repository_impl.dart';
@@ -155,7 +157,13 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
           ? state.amountEntered
           : orderState.total;
 
-      final storeId = ref.read(currentStoreIdProvider);
+      var storeId = ref.read(currentStoreIdProvider);
+      if (storeId.isEmpty) {
+        final store = isar.storeCollections.filter().isDeletedEqualTo(false).build().findFirstSync();
+        if (store != null) {
+          storeId = store.syncId;
+        }
+      }
 
       // Build a human-readable payment reference for non-cash methods.
       String? paymentReference;

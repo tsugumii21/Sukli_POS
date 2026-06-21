@@ -120,7 +120,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                   ),
                   child: Text(
                     'Yes, Continue',
-                    style: AppTextStyles.body(context),
+                    style: AppTextStyles.body(context).copyWith(color: Colors.white),
                   ),
                 ),
               ),
@@ -281,6 +281,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                     ref.read(menuProvider.notifier).updateSearch(v),
                 style: AppTextStyles.body(context).copyWith(color: textPrimary),
                 decoration: InputDecoration(
+                  filled: false,
                   hintText: 'Search items...',
                   hintStyle: AppTextStyles.body(context).copyWith(
                     color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha:0.35),

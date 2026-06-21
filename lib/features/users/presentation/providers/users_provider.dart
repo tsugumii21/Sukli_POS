@@ -306,8 +306,8 @@ class UsersNotifier extends Notifier<AsyncValue<UsersState>> {
         'status': u.status,
         'avatar_url': u.avatarUrl,
         'is_deleted': u.isDeleted,
-        'created_at': u.createdAt.toIso8601String(),
-        'updated_at': u.updatedAt.toIso8601String(),
+        'created_at': u.createdAt.toUtc().toIso8601String(),
+        'updated_at': u.updatedAt.toUtc().toIso8601String(),
       };
 }
 

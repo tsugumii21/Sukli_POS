@@ -119,6 +119,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           RouteConstants.cashierSelect,
           RouteConstants.cashierPin,
           RouteConstants.switchToAdmin,
+          RouteConstants.orderHistory,
         ];
         
         // Prevent going to welcome, signup, or admin login

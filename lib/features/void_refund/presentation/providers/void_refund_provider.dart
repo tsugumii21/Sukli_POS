@@ -8,6 +8,7 @@ import '../../../../core/services/sync_service.dart';
 import '../../../../core/constants/supabase_constants.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
 import '../../../../shared/isar_collections/user_collection.dart';
+import '../../../../shared/isar_collections/store_collection.dart';
 import '../../../../shared/providers/store_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,14 +88,23 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
 
   Future<void> _load() async {
     try {
-      final storeId = ref.read(currentStoreIdProvider);
+      var storeId = ref.read(currentStoreIdProvider);
+      if (storeId.isEmpty) {
+        final store = _isar.isar.storeCollections.filter().isDeletedEqualTo(false).build().findFirstSync();
+        if (store != null) {
+          storeId = store.syncId;
+        } else {
+          state = state.copyWith(isLoading: false);
+          return;
+        }
+      }
       // All non-deleted orders sorted newest-first
       final all = await _isar.isar.orderCollections
           .filter()
           .storeIdEqualTo(storeId)
           .and()
           .isDeletedEqualTo(false)
-          .sortByOrderedAtDesc()
+          .sortByOrderNumberDesc()
           .findAll();
 
       final voidable = all.where((o) => o.status == 'completed').toList();
@@ -184,8 +194,8 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
           'void_reason': reason,
           'voided_by_id': admin?.syncId,
           'voided_by_name': admin?.name,
-          'voided_at': now.toIso8601String(),
-          SupabaseConstants.updatedAt: now.toIso8601String(),
+          'voided_at': now.toUtc().toIso8601String(),
+          SupabaseConstants.updatedAt: now.toUtc().toIso8601String(),
         },
       );
 
@@ -234,8 +244,8 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
           'is_partial_refund': isPartial,
           'refunded_by_id': admin?.syncId,
           'refunded_by_name': admin?.name,
-          'refunded_at': now.toIso8601String(),
-          SupabaseConstants.updatedAt: now.toIso8601String(),
+          'refunded_at': now.toUtc().toIso8601String(),
+          SupabaseConstants.updatedAt: now.toUtc().toIso8601String(),
         },
       );
 
@@ -251,16 +261,14 @@ class VoidRefundNotifier extends Notifier<VoidRefundState> {
 
   /// Forces a sync of remote orders and reloads the local data.
   Future<void> refresh() async {
-    final storeId = ref.read(currentStoreIdProvider);
-    if (storeId.isEmpty) return;
-
-    state = state.copyWith(isLoading: true);
-    try {
-      await _sync.syncAll();
-    } catch (_) {
-      // Ignore sync failures to allow offline loading
-    }
+    // 1. Load local data first for responsiveness
     await _load();
+    try {
+      // 2. Trigger remote sync in the background
+      await _sync.syncAll();
+      // 3. Reload from local database after sync completes
+      await _load();
+    } catch (_) {}
   }
 }
 

@@ -500,7 +500,7 @@ class ExportSheet extends ConsumerWidget {
         .orderedAtBetween(start, end)
         .and()
         .isDeletedEqualTo(false)
-        .sortByOrderedAtDesc()
+        .sortByOrderNumberDesc()
         .findAll();
   }
 }
