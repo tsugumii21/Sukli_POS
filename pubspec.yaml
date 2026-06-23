@@ -43,6 +43,8 @@ dependencies:
   pdf: any
   printing: any
   excel: any
+  syncfusion_flutter_xlsio: any
+  syncfusion_officechart: any
   esc_pos_utils_plus: any
   share_plus: ^7.2.1
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:excel/excel.dart' as xl;
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as sf;
+import 'package:syncfusion_officechart/officechart.dart' as sfc;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -304,92 +305,132 @@ class ExportSheet extends ConsumerWidget {
     final orders = await _fetchOrders(ref, state);
     final dateFmt = DateFormat('MMM d, yyyy');
     final timeFmt = DateFormat('h:mm a');
-    final excel = xl.Excel.createExcel();
 
+    // Create a new Excel document
+    final sf.Workbook workbook = sf.Workbook();
+    
     // ── Sheet 1: Summary ──────────────────────────────────────────────────
-    final summary = excel['Summary'];
-    summary.appendRow([xl.TextCellValue('Sukli POS — Sales Report')]);
-    summary.appendRow([
-      xl.TextCellValue(
-          'Period: ${state.periodLabel}   Generated: ${dateFmt.format(DateTime.now())}')
-    ]);
-    summary.appendRow([xl.TextCellValue('')]);
-    summary.appendRow([xl.TextCellValue('Metric'), xl.TextCellValue('Value')]);
-    summary.appendRow([
-      xl.TextCellValue('Total Revenue'),
-      xl.TextCellValue(CurrencyFormatter.format(state.totalSales)),
-    ]);
-    summary.appendRow([
-      xl.TextCellValue('Total Orders'),
-      xl.IntCellValue(state.totalOrders),
-    ]);
-    summary.appendRow([
-      xl.TextCellValue('Average Order'),
-      xl.TextCellValue(CurrencyFormatter.format(state.averageOrderValue)),
-    ]);
-    summary.appendRow([
-      xl.TextCellValue('Highest Sale'),
-      xl.TextCellValue(CurrencyFormatter.format(state.highestSale)),
-    ]);
-    summary.appendRow([
-      xl.TextCellValue('Total Voids'),
-      xl.TextCellValue(CurrencyFormatter.format(state.totalVoids)),
-    ]);
-    summary.appendRow([
-      xl.TextCellValue('Total Refunds'),
-      xl.TextCellValue(CurrencyFormatter.format(state.totalRefunds)),
-    ]);
-    summary.appendRow([
-      xl.TextCellValue('Top Cashier'),
-      xl.TextCellValue(state.topCashierName),
-    ]);
-    summary.appendRow([xl.TextCellValue('')]);
-    summary.appendRow([xl.TextCellValue('Payment Breakdown')]);
-    summary.appendRow([
-      xl.TextCellValue('Method'),
-      xl.TextCellValue('Amount'),
-      xl.TextCellValue('% of Total'),
-    ]);
+    final sf.Worksheet summarySheet = workbook.worksheets[0];
+    summarySheet.name = 'Summary';
+
+    void setCell(sf.Worksheet sheet, int r, int c, dynamic val, {String? numberFormat}) {
+      final cell = sheet.getRangeByIndex(r, c);
+      if (val is num) {
+        cell.setNumber(val.toDouble());
+        if (numberFormat != null) {
+          cell.numberFormat = numberFormat;
+        }
+      } else if (val is String) {
+        cell.setText(val);
+      } else {
+        cell.setValue(val.toString());
+      }
+    }
+
+    int r = 1;
+    setCell(summarySheet, r, 1, 'Sukli POS — Sales Report');
+    r++;
+    setCell(summarySheet, r, 1, 'Period: ${state.periodLabel}   Generated: ${dateFmt.format(DateTime.now())}');
+    r += 2;
+
+    setCell(summarySheet, r, 1, 'Metric');
+    setCell(summarySheet, r, 2, 'Value');
+    r++;
+
+    setCell(summarySheet, r, 1, 'Total Revenue');
+    setCell(summarySheet, r, 2, state.totalSales, numberFormat: r'"₱"#,##0.00');
+    r++;
+
+    setCell(summarySheet, r, 1, 'Total Orders');
+    setCell(summarySheet, r, 2, state.totalOrders);
+    r++;
+
+    setCell(summarySheet, r, 1, 'Average Order');
+    setCell(summarySheet, r, 2, state.averageOrderValue, numberFormat: r'"₱"#,##0.00');
+    r++;
+
+    setCell(summarySheet, r, 1, 'Highest Sale');
+    setCell(summarySheet, r, 2, state.highestSale, numberFormat: r'"₱"#,##0.00');
+    r++;
+
+    setCell(summarySheet, r, 1, 'Total Voids');
+    setCell(summarySheet, r, 2, state.totalVoids, numberFormat: r'"₱"#,##0.00');
+    r++;
+
+    setCell(summarySheet, r, 1, 'Total Refunds');
+    setCell(summarySheet, r, 2, state.totalRefunds, numberFormat: r'"₱"#,##0.00');
+    r++;
+
+    setCell(summarySheet, r, 1, 'Top Cashier');
+    setCell(summarySheet, r, 2, state.topCashierName);
+    r += 2;
+
+    setCell(summarySheet, r, 1, 'Payment Breakdown');
+    r++;
+    setCell(summarySheet, r, 1, 'Method');
+    setCell(summarySheet, r, 2, 'Amount');
+    setCell(summarySheet, r, 3, '% of Total');
+    r++;
+
+    final paymentStartRow = r;
     for (final p in state.paymentBreakdown) {
-      summary.appendRow([
-        xl.TextCellValue(p.methodLabel),
-        xl.TextCellValue(CurrencyFormatter.format(p.amount)),
-        xl.TextCellValue('${p.percentage.toStringAsFixed(1)}%'),
-      ]);
+      setCell(summarySheet, r, 1, p.methodLabel);
+      setCell(summarySheet, r, 2, p.amount, numberFormat: r'"₱"#,##0.00');
+      setCell(summarySheet, r, 3, p.percentage / 100.0, numberFormat: '0.0%');
+      r++;
+    }
+    final paymentEndRow = r - 1;
+
+    // Create Pie Chart for Payment Breakdown
+    if (state.paymentBreakdown.isNotEmpty) {
+      final sfc.ChartCollection charts = sfc.ChartCollection(summarySheet);
+      final sfc.Chart chart = charts.add();
+      chart.chartType = sfc.ExcelChartType.pie;
+      chart.dataRange = summarySheet.getRangeByIndex(paymentStartRow, 1, paymentEndRow, 2);
+      chart.isSeriesInRows = false;
+      chart.chartTitle = 'Payment Methods';
+      
+      chart.topRow = 4;
+      chart.leftColumn = 4;
+      chart.bottomRow = 18;
+      chart.rightColumn = 10;
+      
+      summarySheet.charts = charts;
     }
 
     // ── Sheet 2: Orders ───────────────────────────────────────────────────
-    final ordersSheet = excel['Orders'];
-    ordersSheet.appendRow([
-      xl.TextCellValue('Order #'),
-      xl.TextCellValue('Cashier'),
-      xl.TextCellValue('Date'),
-      xl.TextCellValue('Time'),
-      xl.TextCellValue('Payment'),
-      xl.TextCellValue('Total'),
-      xl.TextCellValue('Status'),
-    ]);
+    final sf.Worksheet ordersSheet = workbook.worksheets.addWithName('Orders');
+    int or = 1;
+    setCell(ordersSheet, or, 1, 'Order #');
+    setCell(ordersSheet, or, 2, 'Cashier');
+    setCell(ordersSheet, or, 3, 'Date');
+    setCell(ordersSheet, or, 4, 'Time');
+    setCell(ordersSheet, or, 5, 'Payment');
+    setCell(ordersSheet, or, 6, 'Total');
+    setCell(ordersSheet, or, 7, 'Status');
+    or++;
+
     for (final o in orders) {
-      ordersSheet.appendRow([
-        xl.TextCellValue(o.orderNumber),
-        xl.TextCellValue(o.cashierName),
-        xl.TextCellValue(dateFmt.format(o.orderedAt)),
-        xl.TextCellValue(timeFmt.format(o.orderedAt)),
-        xl.TextCellValue(o.paymentMethod.toUpperCase()),
-        xl.TextCellValue(CurrencyFormatter.format(o.totalAmount)),
-        xl.TextCellValue(o.status),
-      ]);
+      setCell(ordersSheet, or, 1, o.orderNumber);
+      setCell(ordersSheet, or, 2, o.cashierName);
+      setCell(ordersSheet, or, 3, dateFmt.format(o.orderedAt));
+      setCell(ordersSheet, or, 4, timeFmt.format(o.orderedAt));
+      setCell(ordersSheet, or, 5, o.paymentMethod.toUpperCase());
+      setCell(ordersSheet, or, 6, o.totalAmount, numberFormat: r'"₱"#,##0.00');
+      setCell(ordersSheet, or, 7, o.status);
+      or++;
     }
 
     // ── Sheet 3: Cashier Summary ──────────────────────────────────────────
-    final cashierSheet = excel['Cashier Summary'];
-    cashierSheet.appendRow([
-      xl.TextCellValue('Cashier Name'),
-      xl.TextCellValue('Total Orders'),
-      xl.TextCellValue('Total Revenue'),
-      xl.TextCellValue('Avg Order Value'),
-      xl.TextCellValue('Most Used Payment'),
-    ]);
+    final sf.Worksheet cashierSheet = workbook.worksheets.addWithName('Cashier Summary');
+    int cr = 1;
+    setCell(cashierSheet, cr, 1, 'Cashier Name');
+    setCell(cashierSheet, cr, 2, 'Total Orders');
+    setCell(cashierSheet, cr, 3, 'Total Revenue');
+    setCell(cashierSheet, cr, 4, 'Avg Order Value');
+    setCell(cashierSheet, cr, 5, 'Most Used Payment');
+    cr++;
+
     // Group by cashier
     final cashierMap = <String, List<OrderCollection>>{};
     for (final o in orders) {
@@ -402,38 +443,58 @@ class ExportSheet extends ConsumerWidget {
         final rb = b.value.fold<double>(0, (s, o) => s + o.totalAmount);
         return rb.compareTo(ra);
       });
+
+    final cashierStartRow = cr;
     for (final entry in cashierEntries) {
       final list = entry.value;
       final totalRev = list.fold<double>(0, (s, o) => s + o.totalAmount);
       final avgVal = list.isEmpty ? 0.0 : totalRev / list.length;
-      // Most used payment
+      
       final payMap = <String, int>{};
       for (final o in list) {
         final m = o.paymentMethod.toUpperCase();
         payMap[m] = (payMap[m] ?? 0) + 1;
       }
-      final topPay =
-          payMap.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
-      cashierSheet.appendRow([
-        xl.TextCellValue(entry.key),
-        xl.IntCellValue(list.length),
-        xl.TextCellValue(CurrencyFormatter.format(totalRev)),
-        xl.TextCellValue(CurrencyFormatter.format(avgVal)),
-        xl.TextCellValue(topPay),
-      ]);
+      final topPay = payMap.isEmpty 
+          ? 'N/A' 
+          : payMap.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+
+      setCell(cashierSheet, cr, 1, entry.key);
+      setCell(cashierSheet, cr, 2, list.length);
+      setCell(cashierSheet, cr, 3, totalRev, numberFormat: r'"₱"#,##0.00');
+      setCell(cashierSheet, cr, 4, avgVal, numberFormat: r'"₱"#,##0.00');
+      setCell(cashierSheet, cr, 5, topPay);
+      cr++;
+    }
+    final cashierEndRow = cr - 1;
+
+    // Create Column Chart for Revenue by Cashier
+    if (cashierEntries.isNotEmpty) {
+      final sfc.ChartCollection cashierCharts = sfc.ChartCollection(cashierSheet);
+      final sfc.Chart chart = cashierCharts.add();
+      chart.chartType = sfc.ExcelChartType.column;
+      
+      final sfc.IChartSerie series = chart.series.add('Total Revenue');
+      series.categoryLabels = cashierSheet.getRangeByIndex(cashierStartRow, 1, cashierEndRow, 1);
+      series.values = cashierSheet.getRangeByIndex(cashierStartRow, 3, cashierEndRow, 3);
+      
+      chart.chartTitle = 'Revenue by Cashier';
+      chart.isSeriesInRows = false;
+      chart.legend!.position = sfc.ExcelLegendPosition.right;
+      
+      chart.topRow = 2;
+      chart.leftColumn = 7;
+      chart.bottomRow = 16;
+      chart.rightColumn = 13;
+      
+      cashierSheet.charts = cashierCharts;
     }
 
-    // Remove default Sheet1 if it exists
-    if (excel.sheets.containsKey('Sheet1')) {
-      excel.delete('Sheet1');
-    }
+    // Save Workbook
+    final List<int> bytes = workbook.saveSync();
+    workbook.dispose();
 
-    final bytes = excel.encode();
-    if (bytes == null) return;
-
-    // Save directly to Downloads folder
-    final fileName =
-        'sukli-report-${DateFormat('yyyy-MM-dd-HHmmss').format(DateTime.now())}.xlsx';
+    final fileName = 'sukli-report-${DateFormat('yyyy-MM-dd-HHmmss').format(DateTime.now())}.xlsx';
     Directory? downloadsDir;
 
     if (Platform.isAndroid) {
@@ -454,9 +515,10 @@ class ExportSheet extends ConsumerWidget {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Saved to Downloads/$fileName',
-              style: AppTextStyles.bodySemiBold(context)
-                  .copyWith(color: Colors.white)),
+          content: Text(
+            'Saved to Downloads/$fileName',
+            style: AppTextStyles.bodySemiBold(context).copyWith(color: Colors.white),
+          ),
           backgroundColor: AppColors.successLight,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: AppRadius.mediumBR),

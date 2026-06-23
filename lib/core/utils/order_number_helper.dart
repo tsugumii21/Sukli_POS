@@ -3,9 +3,10 @@ class OrderNumberHelper {
   /// Input:  "ORD-20260506-0042"
   /// Output: "#0042"
   static String toShort(String orderNumber) {
-    // Extract last 4 digits after the final dash
     final parts = orderNumber.split('-');
-    if (parts.length >= 3) {
+    if (parts.length >= 4) {
+      return '#${parts[2]}-${parts[3]}';
+    } else if (parts.length == 3) {
       return '#${parts.last}';
     }
     // Fallback — take last 4 characters

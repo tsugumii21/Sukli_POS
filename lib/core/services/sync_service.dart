@@ -147,6 +147,7 @@ class SyncService {
           .isActiveEqualTo(true)
           .findFirst();
       if (activeStore != null) {
+        await _pullMenuAndUsers(activeStore.syncId);
         await _pullOrders(activeStore.syncId);
       }
 
@@ -507,6 +508,140 @@ class SyncService {
     }
   }
 
+  /// Pulls the users, categories, and menu items incrementally using LWW.
+  Future<void> _pullMenuAndUsers(String storeId) async {
+    try {
+      final client = _supabase.client;
+      final results = await Future.wait([
+        client.from('users').select().eq('store_id', storeId),
+        client.from('categories').select().eq('store_id', storeId),
+        client.from('menu_items').select().eq('store_id', storeId),
+      ]);
+
+      final userRows = results[0];
+      final categoryRows = results[1];
+      final menuItemRows = results[2];
+
+      await _isar.isar.writeTxn(() async {
+        // 1. Sync users
+        for (final row in userRows) {
+          final syncId = row['sync_id'] as String;
+          final existing = await _isar.isar.userCollections
+              .filter()
+              .syncIdEqualTo(syncId)
+              .findFirst();
+
+          final serverUpdatedAt = DateTime.parse(row['updated_at'] as String).toLocal();
+
+          if (existing == null || serverUpdatedAt.isAfter(existing.updatedAt)) {
+            final user = (existing ?? UserCollection())
+              ..syncId = syncId
+              ..email = row['email'] as String
+              ..name = row['name'] as String
+              ..pinHash = row['pin_hash'] as String?
+              ..role = row['role'] as String
+              ..status = row['status'] as String
+              ..avatarUrl = row['avatar_url'] as String?
+              ..storeId = row['store_id'] as String?
+              ..createdAt = DateTime.parse(row['created_at'] as String).toLocal()
+              ..updatedAt = serverUpdatedAt
+              ..isSynced = true
+              ..isDeleted = row['is_deleted'] as bool? ?? false;
+
+            await _isar.isar.userCollections.put(user);
+          }
+        }
+
+        // 2. Sync categories
+        for (final row in categoryRows) {
+          final syncId = row['sync_id'] as String;
+          final existing = await _isar.isar.categoryCollections
+              .filter()
+              .syncIdEqualTo(syncId)
+              .findFirst();
+
+          final serverUpdatedAt = DateTime.parse(row['updated_at'] as String).toLocal();
+
+          if (existing == null || serverUpdatedAt.isAfter(existing.updatedAt)) {
+            final cat = (existing ?? CategoryCollection())
+              ..syncId = syncId
+              ..parentId = row['parent_id'] as String?
+              ..name = row['name'] as String
+              ..description = row['description'] as String?
+              ..iconEmoji = row['icon_emoji'] as String?
+              ..sortOrder = (row['sort_order'] as num?)?.toInt() ?? 0
+              ..isActive = row['is_active'] as bool? ?? true
+              ..storeId = row['store_id'] as String?
+              ..createdAt = DateTime.parse(row['created_at'] as String).toLocal()
+              ..updatedAt = serverUpdatedAt
+              ..isSynced = true
+              ..isDeleted = row['is_deleted'] as bool? ?? false;
+
+            await _isar.isar.categoryCollections.put(cat);
+          }
+        }
+
+        // 3. Sync menu items
+        for (final row in menuItemRows) {
+          final syncId = row['sync_id'] as String;
+          final existing = await _isar.isar.menuItemCollections
+              .filter()
+              .syncIdEqualTo(syncId)
+              .findFirst();
+
+          final serverUpdatedAt = DateTime.parse(row['updated_at'] as String).toLocal();
+
+          if (existing == null || serverUpdatedAt.isAfter(existing.updatedAt)) {
+            final variantsVal = row['variants_json'];
+            List<String> variantsJsonList = [];
+            if (variantsVal is String) {
+              variantsJsonList = [variantsVal];
+            } else if (variantsVal is List) {
+              variantsJsonList = variantsVal.map((v) => v is String ? v : jsonEncode(v)).toList();
+            }
+
+            final groupsVal = row['variant_groups_json'];
+            List<String> groupsJsonList = [];
+            if (groupsVal is List) {
+              groupsJsonList = groupsVal.map((g) => g is String ? g : jsonEncode(g)).toList();
+            }
+
+            final modifiersVal = row['modifiers_json'];
+            List<String> modifiersJsonList = [];
+            if (modifiersVal is List) {
+              modifiersJsonList = modifiersVal.map((m) => m is String ? m : jsonEncode(m)).toList();
+            }
+
+            final item = (existing ?? MenuItemCollection())
+              ..syncId = syncId
+              ..categoryId = row['category_id'] as String
+              ..name = row['name'] as String
+              ..description = row['description'] as String?
+              ..basePrice = (row['base_price'] as num).toDouble()
+              ..imageUrl = row['image_url'] as String?
+              ..isAvailable = row['is_available'] as bool? ?? true
+              ..isFavorite = row['is_favorite'] as bool? ?? false
+              ..sortOrder = (row['sort_order'] as num?)?.toInt() ?? 0
+              ..variantsJson = variantsJsonList
+              ..variantGroupsJson = groupsJsonList
+              ..modifiersJson = modifiersJsonList
+              ..storeId = row['store_id'] as String?
+              ..createdAt = DateTime.parse(row['created_at'] as String).toLocal()
+              ..updatedAt = serverUpdatedAt
+              ..isSynced = true
+              ..isDeleted = row['is_deleted'] as bool? ?? false;
+
+            await _isar.isar.menuItemCollections.put(item);
+          }
+        }
+      });
+
+      debugPrint('SYNC: Pulled and synced users, categories, and menu items.');
+    } catch (e) {
+      debugPrint('SYNC: Pull menu and users failed: $e');
+    }
+  }
+
   /// Full pull of all store data from Supabase into Isar.
   /// Call this on every login to restore local data from Supabase.
   /// This is a convenience wrapper around pullStoreData for cases where
@@ -541,8 +676,13 @@ class SyncService {
         return;
       }
 
-      // Re-use the full pullStoreData pipeline (users, categories, items, orders)
-      await pullStoreData(ownerEmail);
+      final storeId = storeRows.first['sync_id'] as String;
+
+      // 1. Pull menu, users, and categories incrementally (does not wipe)
+      await _pullMenuAndUsers(storeId);
+
+      // 2. Pull recent orders
+      await _pullOrders(storeId);
 
       debugPrint('SYNC: Initial pull complete.');
     } catch (e) {

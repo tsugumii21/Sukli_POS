@@ -30,7 +30,12 @@ class OrderRepositoryImpl {
   }) async {
     final now = DateTime.now();
     final syncId = _uuid.v4();
-    final orderNumber = await _generateOrderNumber(now, storeId);
+    final orderNumber = await _generateOrderNumber(
+      now: now,
+      storeId: storeId,
+      cashierName: cashierName,
+      cashierId: cashierId,
+    );
 
     final itemsJson = orderState.items
         .map((item) => jsonEncode({
@@ -94,7 +99,12 @@ class OrderRepositoryImpl {
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   /// Generates a continuous sequential order number for THIS store.
-  Future<String> _generateOrderNumber(DateTime now, String storeId) async {
+  Future<String> _generateOrderNumber({
+    required DateTime now,
+    required String storeId,
+    required String cashierName,
+    required String cashierId,
+  }) async {
     final count = await _isar.orderCollections
         .filter()
         .storeIdEqualTo(storeId)
@@ -103,7 +113,23 @@ class OrderRepositoryImpl {
     final dateStr =
         '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
     final seq = (count + 1).toString().padLeft(4, '0');
-    return '${AppConstants.orderPrefix}-$dateStr-$seq';
+
+    // Generate cashier suffix using initials + last 3 characters of cashier ID
+    final nameParts = cashierName.trim().split(RegExp(r'\s+'));
+    String initials = '';
+    if (nameParts.isNotEmpty) {
+      initials = nameParts.map((p) => p.isNotEmpty ? p[0].toUpperCase() : '').join();
+    }
+    if (initials.length > 3) initials = initials.substring(0, 3);
+    if (initials.isEmpty) initials = 'CS';
+
+    final idPart = cashierId.length >= 3
+        ? cashierId.substring(cashierId.length - 3).toUpperCase()
+        : '000';
+
+    final cashierSuffix = '$initials$idPart';
+
+    return '${AppConstants.orderPrefix}-$dateStr-$seq-$cashierSuffix';
   }
 
   SyncQueueCollection _buildSyncEntry({
