@@ -474,7 +474,8 @@ class ExportSheet extends ConsumerWidget {
       final sfc.Chart chart = cashierCharts.add();
       chart.chartType = sfc.ExcelChartType.column;
       
-      final sfc.IChartSerie series = chart.series.add('Total Revenue');
+      final sfc.ChartSerie series = chart.series.add();
+      series.name = 'Total Revenue';
       series.categoryLabels = cashierSheet.getRangeByIndex(cashierStartRow, 1, cashierEndRow, 1);
       series.values = cashierSheet.getRangeByIndex(cashierStartRow, 3, cashierEndRow, 3);
       
