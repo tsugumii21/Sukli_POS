@@ -11,6 +11,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/utils/order_number_helper.dart';
 import '../../../../shared/providers/sync_provider.dart';
 import '../../../../shared/providers/active_role_provider.dart';
 import '../../../auth/presentation/providers/admin_auth_provider.dart';
@@ -639,8 +640,7 @@ class _RecentOrderTile extends StatelessWidget {
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
 
     final rawNum = order.orderNumber as String;
-    final shortNum =
-        '#${rawNum.length > 4 ? rawNum.substring(rawNum.length - 4) : rawNum}';
+    final shortNum = OrderNumberHelper.toShort(rawNum, isAdmin: true);
 
     Color statusColor;
     String statusLabel;

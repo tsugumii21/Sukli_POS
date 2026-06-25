@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
+import '../../../../shared/providers/active_role_provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -11,7 +14,7 @@ import '../../../../shared/isar_collections/order_collection.dart';
 // OrderTile — single card in the order history list
 // ─────────────────────────────────────────────────────────────────────────────
 
-class OrderTile extends StatelessWidget {
+class OrderTile extends ConsumerWidget {
   const OrderTile({
     super.key,
     required this.order,
@@ -33,7 +36,8 @@ class OrderTile extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isAdmin = ref.watch(activeRoleProvider) == ActiveRole.admin;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? AppColors.cardDark : Theme.of(context).brightness == Brightness.dark ? AppColors.cardDark : AppColors.cardLight;
     final textPrimary =
@@ -80,7 +84,7 @@ class OrderTile extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      OrderNumberHelper.toShort(order.orderNumber),
+                      OrderNumberHelper.toShort(order.orderNumber, isAdmin: isAdmin),
                       style: AppTextStyles.bodySemiBold(context).copyWith(
                         color: textPrimary,
                         letterSpacing: 0.2,
