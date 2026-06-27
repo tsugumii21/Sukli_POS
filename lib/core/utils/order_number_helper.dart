@@ -1,11 +1,11 @@
 class OrderNumberHelper {
   /// Returns a short human-readable display version of an order number
   /// Input:  "ORD-20260506-0042-5FT6"
-  /// Output: "#0042-5FT6" (if isAdmin is true) or "#0042" (if isAdmin is false)
+  /// Output: "#0042-5FT6"
   static String toShort(String orderNumber, {bool isAdmin = false}) {
     final parts = orderNumber.split('-');
     if (parts.length >= 4) {
-      return isAdmin ? '#${parts[2]}-${parts[3]}' : '#${parts[2]}';
+      return '#${parts[2]}-${parts[3]}';
     } else if (parts.length == 3) {
       return '#${parts[2]}';
     }

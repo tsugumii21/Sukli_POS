@@ -12,10 +12,12 @@ class ItemCard extends StatelessWidget {
     super.key,
     required this.item,
     required this.onTap,
+    this.onFavoriteToggle,
   });
 
   final MenuItemCollection item;
   final VoidCallback onTap;
+  final VoidCallback? onFavoriteToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +99,32 @@ class ItemCard extends StatelessWidget {
                   ],
                 ),
               ),
+
+              // ── Favorite Star Button ────────────────────────────────────
+              if (onFavoriteToggle != null)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onFavoriteToggle,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          item.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+                          size: 18,
+                          color: item.isFavorite ? const Color(0xFFFFB703) : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
 
               // ── Unavailable Overlay ─────────────────────────────────────
               if (isUnavailable)

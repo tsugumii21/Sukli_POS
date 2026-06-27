@@ -127,7 +127,7 @@ class OrderRepositoryImpl {
         ? cashierId.substring(cashierId.length - 3).toUpperCase()
         : '000';
 
-    final cashierSuffix = '$initials$idPart';
+    final cashierSuffix = '${initials}_$idPart';
 
     return '${AppConstants.orderPrefix}-$dateStr-$seq-$cashierSuffix';
   }

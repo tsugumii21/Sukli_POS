@@ -46,6 +46,9 @@ class MenuState {
 
   /// Returns item count for a given category syncId (hierarchical).
   int countForCategory(String categoryId) {
+    if (categoryId == '__favorites__') {
+      return allItems.where((i) => i.isFavorite).length;
+    }
     final cat = categories.firstWhere(
       (c) => c.syncId == categoryId,
       orElse: () => CategoryCollection()..syncId = '',
@@ -74,10 +77,43 @@ class MenuNotifier extends Notifier<MenuState> {
     if (storeId.isEmpty) return const MenuState(isLoading: false);
 
     _loadInitialData(storeId);
+    _isar.isar.menuItemCollections.watchLazy().listen((_) {
+      refreshData();
+    });
     return const MenuState();
   }
 
   IsarService get _isar => IsarService.instance;
+
+  Future<void> refreshData() async {
+    final storeId = ref.read(currentStoreIdProvider);
+    if (storeId.isEmpty) return;
+
+    final categories = await _isar.isar.categoryCollections
+        .filter()
+        .storeIdEqualTo(storeId)
+        .isActiveEqualTo(true)
+        .and()
+        .isDeletedEqualTo(false)
+        .sortBySortOrder()
+        .findAll();
+
+    final allItems = await _isar.isar.menuItemCollections
+        .filter()
+        .storeIdEqualTo(storeId)
+        .isDeletedEqualTo(false)
+        .sortBySortOrder()
+        .findAll();
+
+    final items = await _loadFilteredItems(storeId, state.selectedCategoryId, state.searchQuery, categories);
+
+    state = state.copyWith(
+      categories: categories,
+      allItems: allItems,
+      items: items,
+      isLoading: false,
+    );
+  }
 
   Future<void> _loadInitialData(String storeId) async {
     final categories = await _isar.isar.categoryCollections
@@ -118,7 +154,9 @@ class MenuNotifier extends Notifier<MenuState> {
         .storeIdEqualTo(storeId)
         .isDeletedEqualTo(false);
 
-    if (categoryId != null) {
+    if (categoryId == '__favorites__') {
+      query = query.and().isFavoriteEqualTo(true);
+    } else if (categoryId != null) {
       final List<String> targetCategoryIds = [categoryId];
       final subCats = categories
           .where((cat) => cat.parentId == categoryId)

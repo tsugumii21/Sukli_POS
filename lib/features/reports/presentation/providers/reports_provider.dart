@@ -73,6 +73,8 @@ class ReportState {
   final List<PaymentBreakdownItem> paymentBreakdown;
   final List<TopItem> topItems;
   final List<FlSpot> revenueSpots;
+  final List<String> xLabels;
+  final List<String> tooltipLabels;
 
   const ReportState({
     required this.period,
@@ -89,6 +91,8 @@ class ReportState {
     this.paymentBreakdown = const [],
     this.topItems = const [],
     this.revenueSpots = const [FlSpot(0, 0)],
+    this.xLabels = const ['0'],
+    this.tooltipLabels = const ['—'],
   });
 
   ReportState copyWith({
@@ -106,6 +110,8 @@ class ReportState {
     List<PaymentBreakdownItem>? paymentBreakdown,
     List<TopItem>? topItems,
     List<FlSpot>? revenueSpots,
+    List<String>? xLabels,
+    List<String>? tooltipLabels,
   }) {
     return ReportState(
       period: period ?? this.period,
@@ -122,6 +128,8 @@ class ReportState {
       paymentBreakdown: paymentBreakdown ?? this.paymentBreakdown,
       topItems: topItems ?? this.topItems,
       revenueSpots: revenueSpots ?? this.revenueSpots,
+      xLabels: xLabels ?? this.xLabels,
+      tooltipLabels: tooltipLabels ?? this.tooltipLabels,
     );
   }
 
@@ -145,6 +153,8 @@ class ReportState {
     }
   }
 }
+
+enum _ReportGranularity { hourly, daily, weekly, monthly }
 
 // ── Notifier ───────────────────────────────────────────────────────────────────
 
@@ -202,6 +212,8 @@ class ReportsNotifier extends Notifier<ReportState> {
         break;
       case ReportPeriod.month:
         start = DateTime(end.year, end.month, 1);
+        final lastDay = DateTime(end.year, end.month + 1, 0);
+        end = lastDay;
         break;
       case ReportPeriod.year:
         start = DateTime(end.year, 1, 1);
@@ -236,6 +248,8 @@ class ReportsNotifier extends Notifier<ReportState> {
         paymentBreakdown: const [],
         topItems: const [],
         revenueSpots: const [FlSpot(0, 0)],
+        xLabels: const ['—'],
+        tooltipLabels: const ['—'],
       );
       return;
     }
@@ -250,27 +264,111 @@ class ReportsNotifier extends Notifier<ReportState> {
     final itemRevenue = <String, double>{};
     final itemQty = <String, int>{};
 
+    _ReportGranularity granularity;
     List<double> buckets;
-    bool isHourly = false;
-    bool isMonthly = false;
+    List<String> xLabels = [];
+    List<String> tooltipLabels = [];
 
-    final days = end.difference(start).inDays + 1;
+    final totalDays = end.difference(start).inDays + 1;
+
+    int dayStartHour = 8;
+    int dayEndHour = 17;
+
     if (state.period == ReportPeriod.day) {
-      buckets = List<double>.filled(24, 0);
-      isHourly = true;
-    } else if (state.period == ReportPeriod.week) {
-      buckets = List<double>.filled(7, 0);
-    } else if (state.period == ReportPeriod.month) {
-      buckets = List<double>.filled(30, 0);
-    } else if (state.period == ReportPeriod.year) {
-      buckets = List<double>.filled(12, 0);
-      isMonthly = true;
-    } else {
-      if (days <= 31) {
-        buckets = List<double>.filled(days, 0);
+      granularity = _ReportGranularity.hourly;
+      final dayOrders = await isar.orderCollections
+          .filter()
+          .storeIdEqualTo(finalStoreId)
+          .and()
+          .orderedAtBetween(start, end)
+          .and()
+          .isDeletedEqualTo(false)
+          .findAll();
+
+      int? minH;
+      int? maxH;
+      for (final o in dayOrders) {
+        if (o.status == 'completed' || o.status == 'refunded') {
+          final h = o.orderedAt.hour;
+          if (minH == null || h < minH) minH = h;
+          if (maxH == null || h > maxH) maxH = h;
+        }
+      }
+
+      if (minH != null && maxH != null) {
+        dayStartHour = minH;
+        dayEndHour = maxH;
       } else {
-        buckets = List<double>.filled(12, 0);
-        isMonthly = true;
+        dayStartHour = 8;
+        dayEndHour = 17;
+      }
+
+      final totalHours = dayEndHour - dayStartHour + 1;
+      buckets = List<double>.filled(totalHours, 0);
+
+      for (int i = 0; i < totalHours; i++) {
+        final h = dayStartHour + i;
+        final hourStr = h == 0
+            ? '12 AM'
+            : (h == 12 ? '12 PM' : (h < 12 ? '$h AM' : '${h - 12} PM'));
+        xLabels.add(hourStr);
+        tooltipLabels.add(hourStr);
+      }
+    } else if (state.period == ReportPeriod.week) {
+      granularity = _ReportGranularity.daily;
+      buckets = List<double>.filled(7, 0);
+      final daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      for (int i = 0; i < 7; i++) {
+        final date = start.add(Duration(days: i));
+        xLabels.add(daysOfWeek[i % 7]);
+        tooltipLabels.add(DateFormat('EEEE, MMM d').format(date));
+      }
+    } else if (state.period == ReportPeriod.year) {
+      granularity = _ReportGranularity.monthly;
+      buckets = List<double>.filled(12, 0);
+      final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      for (int m = 0; m < 12; m++) {
+        xLabels.add(monthNames[m]);
+        tooltipLabels.add(DateFormat('MMMM yyyy').format(DateTime(start.year, m + 1, 1)));
+      }
+    } else {
+      // Month or Custom period
+      if (totalDays <= 10) {
+        granularity = _ReportGranularity.daily;
+        buckets = List<double>.filled(totalDays, 0);
+        for (int i = 0; i < totalDays; i++) {
+          final date = start.add(Duration(days: i));
+          xLabels.add(DateFormat('MMM d').format(date));
+          tooltipLabels.add(DateFormat('EEEE, MMM d').format(date));
+        }
+      } else if (totalDays <= 60) {
+        granularity = _ReportGranularity.weekly;
+        final numWeeks = ((totalDays - 1) ~/ 7) + 1;
+        buckets = List<double>.filled(numWeeks, 0);
+        final isMultiMonth = start.month != end.month;
+
+        for (int w = 0; w < numWeeks; w++) {
+          final wStart = start.add(Duration(days: w * 7));
+          final wEndTemp = start.add(Duration(days: (w + 1) * 7 - 1));
+          final wEnd = wEndTemp.isAfter(end) ? end : wEndTemp;
+
+          if (isMultiMonth) {
+            final monthStr = DateFormat('MMM').format(wStart);
+            xLabels.add('W${w + 1} - $monthStr');
+          } else {
+            xLabels.add('Week ${w + 1}');
+          }
+          tooltipLabels.add('Week ${w + 1} (${DateFormat('MMM d').format(wStart)} – ${DateFormat('MMM d').format(wEnd)})');
+        }
+      } else {
+        granularity = _ReportGranularity.monthly;
+        final numMonths = (end.year - start.year) * 12 + end.month - start.month + 1;
+        buckets = List<double>.filled(numMonths, 0);
+        for (int m = 0; m < numMonths; m++) {
+          final mDate = DateTime(start.year, start.month + m, 1);
+          xLabels.add(DateFormat('MMM').format(mDate));
+          tooltipLabels.add(DateFormat('MMMM yyyy').format(mDate));
+        }
       }
     }
 
@@ -292,100 +390,77 @@ class ReportsNotifier extends Notifier<ReportState> {
       if (batch.isEmpty) break;
 
       for (final o in batch) {
-        if (o.status == 'completed') {
-          completedOrdersCount++;
-          totalSales += o.totalAmount;
-          if (o.totalAmount > highestSale) highestSale = o.totalAmount;
-          cashierCounts[o.cashierName] = (cashierCounts[o.cashierName] ?? 0) + 1;
-          
-          final method = o.paymentMethod.toLowerCase();
-          paymentTotals[method] = (paymentTotals[method] ?? 0) + o.totalAmount;
-
-          for (final json in o.orderItemsJson) {
-            try {
-              final map = jsonDecode(json);
-              final name = map['itemName'] as String?;
-              final price = (map['subtotal'] as num?)?.toDouble() ?? 0.0;
-              final count = (map['quantity'] as num?)?.toInt() ?? 1;
-
-              if (name == null) continue;
-
-              itemRevenue[name] = (itemRevenue[name] ?? 0) + price;
-              itemQty[name] = (itemQty[name] ?? 0) + count;
-            } catch (_) {
-              continue;
-            }
+        if (o.status == 'completed' || o.status == 'refunded') {
+          double amt = o.totalAmount;
+          if (o.status == 'refunded') {
+            final refundAmt = o.refundAmount ?? o.totalAmount;
+            totalRefunds += refundAmt;
+            amt = o.totalAmount - refundAmt;
           }
 
-          if (isHourly) {
-            if (o.orderedAt.year == start.year &&
-                o.orderedAt.month == start.month &&
-                o.orderedAt.day == start.day) {
-              buckets[o.orderedAt.hour] += o.totalAmount;
-            }
-          } else if (isMonthly) {
-            final month = o.orderedAt.month - 1;
-            if (month >= 0 && month < 12) {
-              buckets[month] += o.totalAmount;
-            }
-          } else {
-            final diff = o.orderedAt.difference(start).inDays;
-            if (diff >= 0 && diff < buckets.length) {
-              buckets[diff] += o.totalAmount;
-            }
+          if (amt <= 0 && o.status == 'refunded') {
+            continue;
           }
-        } else if (o.status == 'voided') {
-          totalVoids += o.totalAmount;
-        } else if (o.status == 'refunded') {
-          final refundAmt = o.refundAmount ?? o.totalAmount;
-          totalRefunds += refundAmt;
-          
-          final netAmount = o.totalAmount - refundAmt;
-          totalSales += netAmount;
-          
-          if (netAmount > 0.0) {
+
+          if (o.status == 'completed') {
             completedOrdersCount++;
-            if (netAmount > highestSale) highestSale = netAmount;
+            totalSales += amt;
+            if (amt > highestSale) highestSale = amt;
             cashierCounts[o.cashierName] = (cashierCounts[o.cashierName] ?? 0) + 1;
 
             final method = o.paymentMethod.toLowerCase();
-            paymentTotals[method] = (paymentTotals[method] ?? 0) + netAmount;
-          }
+            paymentTotals[method] = (paymentTotals[method] ?? 0) + amt;
 
-          for (final json in o.orderItemsJson) {
-            try {
-              final map = jsonDecode(json);
-              final name = map['itemName'] as String?;
-              final price = (map['subtotal'] as num?)?.toDouble() ?? 0.0;
-              final count = (map['quantity'] as num?)?.toInt() ?? 1;
+            for (final json in o.orderItemsJson) {
+              try {
+                final map = jsonDecode(json);
+                final name = map['itemName'] as String?;
+                final price = (map['subtotal'] as num?)?.toDouble() ?? 0.0;
+                final count = (map['quantity'] as num?)?.toInt() ?? 1;
 
-              if (name == null) continue;
+                if (name == null) continue;
 
-              final scale = o.totalAmount > 0 ? netAmount / o.totalAmount : 0.0;
-              itemRevenue[name] = (itemRevenue[name] ?? 0) + (price * scale);
-              itemQty[name] = (itemQty[name] ?? 0) + (count * scale).round();
-            } catch (_) {
-              continue;
+                itemRevenue[name] = (itemRevenue[name] ?? 0) + price;
+                itemQty[name] = (itemQty[name] ?? 0) + count;
+              } catch (_) {
+                continue;
+              }
             }
           }
 
-          if (isHourly) {
-            if (o.orderedAt.year == start.year &&
-                o.orderedAt.month == start.month &&
-                o.orderedAt.day == start.day) {
-              buckets[o.orderedAt.hour] += netAmount;
-            }
-          } else if (isMonthly) {
-            final month = o.orderedAt.month - 1;
-            if (month >= 0 && month < 12) {
-              buckets[month] += netAmount;
-            }
-          } else {
-            final diff = o.orderedAt.difference(start).inDays;
-            if (diff >= 0 && diff < buckets.length) {
-              buckets[diff] += netAmount;
-            }
+          switch (granularity) {
+            case _ReportGranularity.hourly:
+              if (o.orderedAt.year == start.year &&
+                  o.orderedAt.month == start.month &&
+                  o.orderedAt.day == start.day) {
+                final idx = o.orderedAt.hour - dayStartHour;
+                if (idx >= 0 && idx < buckets.length) {
+                  buckets[idx] += amt;
+                }
+              }
+              break;
+            case _ReportGranularity.daily:
+              final diff = o.orderedAt.difference(start).inDays;
+              if (diff >= 0 && diff < buckets.length) {
+                buckets[diff] += amt;
+              }
+              break;
+            case _ReportGranularity.weekly:
+              final diffDays = o.orderedAt.difference(start).inDays;
+              final weekIdx = diffDays ~/ 7;
+              if (weekIdx >= 0 && weekIdx < buckets.length) {
+                buckets[weekIdx] += amt;
+              }
+              break;
+            case _ReportGranularity.monthly:
+              final monthDiff = (o.orderedAt.year - start.year) * 12 + (o.orderedAt.month - start.month);
+              if (monthDiff >= 0 && monthDiff < buckets.length) {
+                buckets[monthDiff] += amt;
+              }
+              break;
           }
+        } else if (o.status == 'voided') {
+          totalVoids += o.totalAmount;
         }
       }
 
@@ -432,6 +507,8 @@ class ReportsNotifier extends Notifier<ReportState> {
       paymentBreakdown: breakdownItems,
       topItems: topItemList.take(5).toList(),
       revenueSpots: spots,
+      xLabels: xLabels,
+      tooltipLabels: tooltipLabels,
     );
   }
 }

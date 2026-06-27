@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -30,6 +32,7 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
 
   String _role = 'cashier';
   String _status = 'active';
+  String? _avatarUrl;
   bool _obscurePin = true;
   bool _isSaving = false;
 
@@ -44,6 +47,7 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
     _pinCtrl = TextEditingController();
     _role = u?.role ?? 'cashier';
     _status = u?.status ?? 'active';
+    _avatarUrl = u?.avatarUrl;
   }
 
   @override
@@ -52,6 +56,25 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
     _emailCtrl.dispose();
     _pinCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAvatar() async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        setState(() => _avatarUrl = picked.path);
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnack('Error picking image: $e', AppColors.errorLight);
+      }
+    }
   }
 
   // ── Save ────────────────────────────────────────────────────────────────────
@@ -72,15 +95,16 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
               newPin: _role == 'cashier' && _pinCtrl.text.length == 4
                   ? _pinCtrl.text
                   : null,
+              avatarUrl: _avatarUrl,
             );
       } else {
-        // Create mode — always cashier, always active, no email needed
         await ref.read(usersProvider.notifier).createUser(
               name: _nameCtrl.text,
-              email: '',
-              role: 'cashier',
+              email: _emailCtrl.text,
+              role: _role,
               pin: _pinCtrl.text,
               status: 'active',
+              avatarUrl: _avatarUrl,
             );
       }
       if (mounted) {
@@ -239,35 +263,57 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
               children: [
                 // ── Avatar preview ───────────────────────────────────────
                 Center(
-                  child: ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: _nameCtrl,
-                    builder: (_, value, __) {
-                      final initial = value.text.isNotEmpty
-                          ? value.text[0].toUpperCase()
-                          : '?';
-                      return Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: primaryColor.withValues(alpha: 0.12),
-                          border: Border.all(
-                            color: primaryColor.withValues(alpha: 0.25),
-                            width: 2,
-                          ),
+                  child: GestureDetector(
+                    onTap: _pickAvatar,
+                    child: Stack(
+                      children: [
+                        ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: _nameCtrl,
+                          builder: (_, value, __) {
+                            final initial = value.text.isNotEmpty
+                                ? value.text[0].toUpperCase()
+                                : '?';
+                            final hasAvatar = _avatarUrl != null && _avatarUrl!.isNotEmpty;
+                            return Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: primaryColor.withValues(alpha: 0.12),
+                                border: Border.all(
+                                  color: primaryColor.withValues(alpha: 0.25),
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: hasAvatar
+                                    ? (_avatarUrl!.startsWith('http')
+                                        ? Image.network(_avatarUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildInitial(context, initial, primaryColor))
+                                        : Image.file(File(_avatarUrl!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildInitial(context, initial, primaryColor)))
+                                    : _buildInitial(context, initial, primaryColor),
+                              ),
+                            );
+                          },
                         ),
-                        child: Center(
-                          child: Text(
-                            initial,
-                            style: AppTextStyles.h2(context).copyWith(
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
                               color: primaryColor,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: bg, width: 2),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              size: 14,
+                              color: Colors.white,
                             ),
                           ),
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -290,32 +336,32 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                 ),
                 const SizedBox(height: AppSpacing.md),
 
-                // ── Email (edit mode only for Admin) ───────────────────────
-                if (_isEdit && _role == 'admin') ...[
+                // ── Role selector ─────────────────────────────────────────
+                _SectionHeader(label: 'Role', context: context),
+                const SizedBox(height: AppSpacing.xs),
+                _RoleSelector(
+                  selected: _role,
+                  onChanged: (r) => setState(() => _role = r),
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // ── Email (Required for Co-Admin) ─────────────────────────
+                if (_role == 'admin') ...[
                   AppTextField(
                     controller: _emailCtrl,
-                    label: 'Email',
+                    label: 'Email Address (Required for Co-Admin)',
                     hint: 'e.g. maria@suklipos.com',
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: Icon(Icons.alternate_email_rounded,
                         color: textPrimary.withValues(alpha: 0.4), size: 20),
                     textInputAction: TextInputAction.next,
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Email is required';
-                      if (!v.contains('@')) return 'Enter a valid email';
+                      if (_role == 'admin') {
+                        if (v == null || v.trim().isEmpty) return 'Email is required for Co-Admin';
+                        if (!v.contains('@')) return 'Enter a valid email';
+                      }
                       return null;
                     },
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                ],
-
-                // ── Role selector (edit mode only) ─────────────────────────
-                if (_isEdit) ...[
-                  _SectionHeader(label: 'Role', context: context),
-                  const SizedBox(height: AppSpacing.xs),
-                  _RoleSelector(
-                    selected: _role,
-                    onChanged: (r) => setState(() => _role = r),
                   ),
                   const SizedBox(height: AppSpacing.md),
                 ],
@@ -406,7 +452,9 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
 
                 // ── Save button ───────────────────────────────────────────
                 AppPrimaryButton(
-                  label: _isEdit ? 'Save Changes' : 'Add Cashier',
+                  label: _isEdit
+                      ? 'Save Changes'
+                      : (_role == 'admin' ? 'Add Co-Admin' : 'Add Cashier'),
                   icon:
                       _isEdit ? Icons.check_rounded : Icons.person_add_rounded,
                   onPressed: _isSaving ? null : _save,
@@ -417,6 +465,19 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInitial(BuildContext context, String initial, Color primaryColor) {
+    return Center(
+      child: Text(
+        initial,
+        style: AppTextStyles.h2(context).copyWith(
+          color: primaryColor,
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
@@ -475,7 +536,7 @@ class _RoleSelector extends StatelessWidget {
         const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: _RoleOption(
-            label: 'Admin',
+            label: 'Co-Admin',
             icon: Icons.admin_panel_settings_outlined,
             isSelected: selected == 'admin',
             onTap: () => onChanged('admin'),

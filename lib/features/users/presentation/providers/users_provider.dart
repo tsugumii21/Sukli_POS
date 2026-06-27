@@ -162,6 +162,7 @@ class UsersNotifier extends Notifier<AsyncValue<UsersState>> {
     required String role,
     String? pin,
     String status = 'active',
+    String? avatarUrl,
   }) async {
     final storeId = ref.read(currentStoreIdProvider);
     if (storeId.isEmpty) throw Exception('No active store');
@@ -181,6 +182,7 @@ class UsersNotifier extends Notifier<AsyncValue<UsersState>> {
       ..email = finalEmail
       ..role = role
       ..status = status
+      ..avatarUrl = avatarUrl
       ..pinHash = (role == 'cashier' && pin != null && pin.length == 4)
           ? PinHelper.hashPin(pin)
           : null
@@ -209,6 +211,7 @@ class UsersNotifier extends Notifier<AsyncValue<UsersState>> {
     required String role,
     required String status,
     String? newPin,
+    String? avatarUrl,
   }) async {
     final now = DateTime.now();
 
@@ -222,6 +225,7 @@ class UsersNotifier extends Notifier<AsyncValue<UsersState>> {
       ..email = finalEmail
       ..role = role
       ..status = status
+      ..avatarUrl = avatarUrl ?? user.avatarUrl
       ..updatedAt = now
       ..isSynced = false;
 

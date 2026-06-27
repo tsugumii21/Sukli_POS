@@ -91,30 +91,40 @@ class AdminDashboardScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  // Connectivity dot
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isOnline
-                          ? AppColors.successLight
-                          : AppColors.errorLight,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Avatar
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: isDark
-                        ? AppColors.accentDark.withValues(alpha: 0.2)
-                        : AppColors.accentLight.withValues(alpha: 0.15),
-                    child: Text(
-                      initial,
-                      style: AppTextStyles.body(context).copyWith(color: isDark
-                            ? AppColors.accentDarkLight
-                            :AppColors.accentLight),
-                    ),
+                  // Avatar with online indicator badge
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: isDark
+                            ? AppColors.accentDark.withValues(alpha: 0.2)
+                            : AppColors.accentLight.withValues(alpha: 0.15),
+                        child: Text(
+                          initial,
+                          style: AppTextStyles.body(context).copyWith(color: isDark
+                                ? AppColors.accentDarkLight
+                                : AppColors.accentLight),
+                        ),
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: isOnline
+                                ? AppColors.successLight
+                                : AppColors.errorLight,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: bg,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(width: 16),
                 ],

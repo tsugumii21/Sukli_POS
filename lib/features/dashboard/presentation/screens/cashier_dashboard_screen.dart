@@ -15,7 +15,6 @@ import '../../../../shared/providers/sync_provider.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/stats_card.dart';
-import '../../../../shared/widgets/sync_status_badge.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 
@@ -30,7 +29,6 @@ class CashierDashboardScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final dashboardAsync = ref.watch(dashboardProvider);
     final isOnline = ref.watch(isOnlineProvider);
-    final isSyncing = ref.watch(isSyncingProvider);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
@@ -80,18 +78,40 @@ class CashierDashboardScreen extends ConsumerWidget {
                       },
                     ),
                   ),
-                  // Avatar circle
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: AppColors.secondary(context).withValues(alpha: 0.15),
-                    child: Text(
-                      initials,
-                      style: TextStyle(
-                        color: AppColors.secondary(context),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                  // Avatar circle with online indicator badge
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: AppColors.secondary(context).withValues(alpha: 0.15),
+                        child: Text(
+                          initials,
+                          style: TextStyle(
+                            color: AppColors.secondary(context),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: isOnline
+                                ? AppColors.successLight
+                                : AppColors.errorLight,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: bg,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   // Expanded absorbs all remaining width — overflow impossible
@@ -118,11 +138,6 @@ class CashierDashboardScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                  ),
-                  // Badge sits at its natural width; Expanded guarantees no bleed
-                  SyncStatusBadge(
-                    isOnline: isOnline,
-                    isSyncing: isSyncing,
                   ),
                   const SizedBox(width: 12),
                 ],
@@ -179,74 +194,6 @@ class CashierDashboardScreen extends ConsumerWidget {
                 ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
 
                 const SizedBox(height: AppSpacing.xl),
-
-                // ── Favorites / Quick Picks Section ──────────────────────────
-                if (data.favorites.isNotEmpty) ...[
-                  Text(
-                    'Quick Picks',
-                    style: AppTextStyles.h3(context).copyWith(color: textPrimary),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  // Stack adds a right-edge fade so the list naturally trails off.
-                  Stack(
-                    children: [
-                      SizedBox(
-                        height: 48,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: data.favorites.length,
-                          itemBuilder: (context, index) {
-                            final item = data.favorites[index];
-                            return Container(
-                              margin: const EdgeInsets.only(right: 12),
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              decoration: BoxDecoration(
-                                color: cardBg,
-                                borderRadius: BorderRadius.circular(99),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.03),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  item.name,
-                                  style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      // Right-edge fade gradient
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: IgnorePointer(
-                          child: Container(
-                            width: 48,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [bg.withAlpha(0), bg],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                      .animate()
-                      .fadeIn(duration: 600.ms, delay: 400.ms)
-                      .slideX(begin: 0.1, end: 0),
-                  const SizedBox(height: AppSpacing.xl),
-                ],
 
                 // ── Recent Orders ────────────────────────────────────────────
                 Row(

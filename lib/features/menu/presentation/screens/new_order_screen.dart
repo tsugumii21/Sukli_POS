@@ -13,6 +13,7 @@ import '../../../../shared/isar_collections/menu_item_collection.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/shimmer_list.dart';
 import '../../../orders/presentation/providers/order_provider.dart';
+import '../providers/item_provider.dart';
 import '../providers/menu_provider.dart';
 import '../widgets/item_card.dart';
 import '../widgets/item_customization_modal.dart';
@@ -363,6 +364,8 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                           return ItemCard(
                             item: item,
                             onTap: () => _showItemCustomization(context, item),
+                            onFavoriteToggle: () =>
+                                ref.read(itemProvider.notifier).toggleFavorite(item),
                           )
                               .animate()
                               .fadeIn(
@@ -655,6 +658,15 @@ class _CategoryTabsRow extends StatelessWidget {
             count: allCount,
             isSelected: selectedId == null,
             onTap: () => onSelect(null),
+            maroon: maroon,
+            unselectedBg: unselectedBg,
+            textPrimary: textPrimary,
+          ),
+          _Tab(
+            label: '⭐ Favorites',
+            count: countForCategory('__favorites__'),
+            isSelected: selectedId == '__favorites__',
+            onTap: () => onSelect('__favorites__'),
             maroon: maroon,
             unselectedBg: unselectedBg,
             textPrimary: textPrimary,

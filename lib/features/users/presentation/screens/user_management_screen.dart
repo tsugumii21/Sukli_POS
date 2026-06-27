@@ -224,6 +224,8 @@ class _FilterChipsRow extends StatelessWidget {
 
   static const _filters = [
     (UsersFilter.all, 'All'),
+    (UsersFilter.admins, 'Co-Admin'),
+    (UsersFilter.cashiers, 'Cashiers'),
     (UsersFilter.active, 'Active'),
     (UsersFilter.inactive, 'Inactive'),
   ];

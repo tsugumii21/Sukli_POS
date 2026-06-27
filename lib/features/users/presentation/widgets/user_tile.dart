@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -32,6 +33,8 @@ class UserTile extends ConsumerWidget {
     
     final primaryColor = isDark ? AppColors.accentDark : AppColors.secondaryLight;
     final secondaryColor = isDark ? AppColors.accentDarkLight : AppColors.accentLight;
+
+    final hasAvatar = user.avatarUrl != null && user.avatarUrl!.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -71,14 +74,12 @@ class UserTile extends ConsumerWidget {
                       width: 1.5,
                     ),
                   ),
-                  child: Center(
-                    child: Text(
-                      initial,
-                      style: AppTextStyles.bodyLarge(context).copyWith(
-                        color: isCashier ? primaryColor : secondaryColor,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                  child: ClipOval(
+                    child: hasAvatar
+                        ? (user.avatarUrl!.startsWith('http')
+                            ? Image.network(user.avatarUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildInitial(context, initial, isCashier, primaryColor, secondaryColor))
+                            : Image.file(File(user.avatarUrl!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildInitial(context, initial, isCashier, primaryColor, secondaryColor)))
+                        : _buildInitial(context, initial, isCashier, primaryColor, secondaryColor),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -98,7 +99,7 @@ class UserTile extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        user.email,
+                        user.email.contains('@cashier.local') ? 'Cashier Account' : user.email,
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                         style: AppTextStyles.captionSecondary(context),
@@ -123,6 +124,18 @@ class UserTile extends ConsumerWidget {
         .animate(delay: Duration(milliseconds: (animationIndex * 40).clamp(0, 400)))
         .fadeIn(duration: AppDuration.medium)
         .slideY(begin: 0.08, end: 0, duration: AppDuration.medium, curve: AppCurve.standard);
+  }
+
+  Widget _buildInitial(BuildContext context, String initial, bool isCashier, Color primaryColor, Color secondaryColor) {
+    return Center(
+      child: Text(
+        initial,
+        style: AppTextStyles.bodyLarge(context).copyWith(
+          color: isCashier ? primaryColor : secondaryColor,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
   }
 }
 
@@ -162,7 +175,7 @@ class _RoleChip extends StatelessWidget {
         ),
       ),
       child: Text(
-        isAdmin ? 'Admin' : 'Cashier',
+        isAdmin ? 'Co-Admin' : 'Cashier',
         style: AppTextStyles.label(context).copyWith(
           color: textColor,
         ),

@@ -542,6 +542,16 @@ class _RevenueChart extends StatelessWidget {
     final textSecondary =
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
+    double maxSpotY = 0;
+    for (final spot in state.revenueSpots) {
+      if (spot.y > maxSpotY) maxSpotY = spot.y;
+    }
+    double calculatedMaxY = 500;
+    if (maxSpotY > 0) {
+      calculatedMaxY = (maxSpotY / 500).ceil() * 500.0;
+      if (calculatedMaxY == maxSpotY) calculatedMaxY += 500;
+    }
+
     return AppCard(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -566,6 +576,8 @@ class _RevenueChart extends StatelessWidget {
                   )
                 : LineChart(
                     LineChartData(
+                      minY: 0,
+                      maxY: calculatedMaxY,
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
@@ -579,9 +591,10 @@ class _RevenueChart extends StatelessWidget {
                         leftTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
-                            reservedSize: 48,
+                            reservedSize: 68,
+                            interval: 500,
                             getTitlesWidget: (value, _) => Text(
-                              CurrencyFormatter.formatCompact(value),
+                              CurrencyFormatter.format(value),
                               style: AppTextStyles.caption(context),
                             ),
                           ),
@@ -589,13 +602,30 @@ class _RevenueChart extends StatelessWidget {
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
-                            getTitlesWidget: (value, _) => Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text(
-                                _formatXLabel(value, state.period),
-                                style: AppTextStyles.caption(context),
-                              ),
-                            ),
+                            interval: 1,
+                            reservedSize: 36,
+                            getTitlesWidget: (value, meta) {
+                              final i = value.toInt();
+                              if (i < 0 || i >= state.xLabels.length) {
+                                return const SizedBox.shrink();
+                              }
+                              final text = state.xLabels[i];
+                              if (text.isEmpty) return const SizedBox.shrink();
+
+                              if (state.xLabels.length > 8 && i % 2 != 0) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return SideTitleWidget(
+                                meta: meta,
+                                space: 4,
+                                angle: -0.7,
+                                child: Text(
+                                  text,
+                                  style: AppTextStyles.caption(context).copyWith(fontSize: 10),
+                                ),
+                              );
+                            },
                           ),
                         ),
                         topTitles: const AxisTitles(
@@ -639,13 +669,18 @@ class _RevenueChart extends StatelessWidget {
                         getTouchLineStart: (data, index) => 0,
                         touchTooltipData: LineTouchTooltipData(
                           getTooltipColor: (spot) => isDark ? const Color(0xFF2A2D3E) : const Color(0xFF3E2723),
-                          getTooltipItems: (spots) => spots
-                              .map((s) => LineTooltipItem(
-                                    CurrencyFormatter.format(s.y),
-                                    AppTextStyles.captionMedium(context)
-                                        .copyWith(color: Colors.white),
-                                  ))
-                              .toList(),
+                          getTooltipItems: (spots) => spots.map((s) {
+                            final i = s.x.toInt();
+                            final label = (i >= 0 && i < state.tooltipLabels.length)
+                                ? state.tooltipLabels[i]
+                                : '';
+                            final amount = CurrencyFormatter.format(s.y);
+                            return LineTooltipItem(
+                              label.isNotEmpty ? '$label\n$amount' : amount,
+                              AppTextStyles.captionMedium(context)
+                                  .copyWith(color: Colors.white),
+                            );
+                          }).toList(),
                         ),
                       ),
                     ),
@@ -654,42 +689,6 @@ class _RevenueChart extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatXLabel(double value, ReportPeriod period) {
-    final i = value.toInt();
-    switch (period) {
-      case ReportPeriod.day:
-        if (i % 4 != 0) return '';
-        if (i == 0) return '12 AM';
-        if (i == 12) return '12 PM';
-        if (i < 12) return '$i AM';
-        return '${i - 12} PM';
-      case ReportPeriod.week:
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        return i < days.length ? days[i] : '';
-      case ReportPeriod.month:
-        if (i % 5 != 0) return '';
-        return '${i + 1}';
-      case ReportPeriod.year:
-        const months = [
-          'Jan',
-          'Feb',
-          'Mar',
-          'Apr',
-          'May',
-          'Jun',
-          'Jul',
-          'Aug',
-          'Sep',
-          'Oct',
-          'Nov',
-          'Dec'
-        ];
-        return i < months.length ? months[i] : '';
-      case ReportPeriod.custom:
-        return '${i + 1}';
-    }
   }
 }
 
