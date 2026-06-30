@@ -1602,7 +1602,7 @@ class _Step4Availability extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           _ToggleRow(
             label: 'Mark as Favourite',
-            subtitle: 'Shows in Quick Picks on the cashier screen.',
+            subtitle: 'Shows in the Favorites category in Cashier.',
             icon: Icons.star_rounded,
             value: isFavorite,
             onChanged: onFavoriteChanged,
