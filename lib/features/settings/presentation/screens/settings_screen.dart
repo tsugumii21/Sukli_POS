@@ -740,24 +740,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               style: AppTextStyles.captionSecondary(context),
                             ),
                             const SizedBox(height: AppSpacing.md),
-                            Row(
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Expanded(
-                                  child: AppSecondaryButton(
-                                    label: 'Export Backup',
-                                    icon: Icons.upload_rounded,
-                                    onPressed: _exportBackup,
-                                    textStyle: AppTextStyles.bodyMedium(context),
-                                  ),
+                                AppSecondaryButton(
+                                  label: 'Export Backup',
+                                  icon: Icons.upload_rounded,
+                                  onPressed: _exportBackup,
+                                  textStyle: AppTextStyles.bodyMedium(context),
                                 ),
-                                const SizedBox(width: AppSpacing.md),
-                                Expanded(
-                                  child: AppPrimaryButton(
-                                    label: 'Restore Backup',
-                                    icon: Icons.download_rounded,
-                                    onPressed: _showRestoreDialog,
-                                    textStyle: AppTextStyles.bodyMedium(context),
-                                  ),
+                                const SizedBox(height: AppSpacing.sm),
+                                AppPrimaryButton(
+                                  label: 'Restore Backup',
+                                  icon: Icons.download_rounded,
+                                  onPressed: _showRestoreDialog,
+                                  textStyle: AppTextStyles.bodyMedium(context),
                                 ),
                               ],
                             ),
