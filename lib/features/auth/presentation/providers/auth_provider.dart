@@ -23,7 +23,32 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   void clearSelection() {
-    state = state.copyWith(clearCashier: true, clearError: true);
+    state = const AuthState(selectedCashier: null, previousCashier: null, isAuthenticated: false, error: null);
+  }
+
+  // ── Switch cashier (preserves previous cashier for back button) ───────────
+  void switchCashier() {
+    state = AuthState(
+      selectedCashier: null,
+      previousCashier: state.selectedCashier ?? state.previousCashier,
+      isAuthenticated: false,
+      error: null,
+    );
+  }
+
+  // ── Restore previous cashier session on Back ─────────────────────────────
+  bool restorePreviousCashier() {
+    final prev = state.previousCashier;
+    if (prev != null) {
+      state = AuthState(
+        selectedCashier: prev,
+        previousCashier: null,
+        isAuthenticated: true,
+        error: null,
+      );
+      return true;
+    }
+    return false;
   }
 
   // ── Validate PIN against Isar hash ──────────────────────────────────────────

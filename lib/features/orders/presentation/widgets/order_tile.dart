@@ -24,14 +24,10 @@ class OrderTile extends ConsumerWidget {
   final OrderCollection order;
   final VoidCallback onTap;
 
-  static final _dateFmt = DateFormat('MMM d, yyyy');
+  static final _dateFmt = DateFormat("h:mm a '•' MMM d, yyyy");
 
-  /// Shows relative time for orders under 24 hours, date otherwise.
+  /// Shows time and date (e.g. 9:23 AM • Jul 23, 2026).
   static String _timeLabel(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-    if (diff.inHours < 24) return '${diff.inHours} hr ago';
     return _dateFmt.format(dt);
   }
 

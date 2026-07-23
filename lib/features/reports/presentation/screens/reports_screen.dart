@@ -742,61 +742,67 @@ class _PaymentDonutChart extends StatelessWidget {
             Row(
               children: [
                 SizedBox(
-                  width: 150,
-                  height: 150,
+                  width: 120,
+                  height: 120,
                   child: PieChart(
                     PieChartData(
                       sectionsSpace: 3,
-                      centerSpaceRadius: 45,
+                      centerSpaceRadius: 36,
                       sections: breakdown
                           .map((p) => PieChartSectionData(
                                 value: p.percentage,
                                 color: _paymentColor(p.method, isDark),
-                                radius: 30,
+                                radius: 24,
                                 showTitle: false,
                               ))
                           .toList(),
                     ),
                   ),
                 ),
-                const SizedBox(width: AppSpacing.md),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: breakdown.map((p) {
                       final color = _paymentColor(p.method, isDark);
-                      final accent =
-                          isDark ? AppColors.accentDark : AppColors.accentLight;
+                      final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+                      final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.symmetric(vertical: 5),
                         child: Row(
                           children: [
                             Container(
-                              width: 12,
-                              height: 12,
+                              width: 10,
+                              height: 10,
                               decoration: BoxDecoration(
                                 color: color,
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(width: AppSpacing.xs),
-                            Text(p.methodLabel,
-                                style: AppTextStyles.body(context)),
-                            const Spacer(),
-                             Text(
-                              CurrencyFormatter.format(p.amount),
-                              style: AppTextStyles.bodyMedium(context).copyWith(
-                                color: accent,
-                                fontFeatures: [const FontFeature.tabularFigures()],
+                            const SizedBox(width: 6),
+                            Text(
+                              p.methodLabel,
+                              style: AppTextStyles.body(context).copyWith(
+                                color: textPrimary,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(width: AppSpacing.sm),
-                            SizedBox(
-                              width: 42,
-                              child: Text(
-                                '${p.percentage.toStringAsFixed(1)}%',
-                                style: AppTextStyles.captionSecondary(context),
-                                textAlign: TextAlign.right,
+                            const SizedBox(width: 4),
+                            Text(
+                              '(${p.percentage.toStringAsFixed(1)}%)',
+                              style: AppTextStyles.captionSecondary(context).copyWith(
+                                color: textSecondary,
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              CurrencyFormatter.format(p.amount),
+                              style: AppTextStyles.bodySemiBold(context).copyWith(
+                                fontSize: 13,
+                                color: textPrimary,
+                                fontFeatures: const [FontFeature.tabularFigures()],
                               ),
                             ),
                           ],
@@ -845,7 +851,7 @@ class _TopItemsChart extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           SizedBox(
-            height: 220,
+            height: 230,
             child: topItems.isEmpty
                 ? Center(
                     child: Text('No data',
@@ -872,19 +878,29 @@ class _TopItemsChart extends StatelessWidget {
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
-                            getTitlesWidget: (value, _) {
+                            reservedSize: 42,
+                            getTitlesWidget: (value, meta) {
                               final idx = value.toInt();
                               if (idx >= topItems.length) {
                                 return const SizedBox();
                               }
                               final name = topItems[idx].name;
-                              final label = name.length > 8
-                                  ? '${name.substring(0, 8)}…'
+                              final label = name.length > 9
+                                  ? '${name.substring(0, 7)}…'
                                   : name;
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Text(label,
-                                    style: AppTextStyles.caption(context)),
+                              return SideTitleWidget(
+                                meta: meta,
+                                space: 8,
+                                child: Transform.rotate(
+                                  angle: -0.45,
+                                  child: Text(
+                                    label,
+                                    style: AppTextStyles.caption(context).copyWith(
+                                      fontSize: 10,
+                                      color: textSecondary,
+                                    ),
+                                  ),
+                                ),
                               );
                             },
                           ),

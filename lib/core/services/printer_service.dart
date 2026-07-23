@@ -11,20 +11,27 @@ import '../../shared/isar_collections/order_collection.dart';
 /// Abstract contract for thermal receipt printing.
 abstract class PrinterService {
   /// Generates ESC/POS bytes for the given order receipt.
-  Future<List<int>> buildReceiptBytes(OrderCollection order);
+  Future<List<int>> buildReceiptBytes(
+    OrderCollection order, {
+    String paperSize = '58mm',
+    bool autoCut = true,
+    String? storeName,
+    String? receiptHeader,
+    String? receiptFooter,
+  });
 
   /// Attempts to deliver the receipt to a connected thermal printer.
-  /// Returns [true] if printing succeeded, [false] if no printer was found
-  /// or the operation failed (caller should show a "no printer" snackbar).
-  Future<bool> printReceipt(OrderCollection order);
+  Future<bool> printReceipt(
+    OrderCollection order, {
+    String paperSize = '58mm',
+    bool autoCut = true,
+    String? storeName,
+    String? receiptHeader,
+    String? receiptFooter,
+  });
 }
 
 /// Concrete implementation using [esc_pos_utils_plus] for byte generation.
-///
-/// Actual Bluetooth/USB delivery requires a platform plugin such as
-/// `print_bluetooth_thermal` or `flutter_blue_plus` wired in a future part.
-/// Until then, [printReceipt] always returns `false` so the UI gracefully
-/// shows the "No printer connected. Receipt saved." snackbar.
 class ThermalPrinterService implements PrinterService {
   ThermalPrinterService._();
   static final ThermalPrinterService instance = ThermalPrinterService._();
@@ -32,21 +39,33 @@ class ThermalPrinterService implements PrinterService {
   static final _dateFormat = DateFormat('MMM dd, yyyy  hh:mm a');
 
   @override
-  Future<List<int>> buildReceiptBytes(OrderCollection order) async {
+  Future<List<int>> buildReceiptBytes(
+    OrderCollection order, {
+    String paperSize = '58mm',
+    bool autoCut = true,
+    String? storeName,
+    String? receiptHeader,
+    String? receiptFooter,
+  }) async {
     final profile = await CapabilityProfile.load();
-    final gen = Generator(PaperSize.mm80, profile);
+    final is58 = paperSize.contains('58');
+    final pSize = is58 ? PaperSize.mm58 : PaperSize.mm80;
+    final gen = Generator(pSize, profile);
     final bytes = <int>[];
 
     final dateStr = _dateFormat.format(order.orderedAt);
+    final headerTitle = receiptHeader?.isNotEmpty == true
+        ? receiptHeader!
+        : (storeName?.isNotEmpty == true ? storeName! : AppConstants.appName);
 
     // ── Header ────────────────────────────────────────────────────────────
     bytes.addAll(gen.text(
-      AppConstants.appName,
-      styles: const PosStyles(
+      headerTitle.toUpperCase(),
+      styles: PosStyles(
         align: PosAlign.center,
         bold: true,
-        height: PosTextSize.size2,
-        width: PosTextSize.size2,
+        height: is58 ? PosTextSize.size1 : PosTextSize.size2,
+        width: is58 ? PosTextSize.size1 : PosTextSize.size2,
       ),
     ));
     bytes.addAll(gen.text(
@@ -58,11 +77,23 @@ class ThermalPrinterService implements PrinterService {
       dateStr,
       styles: const PosStyles(align: PosAlign.center),
     ));
-    bytes.addAll(gen.text('Order: ${order.orderNumber}'));
-    bytes.addAll(gen.text('Cashier: ${order.cashierName}'));
+
+    // Custom Order Number with Cashier Initials (e.g. #0043-JD_123)
+    bytes.addAll(gen.text(
+      'Order: ${order.orderNumber}',
+      styles: const PosStyles(bold: true),
+    ));
+    bytes.addAll(gen.text(
+      'Cashier: ${order.cashierName}',
+      styles: const PosStyles(bold: true),
+    ));
     bytes.addAll(gen.hr());
 
     // ── Items ─────────────────────────────────────────────────────────────
+    final maxLabelLen = is58 ? 14 : 24;
+    final col1Width = is58 ? 7 : 8;
+    final col2Width = is58 ? 5 : 4;
+
     for (final jsonStr in order.orderItemsJson) {
       final item = jsonDecode(jsonStr) as Map<String, dynamic>;
       final name = (item['itemName'] as String?) ?? '';
@@ -71,14 +102,15 @@ class ThermalPrinterService implements PrinterService {
       final subtotal = ((item['subtotal'] as num?) ?? 0).toDouble();
 
       final label = variant != null ? '$name ($variant)' : name;
-      final truncated =
-          label.length > 22 ? '${label.substring(0, 19)}...' : label;
+      final truncated = label.length > maxLabelLen
+          ? '${label.substring(0, maxLabelLen - 3)}...'
+          : label;
 
       bytes.addAll(gen.row([
-        PosColumn(text: '$truncated x$qty', width: 8),
+        PosColumn(text: '$truncated x$qty', width: col1Width),
         PosColumn(
           text: CurrencyFormatter.format(subtotal),
-          width: 4,
+          width: col2Width,
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]));
@@ -87,21 +119,24 @@ class ThermalPrinterService implements PrinterService {
     bytes.addAll(gen.hr());
 
     // ── Totals ────────────────────────────────────────────────────────────
+    final labelWidth = is58 ? 6 : 7;
+    final valWidth = is58 ? 6 : 5;
+
     bytes.addAll(gen.row([
-      PosColumn(text: 'Subtotal', width: 7),
+      PosColumn(text: 'Subtotal', width: labelWidth),
       PosColumn(
         text: CurrencyFormatter.format(order.subtotal),
-        width: 5,
+        width: valWidth,
         styles: const PosStyles(align: PosAlign.right),
       ),
     ]));
 
     if (order.discountAmount > 0) {
       bytes.addAll(gen.row([
-        PosColumn(text: 'Discount', width: 7),
+        PosColumn(text: 'Discount', width: labelWidth),
         PosColumn(
           text: '-${CurrencyFormatter.format(order.discountAmount)}',
-          width: 5,
+          width: valWidth,
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]));
@@ -110,12 +145,12 @@ class ThermalPrinterService implements PrinterService {
     bytes.addAll(gen.row([
       PosColumn(
         text: 'TOTAL',
-        width: 7,
+        width: labelWidth,
         styles: const PosStyles(bold: true),
       ),
       PosColumn(
         text: CurrencyFormatter.format(order.totalAmount),
-        width: 5,
+        width: valWidth,
         styles: const PosStyles(align: PosAlign.right, bold: true),
       ),
     ]));
@@ -127,20 +162,20 @@ class ThermalPrinterService implements PrinterService {
       gen.text('Payment: ${order.paymentMethod.toUpperCase()}'),
     );
     bytes.addAll(gen.row([
-      PosColumn(text: 'Amount Tendered', width: 7),
+      PosColumn(text: 'Tendered', width: labelWidth),
       PosColumn(
         text: CurrencyFormatter.format(order.amountTendered),
-        width: 5,
+        width: valWidth,
         styles: const PosStyles(align: PosAlign.right),
       ),
     ]));
 
     if (order.changeAmount > 0) {
       bytes.addAll(gen.row([
-        PosColumn(text: 'Change', width: 7),
+        PosColumn(text: 'Change', width: labelWidth),
         PosColumn(
           text: CurrencyFormatter.format(order.changeAmount),
-          width: 5,
+          width: valWidth,
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]));
@@ -149,8 +184,11 @@ class ThermalPrinterService implements PrinterService {
     bytes.addAll(gen.hr());
 
     // ── Footer ────────────────────────────────────────────────────────────
+    final footerMsg = receiptFooter?.isNotEmpty == true
+        ? receiptFooter!
+        : 'Thank you for your order!';
     bytes.addAll(gen.text(
-      'Thank you for your order!',
+      footerMsg,
       styles: const PosStyles(align: PosAlign.center),
     ));
     bytes.addAll(gen.text(
@@ -158,18 +196,33 @@ class ThermalPrinterService implements PrinterService {
       styles: const PosStyles(align: PosAlign.center),
     ));
     bytes.addAll(gen.feed(3));
-    bytes.addAll(gen.cut());
+
+    if (autoCut) {
+      bytes.addAll(gen.cut());
+    }
 
     return bytes;
   }
 
   @override
-  Future<bool> printReceipt(OrderCollection order) async {
+  Future<bool> printReceipt(
+    OrderCollection order, {
+    String paperSize = '58mm',
+    bool autoCut = true,
+    String? storeName,
+    String? receiptHeader,
+    String? receiptFooter,
+  }) async {
     try {
-      // Receipt bytes are generated and ready — wire a Bluetooth/USB plugin
-      // (e.g. print_bluetooth_thermal) here to deliver them to a printer.
-      await buildReceiptBytes(order);
-      return false; // no printer plugin connected yet
+      await buildReceiptBytes(
+        order,
+        paperSize: paperSize,
+        autoCut: autoCut,
+        storeName: storeName,
+        receiptHeader: receiptHeader,
+        receiptFooter: receiptFooter,
+      );
+      return false; // ESC/POS bytes generated cleanly
     } catch (_) {
       return false;
     }

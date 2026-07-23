@@ -285,7 +285,7 @@ class CashierDashboardScreen extends ConsumerWidget {
                                               style: AppTextStyles.bodyLarge(context).copyWith(color: textPrimary),
                                             ),
                                             Text(
-                                              DateFormat('h:mm a').format(order.orderedAt),
+                                              DateFormat('MMM dd, yyyy  h:mm a').format(order.orderedAt),
                                               style: AppTextStyles.body(context).copyWith(
                                                 color: isDark ? AppColors.textSecondaryDark : textPrimary.withValues(alpha: 0.5),
                                                 fontSize: 12,
@@ -486,6 +486,36 @@ class _DashboardDrawer extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
+          Divider(height: 1, color: dividerColor),
+          ListTile(
+            leading: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: (isDark ? AppColors.secondaryDark : AppColors.secondaryLight).withValues(alpha: 0.10),
+                borderRadius: AppRadius.smallBR,
+              ),
+              child: Icon(
+                Icons.people_outline_rounded,
+                size: 18,
+                color: isDark ? AppColors.secondaryDark : AppColors.secondaryLight,
+              ),
+            ),
+            title: Text(
+              'Switch Cashier',
+              style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
+            ),
+            subtitle: Text(
+              'Select another cashier profile',
+              style: AppTextStyles.caption(context).copyWith(color: textSecondary),
+            ),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(context);
+              ref.read(authProvider.notifier).switchCashier();
+              context.go(RouteConstants.cashierSelect);
+            },
+          ),
           Divider(height: 1, color: dividerColor),
           ListTile(
             leading: Container(

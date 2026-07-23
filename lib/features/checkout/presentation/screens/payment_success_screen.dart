@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../shared/providers/store_provider.dart';
 import '../../../../core/utils/receipt_helper.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
 import '../providers/checkout_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -352,6 +353,7 @@ class PaymentSuccessScreen extends ConsumerWidget {
     dynamic order,
   ) async {
     final store = ref.read(currentStoreProvider).value;
+    final settings = ref.read(settingsProvider);
 
     if (store == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -364,6 +366,7 @@ class PaymentSuccessScreen extends ConsumerWidget {
       await ReceiptHelper.printReceipt(
         order: order,
         store: store,
+        paperSize: settings.paperSize,
       );
     } catch (e) {
       if (!context.mounted) return;

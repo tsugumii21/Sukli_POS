@@ -60,6 +60,30 @@ class _CashierSelectionScreenState
     }
   }
 
+  void _handleBack(BuildContext context) {
+    HapticFeedback.lightImpact();
+    final restored = ref.read(authProvider.notifier).restorePreviousCashier();
+    if (restored) {
+      context.go(RouteConstants.cashierHome);
+      return;
+    }
+
+    final adminAuth = ref.read(adminAuthProvider);
+    final isAdminLoggedIn = adminAuth.value != null ||
+        SupabaseService.instance.currentUser != null;
+
+    if (isAdminLoggedIn) {
+      ref.read(activeRoleProvider.notifier).setRole(ActiveRole.admin);
+      context.go(RouteConstants.adminHome);
+    } else {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(RouteConstants.welcome);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -72,21 +96,14 @@ class _CashierSelectionScreenState
     final adminAuth = ref.watch(adminAuthProvider);
     final isAdminLoggedIn = adminAuth.value != null ||
         SupabaseService.instance.currentUser != null;
+    final hasPreviousCashier = ref.watch(authProvider).previousCashier != null;
+    final canShowBack = isAdminLoggedIn || hasPreviousCashier;
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        if (isAdminLoggedIn) {
-          ref.read(activeRoleProvider.notifier).setRole(ActiveRole.admin);
-          context.go(RouteConstants.adminHome);
-        } else {
-          if (context.canPop()) {
-            context.pop();
-          } else {
-            context.go(RouteConstants.welcome);
-          }
-        }
+        _handleBack(context);
       },
       child: Scaffold(
         backgroundColor: bg,
@@ -101,16 +118,9 @@ class _CashierSelectionScreenState
                 ),
                 child: Row(
                   children: [
-                    if (isAdminLoggedIn) ...[
+                    if (canShowBack) ...[
                       GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go(RouteConstants.adminHome);
-                          }
-                        },
+                        onTap: () => _handleBack(context),
                         child: Container(
                           width: 48, height: 48,
                           decoration: BoxDecoration(

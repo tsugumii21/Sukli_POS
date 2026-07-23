@@ -29,6 +29,7 @@ class SettingsState {
     this.printLogo = false,
     this.showDateTime = true,
     this.paperSize = '58mm',
+    this.autoCut = true,
     this.autoSync = true,
     this.syncInterval = 30,
     this.isSyncing = false,
@@ -49,6 +50,7 @@ class SettingsState {
   final bool printLogo;
   final bool showDateTime;
   final String paperSize;
+  final bool autoCut;
   final bool autoSync;
   final int syncInterval;
   final bool isSyncing;
@@ -69,6 +71,7 @@ class SettingsState {
     bool? printLogo,
     bool? showDateTime,
     String? paperSize,
+    bool? autoCut,
     bool? autoSync,
     int? syncInterval,
     bool? isSyncing,
@@ -89,6 +92,7 @@ class SettingsState {
       printLogo: printLogo ?? this.printLogo,
       showDateTime: showDateTime ?? this.showDateTime,
       paperSize: paperSize ?? this.paperSize,
+      autoCut: autoCut ?? this.autoCut,
       autoSync: autoSync ?? this.autoSync,
       syncInterval: syncInterval ?? this.syncInterval,
       isSyncing: isSyncing ?? this.isSyncing,
@@ -132,6 +136,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final printLogo = prefs.getBool('receipt_print_logo') ?? false;
     final showDateTime = prefs.getBool('receipt_show_date_time') ?? true;
     final paperSize = prefs.getString('receipt_paper_size') ?? '58mm';
+    final autoCut = prefs.getBool('receipt_auto_cut') ?? true;
     final autoSync = prefs.getBool('auto_sync') ?? true;
     final syncInterval = prefs.getInt('sync_interval') ?? 30;
 
@@ -162,6 +167,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       printLogo: printLogo,
       showDateTime: showDateTime,
       paperSize: paperSize,
+      autoCut: autoCut,
       autoSync: autoSync,
       syncInterval: syncInterval,
       adminName: adminName,
@@ -181,6 +187,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
     bool? printLogo,
     bool? showDateTime,
     String? paperSize,
+    bool? autoCut,
     bool? autoSync,
     int? syncInterval,
   }) async {
@@ -196,6 +203,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
     if (printLogo != null) await prefs.setBool('receipt_print_logo', printLogo);
     if (showDateTime != null) await prefs.setBool('receipt_show_date_time', showDateTime);
     if (paperSize != null) await prefs.setString('receipt_paper_size', paperSize);
+    if (autoCut != null) await prefs.setBool('receipt_auto_cut', autoCut);
     if (autoSync != null) await prefs.setBool('auto_sync', autoSync);
     if (syncInterval != null) await prefs.setInt('sync_interval', syncInterval);
 
@@ -210,6 +218,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       printLogo: printLogo ?? state.printLogo,
       showDateTime: showDateTime ?? state.showDateTime,
       paperSize: paperSize ?? state.paperSize,
+      autoCut: autoCut ?? state.autoCut,
       autoSync: autoSync ?? state.autoSync,
       syncInterval: syncInterval ?? state.syncInterval,
     );

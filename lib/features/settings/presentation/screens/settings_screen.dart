@@ -598,34 +598,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               },
                             ),
                             Divider(color: dividerColor),
-                            Padding(
+                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text('Printer Paper Size', style: AppTextStyles.body(context).copyWith(color: textPrimary)),
-                                  Text('58mm or 80mm thermal paper', style: AppTextStyles.captionSecondary(context)),
+                                  Text('58mm (32 col) or 80mm (48 col) thermal paper', style: AppTextStyles.captionSecondary(context)),
                                   const SizedBox(height: AppSpacing.sm),
                                   SizedBox(
                                     width: double.infinity,
                                     child: SegmentedButton<String>(
-                                    segments: const [
-                                      ButtonSegment(value: '58mm', label: Text('58mm')),
-                                      ButtonSegment(value: '80mm', label: Text('80mm')),
-                                    ],
-                                    selected: {state.paperSize},
-                                    onSelectionChanged: (Set<String> newSelection) {
-                                      HapticFeedback.selectionClick();
-                                      ref.read(settingsProvider.notifier).saveSettings(paperSize: newSelection.first);
-                                    },
-                                    style: ButtonStyle(
-                                      visualDensity: VisualDensity.compact,
-                                      textStyle: WidgetStatePropertyAll(AppTextStyles.captionMedium(context)),
+                                      segments: const [
+                                        ButtonSegment(value: '58mm', label: Text('58mm Roll')),
+                                        ButtonSegment(value: '80mm', label: Text('80mm Roll')),
+                                      ],
+                                      selected: {state.paperSize},
+                                      onSelectionChanged: (Set<String> newSelection) {
+                                        HapticFeedback.selectionClick();
+                                        ref.read(settingsProvider.notifier).saveSettings(paperSize: newSelection.first);
+                                      },
+                                      style: ButtonStyle(
+                                        visualDensity: VisualDensity.compact,
+                                        textStyle: WidgetStatePropertyAll(AppTextStyles.captionMedium(context)),
+                                      ),
                                     ),
-                                  ),
                                   ),
                                 ],
                               ),
+                            ),
+                            Divider(color: dividerColor),
+                            SwitchListTile.adaptive(
+                              title: Text('Auto-Cut Thermal Paper', style: AppTextStyles.body(context).copyWith(color: textPrimary)),
+                              subtitle: Text('Send hardware cut command after printing', style: AppTextStyles.captionSecondary(context)),
+                              activeColor: AppColors.secondaryLight,
+                              value: state.autoCut,
+                              onChanged: (val) {
+                                HapticFeedback.lightImpact();
+                                ref.read(settingsProvider.notifier).saveSettings(autoCut: val);
+                              },
                             ),
                             const SizedBox(height: AppSpacing.md),
                             Align(
