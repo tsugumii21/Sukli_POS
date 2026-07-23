@@ -92,28 +92,8 @@ lib/
 
 ---
 
-## 🚀 Setup & Execution
+---
 
-### Prerequisites
-- Flutter SDK (>= 3.0.0)
-- Supabase Project credentials
+## 📄 Copyright & License
 
-### Local Run
-1.  Clone the repository.
-2.  Create a `.env` file in the root directory and add your credentials:
-    ```env
-    SUPABASE_URL=your_supabase_url
-    SUPABASE_ANON_KEY=your_supabase_anon_key
-    ```
-3.  Install dependencies:
-    ```bash
-    flutter pub get
-    ```
-4.  Run code generator (Isar, Riverpod annotation):
-    ```bash
-    flutter pub run build_runner build --delete-conflicting-outputs
-    ```
-5.  Launch the application:
-    ```bash
-    flutter run
-    ```
+Copyright © 2026 Sukli POS. All rights reserved.
