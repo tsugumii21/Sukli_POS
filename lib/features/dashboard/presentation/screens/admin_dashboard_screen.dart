@@ -650,7 +650,11 @@ class _RecentOrderTile extends StatelessWidget {
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
 
     final rawNum = order.orderNumber as String;
-    final shortNum = OrderNumberHelper.toShort(rawNum, isAdmin: true);
+    final shortNum = OrderNumberHelper.toShort(
+      rawNum,
+      cashierName: order.cashierName as String?,
+      isAdmin: true,
+    );
 
     Color statusColor;
     String statusLabel;

@@ -113,7 +113,7 @@ class PaymentSuccessScreen extends ConsumerWidget {
 
                   // Order number + timestamp
                   Text(
-                    '${OrderNumberHelper.toShort(order.orderNumber as String)}  •  ${DateFormat('hh:mm a').format(order.orderedAt)}',
+                    '${OrderNumberHelper.toShort(order.orderNumber as String, cashierName: order.cashierName as String?)}  •  ${DateFormat('hh:mm a').format(order.orderedAt)}',
                     style: AppTextStyles.caption(context).copyWith(
                       color: Colors.white.withValues(alpha: 0.75),
                     ),

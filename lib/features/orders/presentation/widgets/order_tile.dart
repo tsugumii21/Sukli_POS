@@ -80,7 +80,11 @@ class OrderTile extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      OrderNumberHelper.toShort(order.orderNumber, isAdmin: isAdmin),
+                      OrderNumberHelper.toShort(
+                        order.orderNumber,
+                        cashierName: order.cashierName,
+                        isAdmin: isAdmin,
+                      ),
                       style: AppTextStyles.bodySemiBold(context).copyWith(
                         color: textPrimary,
                         letterSpacing: 0.2,

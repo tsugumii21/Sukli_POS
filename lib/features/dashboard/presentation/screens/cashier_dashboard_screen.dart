@@ -228,7 +228,10 @@ class CashierDashboardScreen extends ConsumerWidget {
                     final order = entry.value;
                     // Show only the short order number, e.g. #0004
                     final rawNum = order.orderNumber;
-                    final shortNum = OrderNumberHelper.toShort(rawNum);
+                    final shortNum = OrderNumberHelper.toShort(
+                      rawNum,
+                      cashierName: order.cashierName,
+                    );
                     final accentColor = order.status == 'completed'
                         ? AppColors.successDark
                         : order.status == 'voided'
