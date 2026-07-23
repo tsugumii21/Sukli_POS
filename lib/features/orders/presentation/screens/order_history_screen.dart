@@ -52,14 +52,24 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
   }
 
   void _onScroll() {
+    if (!_scrollController.hasClients) return;
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+        _scrollController.position.maxScrollExtent - 600) {
       ref.read(orderHistoryProvider.notifier).loadNextPage();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Auto-trigger next page if previous load finished while scroll remains near bottom
+    ref.listen<OrderHistoryState>(orderHistoryProvider, (previous, next) {
+      if (previous?.isLoadingMore == true && !next.isLoadingMore && next.hasMore) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _onScroll();
+        });
+      }
+    });
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;

@@ -109,7 +109,7 @@ class OrderHistoryState {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
-  static const _pageSize = 20;
+  static const _pageSize = 50;
 
   @override
   OrderHistoryState build() {
