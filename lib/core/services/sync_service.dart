@@ -183,9 +183,9 @@ class SyncService {
           continue;
         }
 
+        Map<String, dynamic>? payload;
         try {
-          final payload =
-              jsonDecode(item.payloadJson) as Map<String, dynamic>;
+          payload = jsonDecode(item.payloadJson) as Map<String, dynamic>;
 
           if (item.operation == 'insert') {
             await _supabase.upsertRecord(item.tableName, payload);
@@ -209,9 +209,10 @@ class SyncService {
             'SYNC: ✓ ${item.operation} ${item.tableName}/${item.recordSyncId}',
           );
         } catch (e) {
+          var err = e;
           // Fallback: If Supabase schema cache doesn't have 'customer_name' column yet (PGRST204),
           // sanitize payload by removing 'customer_name' and retry immediately.
-          if (e.toString().contains('customer_name') && payload.containsKey('customer_name')) {
+          if (err.toString().contains('customer_name') && payload != null && payload.containsKey('customer_name')) {
             try {
               payload.remove('customer_name');
               if (item.operation == 'insert') {
@@ -229,18 +230,18 @@ class SyncService {
               debugPrint('SYNC: ✓ (fallback without customer_name) ${item.operation} ${item.tableName}/${item.recordSyncId}');
               continue;
             } catch (fallbackErr) {
-              e = fallbackErr;
+              err = fallbackErr;
             }
           }
 
           failed++;
           debugPrint(
-            'SYNC: ✗ ${item.operation} ${item.tableName}/${item.recordSyncId} — $e',
+            'SYNC: ✗ ${item.operation} ${item.tableName}/${item.recordSyncId} — $err',
           );
           await _isar.isar.writeTxn(() async {
             item.status = 'failed';
             item.retryCount++;
-            item.lastError = e.toString();
+            item.lastError = err.toString();
             item.lastAttemptAt = DateTime.now();
             // Reset to pending so it can be retried on next cycle
             if (item.retryCount < AppConstants.maxSyncRetries) {
