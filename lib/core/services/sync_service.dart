@@ -209,6 +209,30 @@ class SyncService {
             'SYNC: ✓ ${item.operation} ${item.tableName}/${item.recordSyncId}',
           );
         } catch (e) {
+          // Fallback: If Supabase schema cache doesn't have 'customer_name' column yet (PGRST204),
+          // sanitize payload by removing 'customer_name' and retry immediately.
+          if (e.toString().contains('customer_name') && payload.containsKey('customer_name')) {
+            try {
+              payload.remove('customer_name');
+              if (item.operation == 'insert') {
+                await _supabase.upsertRecord(item.tableName, payload);
+              } else if (item.operation == 'update') {
+                final syncId = payload['sync_id'] as String? ?? item.recordSyncId;
+                await _supabase.updateRecord(item.tableName, syncId, payload);
+              }
+              await _isar.isar.writeTxn(() async {
+                item.status = 'completed';
+                item.completedAt = DateTime.now();
+                await _isar.isar.syncQueueCollections.put(item);
+              });
+              succeeded++;
+              debugPrint('SYNC: ✓ (fallback without customer_name) ${item.operation} ${item.tableName}/${item.recordSyncId}');
+              continue;
+            } catch (fallbackErr) {
+              e = fallbackErr;
+            }
+          }
+
           failed++;
           debugPrint(
             'SYNC: ✗ ${item.operation} ${item.tableName}/${item.recordSyncId} — $e',

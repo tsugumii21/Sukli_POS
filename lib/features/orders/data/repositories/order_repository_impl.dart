@@ -154,13 +154,12 @@ class OrderRepositoryImpl {
   }
 
   String _orderPayload(OrderCollection order) {
-    return jsonEncode({
+    final map = <String, dynamic>{
       'sync_id': order.syncId,
       'store_id': order.storeId,
       'order_number': order.orderNumber,
       'cashier_id': order.cashierId,
       'cashier_name': order.cashierName,
-      'customer_name': order.customerName,
       'order_items_json': order.orderItemsJson,
       'subtotal': order.subtotal,
       'discount_amount': order.discountAmount,
@@ -175,6 +174,10 @@ class OrderRepositoryImpl {
       'ordered_at': order.orderedAt.toUtc().toIso8601String(),
       'created_at': order.createdAt.toUtc().toIso8601String(),
       'updated_at': order.updatedAt.toUtc().toIso8601String(),
-    });
+    };
+    if (order.customerName != null && order.customerName!.trim().isNotEmpty) {
+      map['customer_name'] = order.customerName!.trim();
+    }
+    return jsonEncode(map);
   }
 }
