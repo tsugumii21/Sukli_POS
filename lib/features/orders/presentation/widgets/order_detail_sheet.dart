@@ -344,51 +344,125 @@ class _ItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = item['itemName']?.toString() ?? '';
     final variant = item['variantName']?.toString() ?? '';
-    final qty = item['quantity'] ?? 0;
+    final qty = (item['quantity'] as num?)?.toInt() ?? 1;
     final unitPrice = (item['unitPrice'] as num?)?.toDouble() ?? 0.0;
     final subtotal = (item['subtotal'] as num?)?.toDouble() ?? 0.0;
     final rawMods = item['modifiers'];
-    final modifiers = rawMods is List && rawMods.isNotEmpty
-        ? rawMods
-            .map((m) => m?.toString().trim() ?? '')
-            .where((s) => s.isNotEmpty)
-            .join(', ')
-        : '';
+
+    final modList = <Map<String, String>>[];
+    if (rawMods is List && rawMods.isNotEmpty) {
+      for (final m in rawMods) {
+        final str = m?.toString().trim() ?? '';
+        if (str.isEmpty) continue;
+        if (str.contains('|')) {
+          final parts = str.split('|');
+          final mName = parts[0];
+          final mPrice = double.tryParse(parts[1]) ?? 0.0;
+          modList.add({
+            'name': mName,
+            'price': mPrice > 0 ? '+₱${mPrice.toStringAsFixed(2)}' : '',
+          });
+        } else if (str.contains('(+₱')) {
+          final parts = str.split('(+₱');
+          modList.add({
+            'name': parts[0].trim(),
+            'price': '+₱${parts[1].replaceAll(')', '').trim()}',
+          });
+        } else {
+          modList.add({'name': str, 'price': ''});
+        }
+      }
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: AppTextStyles.body(context).copyWith(color: textPrimary),
+          // Main item row: Name + Variant
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: AppTextStyles.body(context).copyWith(
+                        color: textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (variant.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        variant,
+                        style: AppTextStyles.caption(context).copyWith(
+                          color: textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-                if (variant.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(variant,
-                      style: AppTextStyles.label(context).copyWith(color: textSecondary)),
-                ],
-                if (modifiers.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(modifiers,
-                      style: AppTextStyles.label(context).copyWith(color: textSecondary)),
-                ],
-                const SizedBox(height: 4),
-                Text(
-                  '₱${unitPrice.toStringAsFixed(2)} × $qty',
-                  style: AppTextStyles.caption(context).copyWith(color: textSecondary),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Text(
-            '₱${subtotal.toStringAsFixed(2)}',
-            style: AppTextStyles.body(context).copyWith(color: textPrimary),
+
+          // Modifiers (small font, indented, with right-aligned add-on price)
+          if (modList.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            for (final mod in modList) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 8, top: 1, bottom: 1),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        mod['name']!,
+                        style: AppTextStyles.caption(context).copyWith(
+                          color: textSecondary.withValues(alpha: 0.85),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    if (mod['price']!.isNotEmpty)
+                      Text(
+                        mod['price']!,
+                        style: AppTextStyles.caption(context).copyWith(
+                          color: textSecondary.withValues(alpha: 0.85),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+
+          const SizedBox(height: 6),
+          // Subtotal row (Qty × UnitPrice and Total Item Price)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '₱${unitPrice.toStringAsFixed(2)} × $qty',
+                style: AppTextStyles.caption(context).copyWith(
+                  color: textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                '₱${subtotal.toStringAsFixed(2)}',
+                style: AppTextStyles.bodySemiBold(context).copyWith(
+                  color: textPrimary,
+                ),
+              ),
+            ],
           ),
         ],
       ),

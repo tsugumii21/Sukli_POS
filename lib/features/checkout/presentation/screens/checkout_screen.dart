@@ -270,6 +270,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Future<void> _handleCompletePayment(BuildContext context) async {
+    final customerInput = _customerNameController.text.trim();
+    if (customerInput.isNotEmpty) {
+      ref.read(checkoutProvider.notifier).setCustomerName(customerInput);
+    }
     final saved = await ref.read(checkoutProvider.notifier).processPayment();
     if (saved != null && context.mounted) {
       context.go(RouteConstants.paymentSuccess);

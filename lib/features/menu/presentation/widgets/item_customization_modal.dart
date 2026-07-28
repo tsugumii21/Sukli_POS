@@ -269,8 +269,13 @@ class _ItemCustomizationModalState
   void _addOrUpdateCart() {
     final variantName = _selectedVariantLabel;
 
-    final selectedModNames =
-        _selectedModifierIndices.map((i) => _allModifiers[i].name).toList();
+    final selectedModNames = _selectedModifierIndices.map((i) {
+      final mod = _allModifiers[i];
+      if (mod.priceDelta > 0) {
+        return '${mod.name}|${mod.priceDelta}';
+      }
+      return mod.name;
+    }).toList();
 
     final cartItem = CartItem(
       itemSyncId: widget.item.syncId,
