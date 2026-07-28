@@ -42,133 +42,138 @@ const OrderCollectionSchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'discountAmount': PropertySchema(
+    r'customerName': PropertySchema(
       id: 5,
+      name: r'customerName',
+      type: IsarType.string,
+    ),
+    r'discountAmount': PropertySchema(
+      id: 6,
       name: r'discountAmount',
       type: IsarType.double,
     ),
     r'discountReason': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'discountReason',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isPartialRefund': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isPartialRefund',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'orderItemsJson': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'orderItemsJson',
       type: IsarType.stringList,
     ),
     r'orderNumber': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'orderNumber',
       type: IsarType.string,
     ),
     r'orderedAt': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'orderedAt',
       type: IsarType.dateTime,
     ),
     r'paymentMethod': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'paymentMethod',
       type: IsarType.string,
     ),
     r'paymentReference': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'paymentReference',
       type: IsarType.string,
     ),
     r'refundAmount': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'refundAmount',
       type: IsarType.double,
     ),
     r'refundReason': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'refundReason',
       type: IsarType.string,
     ),
     r'refundedAt': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'refundedAt',
       type: IsarType.dateTime,
     ),
     r'refundedById': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'refundedById',
       type: IsarType.string,
     ),
     r'refundedByName': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'refundedByName',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'status',
       type: IsarType.string,
     ),
     r'storeId': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'storeId',
       type: IsarType.string,
     ),
     r'subtotal': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'subtotal',
       type: IsarType.double,
     ),
     r'syncId': PropertySchema(
-      id: 23,
+      id: 24,
       name: r'syncId',
       type: IsarType.string,
     ),
     r'taxAmount': PropertySchema(
-      id: 24,
+      id: 25,
       name: r'taxAmount',
       type: IsarType.double,
     ),
     r'totalAmount': PropertySchema(
-      id: 25,
+      id: 26,
       name: r'totalAmount',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 26,
+      id: 27,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'voidReason': PropertySchema(
-      id: 27,
+      id: 28,
       name: r'voidReason',
       type: IsarType.string,
     ),
     r'voidedAt': PropertySchema(
-      id: 28,
+      id: 29,
       name: r'voidedAt',
       type: IsarType.dateTime,
     ),
     r'voidedById': PropertySchema(
-      id: 29,
+      id: 30,
       name: r'voidedById',
       type: IsarType.string,
     ),
     r'voidedByName': PropertySchema(
-      id: 30,
+      id: 31,
       name: r'voidedByName',
       type: IsarType.string,
     )
@@ -275,6 +280,12 @@ int _orderCollectionEstimateSize(
   bytesCount += 3 + object.cashierId.length * 3;
   bytesCount += 3 + object.cashierName.length * 3;
   {
+    final value = object.customerName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.discountReason;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -353,32 +364,33 @@ void _orderCollectionSerialize(
   writer.writeString(offsets[2], object.cashierName);
   writer.writeDouble(offsets[3], object.changeAmount);
   writer.writeDateTime(offsets[4], object.createdAt);
-  writer.writeDouble(offsets[5], object.discountAmount);
-  writer.writeString(offsets[6], object.discountReason);
-  writer.writeBool(offsets[7], object.isDeleted);
-  writer.writeBool(offsets[8], object.isPartialRefund);
-  writer.writeBool(offsets[9], object.isSynced);
-  writer.writeStringList(offsets[10], object.orderItemsJson);
-  writer.writeString(offsets[11], object.orderNumber);
-  writer.writeDateTime(offsets[12], object.orderedAt);
-  writer.writeString(offsets[13], object.paymentMethod);
-  writer.writeString(offsets[14], object.paymentReference);
-  writer.writeDouble(offsets[15], object.refundAmount);
-  writer.writeString(offsets[16], object.refundReason);
-  writer.writeDateTime(offsets[17], object.refundedAt);
-  writer.writeString(offsets[18], object.refundedById);
-  writer.writeString(offsets[19], object.refundedByName);
-  writer.writeString(offsets[20], object.status);
-  writer.writeString(offsets[21], object.storeId);
-  writer.writeDouble(offsets[22], object.subtotal);
-  writer.writeString(offsets[23], object.syncId);
-  writer.writeDouble(offsets[24], object.taxAmount);
-  writer.writeDouble(offsets[25], object.totalAmount);
-  writer.writeDateTime(offsets[26], object.updatedAt);
-  writer.writeString(offsets[27], object.voidReason);
-  writer.writeDateTime(offsets[28], object.voidedAt);
-  writer.writeString(offsets[29], object.voidedById);
-  writer.writeString(offsets[30], object.voidedByName);
+  writer.writeString(offsets[5], object.customerName);
+  writer.writeDouble(offsets[6], object.discountAmount);
+  writer.writeString(offsets[7], object.discountReason);
+  writer.writeBool(offsets[8], object.isDeleted);
+  writer.writeBool(offsets[9], object.isPartialRefund);
+  writer.writeBool(offsets[10], object.isSynced);
+  writer.writeStringList(offsets[11], object.orderItemsJson);
+  writer.writeString(offsets[12], object.orderNumber);
+  writer.writeDateTime(offsets[13], object.orderedAt);
+  writer.writeString(offsets[14], object.paymentMethod);
+  writer.writeString(offsets[15], object.paymentReference);
+  writer.writeDouble(offsets[16], object.refundAmount);
+  writer.writeString(offsets[17], object.refundReason);
+  writer.writeDateTime(offsets[18], object.refundedAt);
+  writer.writeString(offsets[19], object.refundedById);
+  writer.writeString(offsets[20], object.refundedByName);
+  writer.writeString(offsets[21], object.status);
+  writer.writeString(offsets[22], object.storeId);
+  writer.writeDouble(offsets[23], object.subtotal);
+  writer.writeString(offsets[24], object.syncId);
+  writer.writeDouble(offsets[25], object.taxAmount);
+  writer.writeDouble(offsets[26], object.totalAmount);
+  writer.writeDateTime(offsets[27], object.updatedAt);
+  writer.writeString(offsets[28], object.voidReason);
+  writer.writeDateTime(offsets[29], object.voidedAt);
+  writer.writeString(offsets[30], object.voidedById);
+  writer.writeString(offsets[31], object.voidedByName);
 }
 
 OrderCollection _orderCollectionDeserialize(
@@ -393,33 +405,34 @@ OrderCollection _orderCollectionDeserialize(
   object.cashierName = reader.readString(offsets[2]);
   object.changeAmount = reader.readDouble(offsets[3]);
   object.createdAt = reader.readDateTime(offsets[4]);
-  object.discountAmount = reader.readDouble(offsets[5]);
-  object.discountReason = reader.readStringOrNull(offsets[6]);
+  object.customerName = reader.readStringOrNull(offsets[5]);
+  object.discountAmount = reader.readDouble(offsets[6]);
+  object.discountReason = reader.readStringOrNull(offsets[7]);
   object.id = id;
-  object.isDeleted = reader.readBool(offsets[7]);
-  object.isPartialRefund = reader.readBool(offsets[8]);
-  object.isSynced = reader.readBool(offsets[9]);
-  object.orderItemsJson = reader.readStringList(offsets[10]) ?? [];
-  object.orderNumber = reader.readString(offsets[11]);
-  object.orderedAt = reader.readDateTime(offsets[12]);
-  object.paymentMethod = reader.readString(offsets[13]);
-  object.paymentReference = reader.readStringOrNull(offsets[14]);
-  object.refundAmount = reader.readDoubleOrNull(offsets[15]);
-  object.refundReason = reader.readStringOrNull(offsets[16]);
-  object.refundedAt = reader.readDateTimeOrNull(offsets[17]);
-  object.refundedById = reader.readStringOrNull(offsets[18]);
-  object.refundedByName = reader.readStringOrNull(offsets[19]);
-  object.status = reader.readString(offsets[20]);
-  object.storeId = reader.readStringOrNull(offsets[21]);
-  object.subtotal = reader.readDouble(offsets[22]);
-  object.syncId = reader.readString(offsets[23]);
-  object.taxAmount = reader.readDouble(offsets[24]);
-  object.totalAmount = reader.readDouble(offsets[25]);
-  object.updatedAt = reader.readDateTime(offsets[26]);
-  object.voidReason = reader.readStringOrNull(offsets[27]);
-  object.voidedAt = reader.readDateTimeOrNull(offsets[28]);
-  object.voidedById = reader.readStringOrNull(offsets[29]);
-  object.voidedByName = reader.readStringOrNull(offsets[30]);
+  object.isDeleted = reader.readBool(offsets[8]);
+  object.isPartialRefund = reader.readBool(offsets[9]);
+  object.isSynced = reader.readBool(offsets[10]);
+  object.orderItemsJson = reader.readStringList(offsets[11]) ?? [];
+  object.orderNumber = reader.readString(offsets[12]);
+  object.orderedAt = reader.readDateTime(offsets[13]);
+  object.paymentMethod = reader.readString(offsets[14]);
+  object.paymentReference = reader.readStringOrNull(offsets[15]);
+  object.refundAmount = reader.readDoubleOrNull(offsets[16]);
+  object.refundReason = reader.readStringOrNull(offsets[17]);
+  object.refundedAt = reader.readDateTimeOrNull(offsets[18]);
+  object.refundedById = reader.readStringOrNull(offsets[19]);
+  object.refundedByName = reader.readStringOrNull(offsets[20]);
+  object.status = reader.readString(offsets[21]);
+  object.storeId = reader.readStringOrNull(offsets[22]);
+  object.subtotal = reader.readDouble(offsets[23]);
+  object.syncId = reader.readString(offsets[24]);
+  object.taxAmount = reader.readDouble(offsets[25]);
+  object.totalAmount = reader.readDouble(offsets[26]);
+  object.updatedAt = reader.readDateTime(offsets[27]);
+  object.voidReason = reader.readStringOrNull(offsets[28]);
+  object.voidedAt = reader.readDateTimeOrNull(offsets[29]);
+  object.voidedById = reader.readStringOrNull(offsets[30]);
+  object.voidedByName = reader.readStringOrNull(offsets[31]);
   return object;
 }
 
@@ -441,56 +454,58 @@ P _orderCollectionDeserializeProp<P>(
     case 4:
       return (reader.readDateTime(offset)) as P;
     case 5:
-      return (reader.readDouble(offset)) as P;
-    case 6:
       return (reader.readStringOrNull(offset)) as P;
+    case 6:
+      return (reader.readDouble(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
       return (reader.readBool(offset)) as P;
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 12:
-      return (reader.readDateTime(offset)) as P;
-    case 13:
       return (reader.readString(offset)) as P;
+    case 13:
+      return (reader.readDateTime(offset)) as P;
     case 14:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 15:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 16:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 17:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 18:
       return (reader.readStringOrNull(offset)) as P;
+    case 18:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 19:
       return (reader.readStringOrNull(offset)) as P;
     case 20:
-      return (reader.readString(offset)) as P;
-    case 21:
       return (reader.readStringOrNull(offset)) as P;
-    case 22:
-      return (reader.readDouble(offset)) as P;
-    case 23:
+    case 21:
       return (reader.readString(offset)) as P;
-    case 24:
+    case 22:
+      return (reader.readStringOrNull(offset)) as P;
+    case 23:
       return (reader.readDouble(offset)) as P;
+    case 24:
+      return (reader.readString(offset)) as P;
     case 25:
       return (reader.readDouble(offset)) as P;
     case 26:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 27:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 28:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 29:
       return (reader.readStringOrNull(offset)) as P;
+    case 29:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 30:
+      return (reader.readStringOrNull(offset)) as P;
+    case 31:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1484,6 +1499,160 @@ extension OrderCollectionQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'customerName',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'customerName',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'customerName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'customerName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'customerName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'customerName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'customerName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'customerName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'customerName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'customerName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'customerName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterFilterCondition>
+      customerNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'customerName',
+        value: '',
       ));
     });
   }
@@ -4418,6 +4587,20 @@ extension OrderCollectionQuerySortBy
   }
 
   QueryBuilder<OrderCollection, OrderCollection, QAfterSortBy>
+      sortByCustomerName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'customerName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterSortBy>
+      sortByCustomerNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'customerName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterSortBy>
       sortByDiscountAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discountAmount', Sort.asc);
@@ -4838,6 +5021,20 @@ extension OrderCollectionQuerySortThenBy
   }
 
   QueryBuilder<OrderCollection, OrderCollection, QAfterSortBy>
+      thenByCustomerName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'customerName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterSortBy>
+      thenByCustomerNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'customerName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QAfterSortBy>
       thenByDiscountAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discountAmount', Sort.asc);
@@ -5235,6 +5432,13 @@ extension OrderCollectionQueryWhereDistinct
   }
 
   QueryBuilder<OrderCollection, OrderCollection, QDistinct>
+      distinctByCustomerName({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'customerName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<OrderCollection, OrderCollection, QDistinct>
       distinctByDiscountAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'discountAmount');
@@ -5460,6 +5664,13 @@ extension OrderCollectionQueryProperty
       createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<OrderCollection, String?, QQueryOperations>
+      customerNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'customerName');
     });
   }
 
