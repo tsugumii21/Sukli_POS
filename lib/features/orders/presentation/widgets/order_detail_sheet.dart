@@ -124,20 +124,16 @@ class OrderDetailSheet extends ConsumerWidget {
                     textSecondary: textSecondary,
                     textPrimary: textPrimary,
                   ),
-                  const SizedBox(height: 8),
-                  _InfoRow(
-                    icon: Icons.account_circle_outlined,
-                    label: 'Customer',
-                    value: (order.customerName != null && order.customerName!.trim().isNotEmpty)
-                        ? order.customerName!
-                        : 'Tap to add customer name',
-                    textSecondary: textSecondary,
-                    textPrimary: (order.customerName != null && order.customerName!.trim().isNotEmpty)
-                        ? textPrimary
-                        : textSecondary.withValues(alpha: 0.6),
-                    showEditHint: true,
-                    onTap: () => _showEditCustomerDialog(context, ref, order),
-                  ),
+                  if (order.customerName != null && order.customerName!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _InfoRow(
+                      icon: Icons.account_circle_outlined,
+                      label: 'Customer',
+                      value: order.customerName!,
+                      textSecondary: textSecondary,
+                      textPrimary: textPrimary,
+                    ),
+                  ],
                   const SizedBox(height: 16),
 
                   // Items section
