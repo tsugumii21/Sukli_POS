@@ -489,6 +489,21 @@ class _OrderSummaryCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (order.customerName != null && (order.customerName as String).trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.account_circle_outlined,
+                          size: 14, color: Colors.grey),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Buyer: ${order.customerName}',
+                        style: AppTextStyles.caption(context)
+                            .copyWith(color: AppColors.textSecondary(context), fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ],
 
                 SizedBox(height: AppSpacing.sm),
                 Divider(height: 1, color: Theme.of(context).brightness == Brightness.dark ? AppColors.accentDark : AppColors.primaryLightVariant),

@@ -28,6 +28,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _otherLabelController = TextEditingController();
+  final _customerNameController = TextEditingController();
 
   @override
   void initState() {
@@ -41,6 +42,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void dispose() {
     _otherLabelController.dispose();
+    _customerNameController.dispose();
     super.dispose();
   }
 
@@ -152,6 +154,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           delay: (40 * entry.key).ms,
                         );
                   }),
+
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Customer / Buyer Name
+                  _SectionLabel(
+                    label: 'BUYER / CUSTOMER NAME (OPTIONAL)',
+                    textSecondary: textSecondary,
+                  ),
+                  const SizedBox(height: 6),
+                  _CustomerNameInput(
+                    controller: _customerNameController,
+                    cardBg: cardBg,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    onChanged: (v) => ref
+                        .read(checkoutProvider.notifier)
+                        .setCustomerName(v),
+                  ).animate().fadeIn(duration: 350.ms, delay: 80.ms),
 
                   const SizedBox(height: AppSpacing.md),
 
@@ -1156,6 +1176,68 @@ class _OtherPaymentField extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CustomerNameInput extends StatelessWidget {
+  const _CustomerNameInput({
+    required this.controller,
+    required this.cardBg,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final Color cardBg, textPrimary, textSecondary;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor =
+        isDark ? AppColors.accentDark : AppColors.secondaryLight;
+
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      textCapitalization: TextCapitalization.words,
+      style: AppTextStyles.body(context).copyWith(color: textPrimary),
+      decoration: InputDecoration(
+        hintText: 'Enter buyer / customer name (e.g. Juan Dela Cruz)',
+        hintStyle: AppTextStyles.body(context).copyWith(
+          color: textSecondary.withValues(alpha: 0.5),
+          fontSize: 14,
+        ),
+        prefixIcon: Icon(
+          Icons.person_outline_rounded,
+          color: textSecondary.withValues(alpha: 0.6),
+          size: 22,
+        ),
+        filled: true,
+        fillColor: cardBg,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+            color: Colors.black.withValues(alpha: 0.06),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+            color: Colors.black.withValues(alpha: 0.06),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: accentColor, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+      ),
     );
   }
 }

@@ -15,6 +15,7 @@ class OrderCollection {
   @Index()
   late String cashierId;
   late String cashierName;
+  String? customerName;
 
   List<String> orderItemsJson = [];
 

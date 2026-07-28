@@ -72,6 +72,12 @@ class ReceiptHelper {
                 child: pw.Text('Cashier: ${order.cashierName}',
                     style: pw.TextStyle(fontSize: widthMm == 58 ? 7.5 : 8, fontWeight: pw.FontWeight.bold)),
               ),
+              if (order.customerName != null && order.customerName!.trim().isNotEmpty)
+                pw.Align(
+                  alignment: pw.Alignment.centerLeft,
+                  child: pw.Text('Customer: ${order.customerName}',
+                      style: pw.TextStyle(fontSize: widthMm == 58 ? 7.5 : 8, fontWeight: pw.FontWeight.bold)),
+                ),
               pw.SizedBox(height: 4),
               pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
 

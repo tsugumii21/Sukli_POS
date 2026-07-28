@@ -48,6 +48,7 @@ class CheckoutState {
 
   /// Free-text label for "Other" payment (e.g. "PayMaya", "Bank Transfer").
   final String otherPaymentLabel;
+  final String customerName;
 
   const CheckoutState({
     this.selectedMethod,
@@ -56,6 +57,7 @@ class CheckoutState {
     this.errorMessage,
     this.completedOrder,
     this.otherPaymentLabel = '',
+    this.customerName = '',
   });
 
   double get amountEntered => double.tryParse(amountDisplay) ?? 0.0;
@@ -79,6 +81,7 @@ class CheckoutState {
     String? errorMessage,
     OrderCollection? completedOrder,
     String? otherPaymentLabel,
+    String? customerName,
     bool clearError = false,
     bool clearMethod = false,
   }) {
@@ -90,6 +93,7 @@ class CheckoutState {
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       completedOrder: completedOrder ?? this.completedOrder,
       otherPaymentLabel: otherPaymentLabel ?? this.otherPaymentLabel,
+      customerName: customerName ?? this.customerName,
     );
   }
 }
@@ -110,6 +114,11 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
       otherPaymentLabel: '',
       clearError: true,
     );
+  }
+
+  /// Sets the buyer / customer name for this order.
+  void setCustomerName(String name) {
+    state = state.copyWith(customerName: name, clearError: true);
   }
 
   /// Sets the free-text payment label used when method is [PaymentMethod.other].
@@ -179,6 +188,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
         orderState: orderState,
         cashierId: cashier.syncId,
         cashierName: cashier.name,
+        customerName: state.customerName.trim().isEmpty ? null : state.customerName.trim(),
         amountTendered: amountTendered,
         paymentMethod: state.selectedMethod!.value,
         paymentReference: paymentReference,

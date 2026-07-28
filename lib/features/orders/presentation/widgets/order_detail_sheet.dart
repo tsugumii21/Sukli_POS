@@ -120,6 +120,16 @@ class OrderDetailSheet extends ConsumerWidget {
                     textSecondary: textSecondary,
                     textPrimary: textPrimary,
                   ),
+                  if (order.customerName != null && order.customerName!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _InfoRow(
+                      icon: Icons.account_circle_outlined,
+                      label: 'Customer',
+                      value: order.customerName!,
+                      textSecondary: textSecondary,
+                      textPrimary: textPrimary,
+                    ),
+                  ],
                   const SizedBox(height: 16),
 
                   // Items section

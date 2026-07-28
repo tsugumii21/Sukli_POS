@@ -87,6 +87,12 @@ class ThermalPrinterService implements PrinterService {
       'Cashier: ${order.cashierName}',
       styles: const PosStyles(bold: true),
     ));
+    if (order.customerName != null && order.customerName!.trim().isNotEmpty) {
+      bytes.addAll(gen.text(
+        'Customer: ${order.customerName}',
+        styles: const PosStyles(bold: true),
+      ));
+    }
     bytes.addAll(gen.hr());
 
     // ── Items ─────────────────────────────────────────────────────────────
@@ -114,6 +120,20 @@ class ThermalPrinterService implements PrinterService {
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]));
+
+      final rawMods = item['modifiers'];
+      if (rawMods is List && rawMods.isNotEmpty) {
+        final modsStr = rawMods
+            .map((m) => m?.toString().trim() ?? '')
+            .where((s) => s.isNotEmpty)
+            .join(', ');
+        if (modsStr.isNotEmpty) {
+          bytes.addAll(gen.text(
+            '  + $modsStr',
+            styles: const PosStyles(align: PosAlign.left),
+          ));
+        }
+      }
     }
 
     bytes.addAll(gen.hr());

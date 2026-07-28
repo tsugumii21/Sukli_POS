@@ -22,6 +22,7 @@ class OrderRepositoryImpl {
     required OrderState orderState,
     required String cashierId,
     required String cashierName,
+    String? customerName,
     required double amountTendered,
     required String paymentMethod,
     String? paymentReference,
@@ -60,6 +61,7 @@ class OrderRepositoryImpl {
       ..orderNumber = orderNumber
       ..cashierId = cashierId
       ..cashierName = cashierName
+      ..customerName = customerName?.trim().isEmpty == true ? null : customerName?.trim()
       ..orderItemsJson = itemsJson
       ..subtotal = subtotal
       ..discountAmount = discountAmount
@@ -158,6 +160,7 @@ class OrderRepositoryImpl {
       'order_number': order.orderNumber,
       'cashier_id': order.cashierId,
       'cashier_name': order.cashierName,
+      'customer_name': order.customerName,
       'order_items_json': order.orderItemsJson,
       'subtotal': order.subtotal,
       'discount_amount': order.discountAmount,

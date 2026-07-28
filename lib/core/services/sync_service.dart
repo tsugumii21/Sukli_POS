@@ -476,6 +476,7 @@ class SyncService {
               ..orderNumber = row['order_number'] as String
               ..cashierId = row['cashier_id'] as String
               ..cashierName = row['cashier_name'] as String
+              ..customerName = row['customer_name'] as String?
               ..orderItemsJson = orderItemsJson
               ..subtotal = (row['subtotal'] as num).toDouble()
               ..discountAmount = (row['discount_amount'] as num? ?? 0).toDouble()
