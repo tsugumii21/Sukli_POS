@@ -9,6 +9,10 @@ import 'package:intl/intl.dart';
 import '../../../../core/services/printer_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
+import '../../../../core/providers/isar_provider.dart';
+import '../../../../shared/providers/sync_provider.dart';
+import '../providers/order_history_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OrderDetailSheet — draggable bottom sheet showing full order breakdown
@@ -120,16 +124,20 @@ class OrderDetailSheet extends ConsumerWidget {
                     textSecondary: textSecondary,
                     textPrimary: textPrimary,
                   ),
-                  if (order.customerName != null && order.customerName!.trim().isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    _InfoRow(
-                      icon: Icons.account_circle_outlined,
-                      label: 'Customer',
-                      value: order.customerName!,
-                      textSecondary: textSecondary,
-                      textPrimary: textPrimary,
-                    ),
-                  ],
+                  const SizedBox(height: 8),
+                  _InfoRow(
+                    icon: Icons.account_circle_outlined,
+                    label: 'Customer',
+                    value: (order.customerName != null && order.customerName!.trim().isNotEmpty)
+                        ? order.customerName!
+                        : 'Tap to add customer name',
+                    textSecondary: textSecondary,
+                    textPrimary: (order.customerName != null && order.customerName!.trim().isNotEmpty)
+                        ? textPrimary
+                        : textSecondary.withValues(alpha: 0.6),
+                    showEditHint: true,
+                    onTap: () => _showEditCustomerDialog(context, ref, order),
+                  ),
                   const SizedBox(height: 16),
 
                   // Items section
@@ -303,6 +311,8 @@ class _InfoRow extends StatelessWidget {
     required this.value,
     required this.textPrimary,
     required this.textSecondary,
+    this.onTap,
+    this.showEditHint = false,
   });
 
   final IconData icon;
@@ -310,23 +320,123 @@ class _InfoRow extends StatelessWidget {
   final String value;
   final Color textPrimary;
   final Color textSecondary;
+  final VoidCallback? onTap;
+  final bool showEditHint;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final rowChild = Row(
       children: [
         Icon(icon, size: 16, color: textSecondary),
         const SizedBox(width: 8),
         Text('$label: ',
             style: AppTextStyles.body(context).copyWith(color: textSecondary)),
         Expanded(
-          child: Text(value,
-              style: AppTextStyles.body(context).copyWith(color: textPrimary),
-              overflow: TextOverflow.ellipsis),
+          child: Text(
+            value,
+            style: AppTextStyles.body(context).copyWith(color: textPrimary),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
+        if (showEditHint) ...[
+          const SizedBox(width: 4),
+          Icon(
+            Icons.edit_outlined,
+            size: 14,
+            color: textSecondary.withValues(alpha: 0.6),
+          ),
+        ],
       ],
     );
+
+    if (onTap != null) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+          child: rowChild,
+        ),
+      );
+    }
+
+    return rowChild;
   }
+}
+
+void _showEditCustomerDialog(
+  BuildContext context,
+  WidgetRef ref,
+  OrderCollection order,
+) {
+  final controller = TextEditingController(text: order.customerName ?? '');
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final dialogBg = isDark ? AppColors.surfaceDark : AppColors.white;
+  final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: dialogBg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(
+        'Edit Customer Name',
+        style: GoogleFonts.dmSans(
+          color: textPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        textCapitalization: TextCapitalization.words,
+        decoration: InputDecoration(
+          hintText: 'Enter buyer / customer name',
+          hintStyle: TextStyle(color: textPrimary.withValues(alpha: 0.5)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            final newName = controller.text.trim();
+            Navigator.pop(ctx);
+
+            final isar = ref.read(isarProvider);
+            await isar.writeTxn(() async {
+              order.customerName = newName.isEmpty ? null : newName;
+              await isar.orderCollections.put(order);
+            });
+
+            final syncService = ref.read(syncServiceProvider);
+            await syncService.addToQueue(
+              tableName: 'orders',
+              recordSyncId: order.syncId,
+              operation: 'update',
+              payload: {
+                'sync_id': order.syncId,
+                if (order.customerName != null) 'customer_name': order.customerName,
+                'updated_at': DateTime.now().toUtc().toIso8601String(),
+              },
+            );
+
+            ref.read(orderHistoryProvider.notifier).refresh();
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isDark ? AppColors.primaryDark : AppColors.secondaryLight,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: const Text('Save'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _ItemRow extends StatelessWidget {
