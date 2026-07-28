@@ -101,24 +101,26 @@ class OrderTile extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.account_circle_outlined, size: 13, color: textSecondary.withValues(alpha: 0.8)),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      'Buyer: ${(order.customerName != null && order.customerName!.trim().isNotEmpty) ? order.customerName! : 'Walk-in'}',
-                      style: AppTextStyles.caption(context).copyWith(
-                        color: textSecondary,
-                        fontWeight: FontWeight.w500,
+              if (order.customerName != null && order.customerName!.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.account_circle_outlined, size: 13, color: textSecondary.withValues(alpha: 0.8)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Buyer: ${order.customerName}',
+                        style: AppTextStyles.caption(context).copyWith(
+                          color: textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
 
               const SizedBox(height: 10),
               Divider(

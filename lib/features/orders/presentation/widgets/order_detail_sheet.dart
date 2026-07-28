@@ -120,16 +120,16 @@ class OrderDetailSheet extends ConsumerWidget {
                     textSecondary: textSecondary,
                     textPrimary: textPrimary,
                   ),
-                  const SizedBox(height: 8),
-                  _InfoRow(
-                    icon: Icons.account_circle_outlined,
-                    label: 'Customer',
-                    value: (order.customerName != null && order.customerName!.trim().isNotEmpty)
-                        ? order.customerName!
-                        : 'Walk-in Customer',
-                    textSecondary: textSecondary,
-                    textPrimary: textPrimary,
-                  ),
+                  if (order.customerName != null && order.customerName!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _InfoRow(
+                      icon: Icons.account_circle_outlined,
+                      label: 'Customer',
+                      value: order.customerName!,
+                      textSecondary: textSecondary,
+                      textPrimary: textPrimary,
+                    ),
+                  ],
                   const SizedBox(height: 16),
 
                   // Items section
@@ -349,7 +349,8 @@ class _ItemRow extends StatelessWidget {
     final subtotal = (item['subtotal'] as num?)?.toDouble() ?? 0.0;
     final rawMods = item['modifiers'];
 
-    final modList = <Map<String, String>>[];
+    double modTotalSum = 0.0;
+    final modList = <Map<String, dynamic>>[];
     if (rawMods is List && rawMods.isNotEmpty) {
       for (final m in rawMods) {
         final str = m?.toString().trim() ?? '';
@@ -358,15 +359,20 @@ class _ItemRow extends StatelessWidget {
           final parts = str.split('|');
           final mName = parts[0];
           final mPrice = double.tryParse(parts[1]) ?? 0.0;
+          modTotalSum += mPrice;
           modList.add({
             'name': mName,
             'price': mPrice > 0 ? '+₱${mPrice.toStringAsFixed(2)}' : '',
           });
         } else if (str.contains('(+₱')) {
           final parts = str.split('(+₱');
+          final mName = parts[0].trim();
+          final pStr = parts[1].replaceAll(')', '').trim();
+          final mPrice = double.tryParse(pStr) ?? 0.0;
+          modTotalSum += mPrice;
           modList.add({
-            'name': parts[0].trim(),
-            'price': '+₱${parts[1].replaceAll(')', '').trim()}',
+            'name': mName,
+            'price': mPrice > 0 ? '+₱${mPrice.toStringAsFixed(2)}' : '',
           });
         } else {
           modList.add({'name': str, 'price': ''});
@@ -374,12 +380,14 @@ class _ItemRow extends StatelessWidget {
       }
     }
 
+    final baseProductPrice = (unitPrice - modTotalSum).clamp(0.0, double.infinity);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Main item row: Name + Variant
+          // Top line: Main Item Name & Base Product Price
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,6 +416,14 @@ class _ItemRow extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
+              Text(
+                '₱${baseProductPrice.toStringAsFixed(2)}',
+                style: AppTextStyles.body(context).copyWith(
+                  color: textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
 
@@ -422,16 +438,16 @@ class _ItemRow extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        mod['name']!,
+                        mod['name'] as String,
                         style: AppTextStyles.caption(context).copyWith(
                           color: textSecondary.withValues(alpha: 0.85),
                           fontSize: 12,
                         ),
                       ),
                     ),
-                    if (mod['price']!.isNotEmpty)
+                    if ((mod['price'] as String).isNotEmpty)
                       Text(
-                        mod['price']!,
+                        mod['price'] as String,
                         style: AppTextStyles.caption(context).copyWith(
                           color: textSecondary.withValues(alpha: 0.85),
                           fontSize: 12,
@@ -445,12 +461,12 @@ class _ItemRow extends StatelessWidget {
           ],
 
           const SizedBox(height: 6),
-          // Subtotal row (Qty × UnitPrice and Total Item Price)
+          // Bottom line (Quantity / Item Total)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '₱${unitPrice.toStringAsFixed(2)} × $qty',
+                qty > 1 ? '₱${unitPrice.toStringAsFixed(2)} × $qty' : 'Qty: $qty',
                 style: AppTextStyles.caption(context).copyWith(
                   color: textSecondary,
                   fontSize: 12,

@@ -33,9 +33,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
+    _customerNameController.addListener(() {
+      final text = _customerNameController.text;
+      ref.read(checkoutProvider.notifier).setCustomerName(text);
+    });
     // Reset any leftover checkout state from a previous session.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(checkoutProvider.notifier).reset();
+      if (mounted) {
+        _customerNameController.clear();
+        _otherLabelController.clear();
+        ref.read(checkoutProvider.notifier).reset();
+      }
     });
   }
 
