@@ -197,6 +197,7 @@ class ExportSheet extends ConsumerWidget {
                 headers: [
                   'Order #',
                   'Cashier',
+                  'Customer',
                   'Date & Time',
                   'Payment',
                   'Total'
@@ -205,6 +206,7 @@ class ExportSheet extends ConsumerWidget {
                     .map((o) => [
                           o.orderNumber,
                           o.cashierName,
+                          o.customerName ?? '—',
                           dateFmt.format(o.orderedAt),
                           o.paymentMethod.toUpperCase(),
                           CurrencyFormatter.format(o.totalAmount),
@@ -672,11 +674,12 @@ class ExportSheet extends ConsumerWidget {
           // Write Table Headers on Row 6
           setCell(sheet, 6, 1, 'Order #', style: tableHeaderStyle);
           setCell(sheet, 6, 2, 'Cashier', style: tableHeaderStyle);
-          setCell(sheet, 6, 3, 'Date', style: tableHeaderStyle);
-          setCell(sheet, 6, 4, 'Time', style: tableHeaderStyle);
-          setCell(sheet, 6, 5, 'Payment', style: tableHeaderStyle);
-          setCell(sheet, 6, 6, 'Total Amount', style: tableHeaderStyle);
-          setCell(sheet, 6, 7, 'Status', style: tableHeaderStyle);
+          setCell(sheet, 6, 3, 'Customer', style: tableHeaderStyle);
+          setCell(sheet, 6, 4, 'Date', style: tableHeaderStyle);
+          setCell(sheet, 6, 5, 'Time', style: tableHeaderStyle);
+          setCell(sheet, 6, 6, 'Payment', style: tableHeaderStyle);
+          setCell(sheet, 6, 7, 'Total Amount', style: tableHeaderStyle);
+          setCell(sheet, 6, 8, 'Status', style: tableHeaderStyle);
 
           // Write Table Data Rows
           int or = 7;
@@ -697,16 +700,17 @@ class ExportSheet extends ConsumerWidget {
 
             setCell(sheet, or, 1, o.orderNumber, style: stdStyle);
             setCell(sheet, or, 2, o.cashierName, style: stdStyle);
-            setCell(sheet, or, 3, dateFmt.format(o.orderedAt), style: centerStyle);
-            setCell(sheet, or, 4, timeFmt.format(o.orderedAt), style: centerStyle);
-            setCell(sheet, or, 5, o.paymentMethod.toUpperCase(), style: centerStyle);
-            setCell(sheet, or, 6, o.totalAmount, style: currencyStyle);
-            setCell(sheet, or, 7, o.status.toUpperCase(), style: statusStyle);
+            setCell(sheet, or, 3, o.customerName ?? 'Walk-in', style: stdStyle);
+            setCell(sheet, or, 4, dateFmt.format(o.orderedAt), style: centerStyle);
+            setCell(sheet, or, 5, timeFmt.format(o.orderedAt), style: centerStyle);
+            setCell(sheet, or, 6, o.paymentMethod.toUpperCase(), style: centerStyle);
+            setCell(sheet, or, 7, o.totalAmount, style: currencyStyle);
+            setCell(sheet, or, 8, o.status.toUpperCase(), style: statusStyle);
 
             or++;
           }
           // Auto-fit all columns
-          for (int col = 1; col <= 7; col++) {
+          for (int col = 1; col <= 8; col++) {
             sheet.autoFitColumn(col);
           }
         }

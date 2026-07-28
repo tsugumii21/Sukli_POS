@@ -109,7 +109,7 @@ class OrderTile extends ConsumerWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        'Buyer: ${order.customerName}',
+                        'Customer: ${order.customerName}',
                         style: AppTextStyles.caption(context).copyWith(
                           color: textSecondary,
                           fontWeight: FontWeight.w500,
