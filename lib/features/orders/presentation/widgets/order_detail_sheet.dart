@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/services/printer_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
-import '../../../../core/providers/isar_provider.dart';
+import '../../../../shared/providers/isar_provider.dart';
 import '../../../../shared/providers/sync_provider.dart';
 import '../providers/order_history_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
