@@ -112,7 +112,7 @@ class OrderDetailSheet extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Cashier info
+                  // Cashier & Customer info
                   _InfoRow(
                     icon: Icons.person_outline_rounded,
                     label: 'Cashier',
@@ -120,16 +120,16 @@ class OrderDetailSheet extends ConsumerWidget {
                     textSecondary: textSecondary,
                     textPrimary: textPrimary,
                   ),
-                  if (order.customerName != null && order.customerName!.trim().isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    _InfoRow(
-                      icon: Icons.account_circle_outlined,
-                      label: 'Customer',
-                      value: order.customerName!,
-                      textSecondary: textSecondary,
-                      textPrimary: textPrimary,
-                    ),
-                  ],
+                  const SizedBox(height: 8),
+                  _InfoRow(
+                    icon: Icons.account_circle_outlined,
+                    label: 'Customer',
+                    value: (order.customerName != null && order.customerName!.trim().isNotEmpty)
+                        ? order.customerName!
+                        : 'Walk-in Customer',
+                    textSecondary: textSecondary,
+                    textPrimary: textPrimary,
+                  ),
                   const SizedBox(height: 16),
 
                   // Items section
