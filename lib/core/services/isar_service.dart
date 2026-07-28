@@ -32,12 +32,44 @@ class IsarService {
     return _isar!;
   }
 
+  /// Bump this number whenever the Isar schema changes (e.g. adding a new
+  /// field to a collection). On next launch the stale DB will be deleted and
+  /// recreated with the current schema, then re-seeded.
+  static const int _schemaVersion = 2;
+  static const String _schemaVersionKey = 'isar_schema_version';
+
   Future<void> init() async {
     if (_isar != null) return;
 
     try {
       final dir = await getApplicationDocumentsDirectory();
+      final prefs = await SharedPreferences.getInstance();
 
+      // ── Schema version check ──────────────────────────────────────────────
+      final storedVersion = prefs.getInt(_schemaVersionKey) ?? 1;
+      if (storedVersion < _schemaVersion) {
+        // Delete the old Isar database files so the new schema takes effect.
+        await Isar.open(
+          [
+            UserCollectionSchema,
+            CategoryCollectionSchema,
+            MenuItemCollectionSchema,
+            OrderCollectionSchema,
+            SyncQueueCollectionSchema,
+            StoreCollectionSchema,
+          ],
+          directory: dir.path,
+          inspector: false,
+        ).then((db) async {
+          await db.writeTxn(() => db.clear());
+          await db.close();
+        });
+        // Mark seeding as needed again since we cleared data.
+        await prefs.setBool('db_seeded', false);
+        await prefs.setInt(_schemaVersionKey, _schemaVersion);
+      }
+
+      // ── Open database ─────────────────────────────────────────────────────
       _isar = await Isar.open(
         [
           UserCollectionSchema,
@@ -52,7 +84,6 @@ class IsarService {
       );
 
       // Seed initial data on first launch only
-      final prefs = await SharedPreferences.getInstance();
       final isSeeded = prefs.getBool('db_seeded') ?? false;
 
       if (!isSeeded) {
