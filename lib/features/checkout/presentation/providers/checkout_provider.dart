@@ -148,7 +148,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
 
   /// Saves the order to Isar, enqueues it for sync, deducts inventory,
   /// and clears the active cart. Returns the saved order on success.
-  Future<OrderCollection?> processPayment() async {
+  Future<OrderCollection?> processPayment({String? customerName}) async {
     final orderState = ref.read(orderProvider);
     final authState = ref.read(authProvider);
     final isar = ref.read(isarProvider);
@@ -183,12 +183,16 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
         paymentReference = state.otherPaymentLabel.trim();
       }
 
+      final resolvedCustomerName = (customerName != null && customerName.trim().isNotEmpty)
+          ? customerName.trim()
+          : (state.customerName.trim().isNotEmpty ? state.customerName.trim() : null);
+
       final savedOrder = await repo.saveOrder(
         storeId: storeId,
         orderState: orderState,
         cashierId: cashier.syncId,
         cashierName: cashier.name,
-        customerName: state.customerName.trim().isEmpty ? null : state.customerName.trim(),
+        customerName: resolvedCustomerName,
         amountTendered: amountTendered,
         paymentMethod: state.selectedMethod!.value,
         paymentReference: paymentReference,

@@ -274,7 +274,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (customerInput.isNotEmpty) {
       ref.read(checkoutProvider.notifier).setCustomerName(customerInput);
     }
-    final saved = await ref.read(checkoutProvider.notifier).processPayment();
+    final saved = await ref.read(checkoutProvider.notifier).processPayment(
+          customerName: customerInput,
+        );
     if (saved != null && context.mounted) {
       context.go(RouteConstants.paymentSuccess);
     }
