@@ -557,17 +557,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                             Divider(color: dividerColor),
                             SwitchListTile.adaptive(
-                              title: Text('Print Store Logo', style: AppTextStyles.body(context).copyWith(color: textPrimary)),
-                              subtitle: Text('Display logo at the top', style: AppTextStyles.captionSecondary(context)),
-                              activeColor: AppColors.secondaryLight,
-                              value: state.printLogo,
-                              onChanged: (val) {
-                                HapticFeedback.lightImpact();
-                                ref.read(settingsProvider.notifier).saveSettings(printLogo: val);
-                              },
-                            ),
-                            Divider(color: dividerColor),
-                            SwitchListTile.adaptive(
                               title: Text('Show Date & Time', style: AppTextStyles.body(context).copyWith(color: textPrimary)),
                               subtitle: Text('Print transaction timestamp', style: AppTextStyles.captionSecondary(context)),
                               activeColor: AppColors.secondaryLight,

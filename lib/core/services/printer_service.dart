@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../constants/app_constants.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/order_number_helper.dart';
 import '../../shared/isar_collections/order_collection.dart';
 
 /// Abstract contract for thermal receipt printing.
@@ -214,9 +215,9 @@ class ThermalPrinterService implements PrinterService {
       styles: const PosStyles(align: PosAlign.center),
     ));
 
-    // Custom Order Number with Cashier Initials (e.g. #0043-JD_123)
+    // Custom Short Order Number (e.g. Order: #0043-JD_123 or #0043)
     bytes.addAll(gen.text(
-      _sanitizeForPrinter('Order: ${order.orderNumber}'),
+      _sanitizeForPrinter('Order: ${OrderNumberHelper.toReceiptShort(order.orderNumber)}'),
       styles: const PosStyles(bold: true),
     ));
     bytes.addAll(gen.text(

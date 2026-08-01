@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'order_number_helper.dart';
 import '../../shared/isar_collections/order_collection.dart';
 import '../../shared/isar_collections/store_collection.dart';
 
@@ -61,7 +62,7 @@ class ReceiptHelper {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('OR#: ${order.orderNumber}',
+                  pw.Text('OR#: ${OrderNumberHelper.toReceiptShort(order.orderNumber)}',
                       style: pw.TextStyle(fontSize: widthMm == 58 ? 7.5 : 8, fontWeight: pw.FontWeight.bold)),
                   pw.Text(dateFormat.format(order.orderedAt),
                       style: pw.TextStyle(fontSize: widthMm == 58 ? 7.5 : 8)),
