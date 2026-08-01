@@ -661,9 +661,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(AppSpacing.md),
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(10),
@@ -690,6 +692,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       Text(
                                         state.selectedPrinterName ?? 'No Printer Selected',
                                         style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
@@ -699,6 +703,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     ],
                                   ),
                                 ),
+                                const SizedBox(width: AppSpacing.xs),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
@@ -723,52 +728,70 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ],
                             ),
                             const SizedBox(height: AppSpacing.md),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: AppPrimaryButton(
-                                    label: state.selectedPrinterMac == null
-                                        ? 'Select Bluetooth Printer'
-                                        : 'Change Printer',
-                                    onPressed: _showBluetoothScannerModal,
-                                  ),
+                            if (state.selectedPrinterMac == null) ...[
+                              SizedBox(
+                                width: double.infinity,
+                                child: AppPrimaryButton(
+                                  label: 'Select Bluetooth Printer',
+                                  onPressed: _showBluetoothScannerModal,
                                 ),
-                                if (state.selectedPrinterMac != null) ...[
-                                  const SizedBox(width: AppSpacing.sm),
-                                  OutlinedButton.icon(
-                                    onPressed: () async {
-                                      HapticFeedback.lightImpact();
-                                      final success = await ref
-                                          .read(settingsProvider.notifier)
-                                          .testPrint();
-                                      if (success) {
-                                        _showSuccessSnackBar('Test page printed successfully!');
-                                      } else {
-                                        _showErrorSnackBar(
-                                            'Test print failed. Make sure printer is turned on.', null);
-                                      }
-                                    },
-                                    icon: const Icon(Icons.speed_rounded, size: 18),
-                                    label: const Text('Test Print'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppColors.secondaryLight,
-                                      side: const BorderSide(color: AppColors.secondaryLight),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ] else ...[
+                              SizedBox(
+                                width: double.infinity,
+                                child: AppPrimaryButton(
+                                  label: 'Change Bluetooth Printer',
+                                  onPressed: _showBluetoothScannerModal,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () async {
+                                        HapticFeedback.lightImpact();
+                                        final success = await ref
+                                            .read(settingsProvider.notifier)
+                                            .testPrint();
+                                        if (success) {
+                                          _showSuccessSnackBar('Test page printed successfully!');
+                                        } else {
+                                          _showErrorSnackBar(
+                                              'Test print failed. Make sure printer is turned on.', null);
+                                        }
+                                      },
+                                      icon: const Icon(Icons.speed_rounded, size: 18),
+                                      label: const Text('Test Print'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.secondaryLight,
+                                        side: const BorderSide(color: AppColors.secondaryLight),
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
-                                  IconButton(
-                                    tooltip: 'Forget Printer',
-                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                    onPressed: () async {
-                                      HapticFeedback.lightImpact();
-                                      await ref.read(settingsProvider.notifier).forgetPrinter();
-                                      _showSuccessSnackBar('Printer removed.');
-                                    },
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () async {
+                                        HapticFeedback.lightImpact();
+                                        await ref.read(settingsProvider.notifier).forgetPrinter();
+                                        _showSuccessSnackBar('Printer removed.');
+                                      },
+                                      icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                                      label: const Text('Remove Printer', style: TextStyle(color: Colors.redAccent)),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.redAccent,
+                                        side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                    ),
                                   ),
                                 ],
-                              ],
-                            ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
