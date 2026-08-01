@@ -9,8 +9,9 @@ import 'package:intl/intl.dart';
 import '../../../../core/services/printer_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
-import '../../../../shared/providers/isar_provider.dart';
-import '../../../../shared/providers/sync_provider.dart';
+import '../../../../shared/providers/store_provider.dart';
+import '../../../../core/utils/receipt_helper.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
 import '../providers/order_history_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -268,20 +269,54 @@ class OrderDetailSheet extends ConsumerWidget {
 
   Future<void> _onReprint(BuildContext context, WidgetRef ref) async {
     final printer = ref.read(printerServiceProvider);
-    final success = await printer.printReceipt(order);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? 'Receipt printed.' : 'No printer connected. Receipt saved.',
-          style: AppTextStyles.body(context),
+    final store = ref.read(currentStoreProvider).value;
+    final settings = ref.read(settingsProvider);
+
+    try {
+      if (settings.selectedPrinterMac != null && settings.selectedPrinterMac!.isNotEmpty) {
+        final success = await printer.printReceipt(
+          order,
+          paperSize: settings.paperSize,
+          autoCut: settings.autoCut,
+          storeName: settings.storeName,
+          receiptHeader: settings.receiptHeader,
+          receiptFooter: settings.receiptFooter,
+          macAddress: settings.selectedPrinterMac,
+        );
+        if (success) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Receipt printed via Bluetooth thermal printer.', style: AppTextStyles.body(context)),
+              backgroundColor: const Color(0xFF2E7D32),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          );
+          return;
+        }
+      }
+
+      if (store != null) {
+        await ReceiptHelper.printReceipt(
+          order: order,
+          store: store,
+          paperSize: settings.paperSize,
+        );
+      } else {
+        throw Exception('Store configuration not loaded');
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Print failed: $e', style: AppTextStyles.body(context)),
+          backgroundColor: AppColors.errorLight,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        backgroundColor:
-            success ? const Color(0xFF2E7D32) : Theme.of(context).brightness == Brightness.dark ? AppColors.secondaryDark : AppColors.secondaryLight,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
+      );
+    }
   }
 
   String _paymentLabel(String method) {

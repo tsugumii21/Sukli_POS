@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
 import '../constants/app_constants.dart';
 import '../utils/currency_formatter.dart';
@@ -10,6 +12,21 @@ import '../../shared/isar_collections/order_collection.dart';
 
 /// Abstract contract for thermal receipt printing.
 abstract class PrinterService {
+  /// Returns a list of paired Bluetooth devices on the phone.
+  Future<List<BluetoothInfo>> getPairedDevices();
+
+  /// Returns whether Bluetooth is currently enabled on the device.
+  Future<bool> isBluetoothEnabled();
+
+  /// Connects to a Bluetooth printer using its MAC address.
+  Future<bool> connect(String macAddress);
+
+  /// Disconnects from the currently connected Bluetooth printer.
+  Future<bool> disconnect();
+
+  /// Checks if a Bluetooth printer is currently connected.
+  Future<bool> isConnected();
+
   /// Generates ESC/POS bytes for the given order receipt.
   Future<List<int>> buildReceiptBytes(
     OrderCollection order, {
@@ -20,7 +37,7 @@ abstract class PrinterService {
     String? receiptFooter,
   });
 
-  /// Attempts to deliver the receipt to a connected thermal printer.
+  /// Sends receipt bytes to the connected Bluetooth thermal printer.
   Future<bool> printReceipt(
     OrderCollection order, {
     String paperSize = '58mm',
@@ -28,15 +45,73 @@ abstract class PrinterService {
     String? storeName,
     String? receiptHeader,
     String? receiptFooter,
+    String? macAddress,
+  });
+
+  /// Prints a test alignment page to verify thermal printer output.
+  Future<bool> printTestReceipt({
+    String paperSize = '58mm',
+    String? storeName,
+    String? macAddress,
   });
 }
 
-/// Concrete implementation using [esc_pos_utils_plus] for byte generation.
+/// Concrete implementation using [esc_pos_utils_plus] and [PrintBluetoothThermal].
 class ThermalPrinterService implements PrinterService {
   ThermalPrinterService._();
   static final ThermalPrinterService instance = ThermalPrinterService._();
 
   static final _dateFormat = DateFormat('MMM dd, yyyy  hh:mm a');
+
+  @override
+  Future<List<BluetoothInfo>> getPairedDevices() async {
+    try {
+      return await PrintBluetoothThermal.pairedBluetoothDevice;
+    } catch (e) {
+      debugPrint('[PrinterService] Failed to fetch paired devices: $e');
+      return [];
+    }
+  }
+
+  @override
+  Future<bool> isBluetoothEnabled() async {
+    try {
+      return await PrintBluetoothThermal.bluetoothEnabled;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> connect(String macAddress) async {
+    if (macAddress.trim().isEmpty) return false;
+    try {
+      final isAlreadyConnected = await PrintBluetoothThermal.connectionStatus;
+      if (isAlreadyConnected) return true;
+      return await PrintBluetoothThermal.connect(macPrinterAddress: macAddress);
+    } catch (e) {
+      debugPrint('[PrinterService] Connection failed to $macAddress: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> disconnect() async {
+    try {
+      return await PrintBluetoothThermal.disconnect;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> isConnected() async {
+    try {
+      return await PrintBluetoothThermal.connectionStatus;
+    } catch (_) {
+      return false;
+    }
+  }
 
   @override
   Future<List<int>> buildReceiptBytes(
@@ -232,9 +307,18 @@ class ThermalPrinterService implements PrinterService {
     String? storeName,
     String? receiptHeader,
     String? receiptFooter,
+    String? macAddress,
   }) async {
     try {
-      await buildReceiptBytes(
+      if (macAddress != null && macAddress.trim().isNotEmpty) {
+        final connected = await connect(macAddress);
+        if (!connected) return false;
+      } else {
+        final connected = await isConnected();
+        if (!connected) return false;
+      }
+
+      final bytes = await buildReceiptBytes(
         order,
         paperSize: paperSize,
         autoCut: autoCut,
@@ -242,8 +326,71 @@ class ThermalPrinterService implements PrinterService {
         receiptHeader: receiptHeader,
         receiptFooter: receiptFooter,
       );
-      return false; // ESC/POS bytes generated cleanly
-    } catch (_) {
+
+      final success = await PrintBluetoothThermal.writeBytes(bytes);
+      return success;
+    } catch (e) {
+      debugPrint('[PrinterService] Print failed: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> printTestReceipt({
+    String paperSize = '58mm',
+    String? storeName,
+    String? macAddress,
+  }) async {
+    try {
+      if (macAddress != null && macAddress.trim().isNotEmpty) {
+        final connected = await connect(macAddress);
+        if (!connected) return false;
+      } else {
+        final connected = await isConnected();
+        if (!connected) return false;
+      }
+
+      final profile = await CapabilityProfile.load();
+      final is58 = paperSize.contains('58');
+      final pSize = is58 ? PaperSize.mm58 : PaperSize.mm80;
+      final gen = Generator(pSize, profile);
+      final bytes = <int>[];
+
+      final title = storeName?.isNotEmpty == true ? storeName! : AppConstants.appName;
+
+      bytes.addAll(gen.text(
+        title.toUpperCase(),
+        styles: PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: is58 ? PosTextSize.size1 : PosTextSize.size2,
+          width: is58 ? PosTextSize.size1 : PosTextSize.size2,
+        ),
+      ));
+      bytes.addAll(gen.text(
+        'TEST PRINT SUCCESSFUL',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      ));
+      bytes.addAll(gen.hr());
+      bytes.addAll(gen.text(
+        'Printer Paper: $paperSize',
+        styles: const PosStyles(align: PosAlign.center),
+      ));
+      bytes.addAll(gen.text(
+        'Date: ${_dateFormat.format(DateTime.now())}',
+        styles: const PosStyles(align: PosAlign.center),
+      ));
+      bytes.addAll(gen.hr());
+      bytes.addAll(gen.text(
+        'Your Bluetooth Thermal Printer is working correctly with Sukli POS!',
+        styles: const PosStyles(align: PosAlign.center),
+      ));
+      bytes.addAll(gen.feed(3));
+      bytes.addAll(gen.cut());
+
+      return await PrintBluetoothThermal.writeBytes(bytes);
+    } catch (e) {
+      debugPrint('[PrinterService] Test print failed: $e');
       return false;
     }
   }
@@ -253,3 +400,4 @@ class ThermalPrinterService implements PrinterService {
 final printerServiceProvider = Provider<PrinterService>(
   (_) => ThermalPrinterService.instance,
 );
+

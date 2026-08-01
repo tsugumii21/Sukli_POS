@@ -19,6 +19,8 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/loading_shimmer.dart';
+import '../../../../core/services/printer_service.dart';
+import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import '../providers/settings_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -653,9 +655,125 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ).animate().fadeIn(delay: 50.ms, duration: 300.ms).slideY(begin: 0.04, end: 0),
                     const SizedBox(height: AppSpacing.lg),
 
-
-
-                    // SECTION 5: Sync Settings
+                    // SECTION 3: Bluetooth Thermal Printer
+                    _buildSectionHeader('Bluetooth Thermal Printer', Icons.print_rounded),
+                    AppCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: (state.isPrinterConnected
+                                            ? AppColors.successLight
+                                            : AppColors.secondaryLight)
+                                        .withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.print_rounded,
+                                    color: state.isPrinterConnected
+                                        ? AppColors.successLight
+                                        : AppColors.secondaryLight,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        state.selectedPrinterName ?? 'No Printer Selected',
+                                        style: AppTextStyles.bodyBold(context).copyWith(color: textPrimary),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        state.selectedPrinterMac ?? 'Tap below to scan & select a paired Bluetooth printer',
+                                        style: AppTextStyles.captionSecondary(context),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: state.isPrinterConnected
+                                        ? AppColors.successLight.withValues(alpha: 0.15)
+                                        : (state.selectedPrinterMac != null
+                                            ? Colors.orange.withValues(alpha: 0.15)
+                                            : textSecondary.withValues(alpha: 0.1)),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    state.isPrinterConnected
+                                        ? 'Connected'
+                                        : (state.selectedPrinterMac != null ? 'Paired' : 'Not Configured'),
+                                    style: AppTextStyles.captionMedium(context).copyWith(
+                                      color: state.isPrinterConnected
+                                          ? AppColors.successLight
+                                          : (state.selectedPrinterMac != null ? Colors.orange : textSecondary),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: AppPrimaryButton(
+                                    label: state.selectedPrinterMac == null
+                                        ? 'Select Bluetooth Printer'
+                                        : 'Change Printer',
+                                    onPressed: _showBluetoothScannerModal,
+                                  ),
+                                ),
+                                if (state.selectedPrinterMac != null) ...[
+                                  const SizedBox(width: AppSpacing.sm),
+                                  OutlinedButton.icon(
+                                    onPressed: () async {
+                                      HapticFeedback.lightImpact();
+                                      final success = await ref
+                                          .read(settingsProvider.notifier)
+                                          .testPrint();
+                                      if (success) {
+                                        _showSuccessSnackBar('Test page printed successfully!');
+                                      } else {
+                                        _showErrorSnackBar(
+                                            'Test print failed. Make sure printer is turned on.', null);
+                                      }
+                                    },
+                                    icon: const Icon(Icons.speed_rounded, size: 18),
+                                    label: const Text('Test Print'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.secondaryLight,
+                                      side: const BorderSide(color: AppColors.secondaryLight),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  IconButton(
+                                    tooltip: 'Forget Printer',
+                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                    onPressed: () async {
+                                      HapticFeedback.lightImpact();
+                                      await ref.read(settingsProvider.notifier).forgetPrinter();
+                                      _showSuccessSnackBar('Printer removed.');
+                                    },
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ).animate().fadeIn(delay: 75.ms, duration: 300.ms).slideY(begin: 0.04, end: 0),
+                    const SizedBox(height: AppSpacing.lg),
                     _buildSectionHeader('Sync Settings', Icons.cloud_sync_rounded),
                     AppCard(
                       child: Padding(
@@ -843,6 +961,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showBluetoothScannerModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _BluetoothScannerBottomSheet(
+        onPrinterSelected: (name, mac) async {
+          Navigator.pop(ctx);
+          final connected = await ref
+              .read(settingsProvider.notifier)
+              .selectPrinter(name, mac);
+          if (connected) {
+            _showSuccessSnackBar('Connected to $name ($mac)');
+          } else {
+            _showErrorSnackBar(
+                'Selected $name ($mac). Ensure printer is turned on.', null);
+          }
+        },
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(String title, IconData icon) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = isDark ? AppColors.accentDark : AppColors.accentLight;
@@ -865,6 +1005,185 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
-
-
 }
+
+class _BluetoothScannerBottomSheet extends ConsumerStatefulWidget {
+  const _BluetoothScannerBottomSheet({required this.onPrinterSelected});
+
+  final void Function(String name, String mac) onPrinterSelected;
+
+  @override
+  ConsumerState<_BluetoothScannerBottomSheet> createState() =>
+      __BluetoothScannerBottomSheetState();
+}
+
+class __BluetoothScannerBottomSheetState
+    extends ConsumerState<_BluetoothScannerBottomSheet> {
+  List<BluetoothInfo> _devices = [];
+  bool _isLoading = true;
+  bool _bluetoothEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scanDevices();
+  }
+
+  Future<void> _scanDevices() async {
+    setState(() => _isLoading = true);
+    final printerService = ref.read(printerServiceProvider);
+    final enabled = await printerService.isBluetoothEnabled();
+    List<BluetoothInfo> list = [];
+    if (enabled) {
+      list = await printerService.getPairedDevices();
+    }
+    if (mounted) {
+      setState(() {
+        _bluetoothEnabled = enabled;
+        _devices = list;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.surfaceDark : AppColors.backgroundLight;
+    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: textSecondary.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Icon(Icons.print_rounded, color: AppColors.secondaryLight, size: 24),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'Paired Bluetooth Printers',
+                  style: AppTextStyles.h3(context).copyWith(color: textPrimary),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                tooltip: 'Re-scan',
+                onPressed: _scanDevices,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Ensure your printer is powered ON and PAIRED in your phone\'s Bluetooth Settings.',
+            style: AppTextStyles.captionSecondary(context),
+          ),
+          const Divider(height: 24),
+          if (!_bluetoothEnabled)
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                children: [
+                  const Icon(Icons.bluetooth_disabled_rounded,
+                      color: Colors.orange, size: 40),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Bluetooth is Turned Off',
+                    style: AppTextStyles.bodyBold(context).copyWith(color: textPrimary),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Please enable Bluetooth on your phone and try again.',
+                    style: AppTextStyles.captionSecondary(context),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          else if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(AppSpacing.xl),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.secondaryLight),
+              ),
+            )
+          else if (_devices.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                children: [
+                  const Icon(Icons.bluetooth_searching_rounded,
+                      color: AppColors.secondaryLight, size: 40),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'No Paired Bluetooth Printers Found',
+                    style: AppTextStyles.bodyBold(context).copyWith(color: textPrimary),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '1. Go to your phone\'s Bluetooth Settings.\n2. Tap "Pair New Device" and select your thermal printer (PIN: 0000 or 1234).\n3. Return here and tap Refresh.',
+                    style: AppTextStyles.captionSecondary(context),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.separated(
+                itemCount: _devices.length,
+                separatorBuilder: (_, __) => Divider(
+                    color: textSecondary.withValues(alpha: 0.1), height: 1),
+                itemBuilder: (context, index) {
+                  final dev = _devices[index];
+                  return ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryLight.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.print_rounded,
+                          color: AppColors.secondaryLight, size: 20),
+                    ),
+                    title: Text(
+                      dev.name.isNotEmpty ? dev.name : 'Unknown Printer',
+                      style: AppTextStyles.bodySemiBold(context)
+                          .copyWith(color: textPrimary),
+                    ),
+                    subtitle: Text(
+                      dev.macAdress,
+                      style: AppTextStyles.captionSecondary(context),
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => widget.onPrinterSelected(
+                        dev.name.isNotEmpty ? dev.name : 'Thermal Printer',
+                        dev.macAdress),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+

@@ -36,6 +36,9 @@ class SettingsState {
     this.syncMessage,
     this.adminName = '',
     this.adminEmail = '',
+    this.selectedPrinterName,
+    this.selectedPrinterMac,
+    this.isPrinterConnected = false,
   });
 
   final String storeName;
@@ -57,6 +60,9 @@ class SettingsState {
   final String? syncMessage;
   final String adminName;
   final String adminEmail;
+  final String? selectedPrinterName;
+  final String? selectedPrinterMac;
+  final bool isPrinterConnected;
 
   SettingsState copyWith({
     String? storeName,
@@ -78,6 +84,10 @@ class SettingsState {
     String? syncMessage,
     String? adminName,
     String? adminEmail,
+    String? selectedPrinterName,
+    String? selectedPrinterMac,
+    bool? isPrinterConnected,
+    bool clearPrinter = false,
   }) {
     return SettingsState(
       storeName: storeName ?? this.storeName,
@@ -99,6 +109,9 @@ class SettingsState {
       syncMessage: syncMessage ?? this.syncMessage,
       adminName: adminName ?? this.adminName,
       adminEmail: adminEmail ?? this.adminEmail,
+      selectedPrinterName: clearPrinter ? null : selectedPrinterName ?? this.selectedPrinterName,
+      selectedPrinterMac: clearPrinter ? null : selectedPrinterMac ?? this.selectedPrinterMac,
+      isPrinterConnected: isPrinterConnected ?? this.isPrinterConnected,
     );
   }
 }
@@ -154,6 +167,10 @@ class SettingsNotifier extends Notifier<SettingsState> {
       adminName = localAdmin?.name ?? supabaseUser.userMetadata?['name'] ?? 'Admin';
     }
 
+    final selectedPrinterName = prefs.getString('printer_name');
+    final selectedPrinterMac = prefs.getString('printer_mac');
+    final isConnected = await ThermalPrinterService.instance.isConnected();
+
     state = SettingsState(
       storeName: storeName,
       logoUrl: logoUrl,
@@ -172,7 +189,59 @@ class SettingsNotifier extends Notifier<SettingsState> {
       syncInterval: syncInterval,
       adminName: adminName,
       adminEmail: adminEmail,
+      selectedPrinterName: selectedPrinterName,
+      selectedPrinterMac: selectedPrinterMac,
+      isPrinterConnected: isConnected,
     );
+  }
+
+  /// Selects and saves a Bluetooth thermal printer.
+  Future<bool> selectPrinter(String name, String mac) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('printer_name', name);
+    await prefs.setString('printer_mac', mac);
+
+    final connected = await ThermalPrinterService.instance.connect(mac);
+    state = state.copyWith(
+      selectedPrinterName: name,
+      selectedPrinterMac: mac,
+      isPrinterConnected: connected,
+    );
+    return connected;
+  }
+
+  /// Forgets the saved Bluetooth printer and disconnects.
+  Future<void> forgetPrinter() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('printer_name');
+    await prefs.remove('printer_mac');
+    await ThermalPrinterService.instance.disconnect();
+
+    state = state.copyWith(
+      clearPrinter: true,
+      isPrinterConnected: false,
+    );
+  }
+
+  /// Checks live connection status of the thermal printer.
+  Future<bool> checkPrinterStatus() async {
+    final connected = await ThermalPrinterService.instance.isConnected();
+    state = state.copyWith(isPrinterConnected: connected);
+    return connected;
+  }
+
+  /// Sends a test receipt to the selected thermal printer.
+  Future<bool> testPrint() async {
+    final mac = state.selectedPrinterMac;
+    if (mac == null || mac.isEmpty) return false;
+
+    final result = await ThermalPrinterService.instance.printTestReceipt(
+      paperSize: state.paperSize,
+      storeName: state.storeName,
+      macAddress: mac,
+    );
+    state = state.copyWith(isPrinterConnected: result);
+    return result;
   }
 
   /// Update general SharedPreferences settings.

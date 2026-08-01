@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../shared/providers/store_provider.dart';
 import '../../../../core/utils/receipt_helper.dart';
+import '../../../../core/services/printer_service.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../providers/checkout_provider.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -363,6 +364,26 @@ class PaymentSuccessScreen extends ConsumerWidget {
     }
 
     try {
+      if (settings.selectedPrinterMac != null && settings.selectedPrinterMac!.isNotEmpty) {
+        final success = await ref.read(printerServiceProvider).printReceipt(
+          order,
+          paperSize: settings.paperSize,
+          autoCut: settings.autoCut,
+          storeName: settings.storeName,
+          receiptHeader: settings.receiptHeader,
+          receiptFooter: settings.receiptFooter,
+          macAddress: settings.selectedPrinterMac,
+        );
+        if (success) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Receipt sent to Bluetooth thermal printer!')),
+            );
+          }
+          return;
+        }
+      }
+
       await ReceiptHelper.printReceipt(
         order: order,
         store: store,
