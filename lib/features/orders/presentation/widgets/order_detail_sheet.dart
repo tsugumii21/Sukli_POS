@@ -301,6 +301,9 @@ class OrderDetailSheet extends ConsumerWidget {
         receiptFooter: settings.receiptFooter,
         storeAddress: settings.storeAddress,
         storeContact: settings.storeContact,
+        showDateTime: settings.showDateTime,
+        showCashierName: settings.showCashierName,
+        showOrderNumber: settings.showOrderNumber,
         paperSize: settings.paperSize,
         autoCut: settings.autoCut,
       );
@@ -338,6 +341,9 @@ class OrderDetailSheet extends ConsumerWidget {
           paperSize: settings.paperSize,
           storeAddress: settings.storeAddress,
           storeContact: settings.storeContact,
+          showDateTime: settings.showDateTime,
+          showCashierName: settings.showCashierName,
+          showOrderNumber: settings.showOrderNumber,
         );
       } else {
         throw Exception('Store configuration not loaded');

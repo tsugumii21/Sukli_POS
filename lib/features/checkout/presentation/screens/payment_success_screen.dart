@@ -392,6 +392,9 @@ class PaymentSuccessScreen extends ConsumerWidget {
         receiptFooter: settings.receiptFooter,
         storeAddress: settings.storeAddress,
         storeContact: settings.storeContact,
+        showDateTime: settings.showDateTime,
+        showCashierName: settings.showCashierName,
+        showOrderNumber: settings.showOrderNumber,
         paperSize: settings.paperSize,
         autoCut: settings.autoCut,
       );

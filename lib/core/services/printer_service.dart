@@ -43,6 +43,9 @@ abstract class PrinterService {
     String? receiptFooter,
     String? storeAddress,
     String? storeContact,
+    bool showDateTime = true,
+    bool showCashierName = true,
+    bool showOrderNumber = true,
   });
 
   /// Sends receipt bytes to the connected Bluetooth thermal printer.
@@ -55,6 +58,9 @@ abstract class PrinterService {
     String? receiptFooter,
     String? storeAddress,
     String? storeContact,
+    bool showDateTime = true,
+    bool showCashierName = true,
+    bool showOrderNumber = true,
     String? macAddress,
   });
 
@@ -179,6 +185,9 @@ class ThermalPrinterService implements PrinterService {
     String? receiptFooter,
     String? storeAddress,
     String? storeContact,
+    bool showDateTime = true,
+    bool showCashierName = true,
+    bool showOrderNumber = true,
   }) async {
     final profile = await CapabilityProfile.load();
     final is58 = paperSize.contains('58');
@@ -238,20 +247,27 @@ class ThermalPrinterService implements PrinterService {
       styles: const PosStyles(align: PosAlign.center, bold: true),
     ));
     bytes.addAll(gen.hr());
-    bytes.addAll(gen.text(
-      dateStr,
-      styles: const PosStyles(align: PosAlign.center),
-    ));
 
-    // Custom Short Order Number (e.g. Order: #0043-JD_123 or #0043)
-    bytes.addAll(gen.text(
-      _sanitizeForPrinter('Order: ${OrderNumberHelper.toReceiptShort(order.orderNumber)}'),
-      styles: const PosStyles(bold: true),
-    ));
-    bytes.addAll(gen.text(
-      _sanitizeForPrinter('Cashier: ${order.cashierName}'),
-      styles: const PosStyles(bold: true),
-    ));
+    if (showDateTime) {
+      bytes.addAll(gen.text(
+        dateStr,
+        styles: const PosStyles(align: PosAlign.center),
+      ));
+    }
+
+    if (showOrderNumber) {
+      bytes.addAll(gen.text(
+        _sanitizeForPrinter('Order: ${OrderNumberHelper.toReceiptShort(order.orderNumber)}'),
+        styles: const PosStyles(bold: true),
+      ));
+    }
+
+    if (showCashierName) {
+      bytes.addAll(gen.text(
+        _sanitizeForPrinter('Cashier: ${order.cashierName}'),
+        styles: const PosStyles(bold: true),
+      ));
+    }
     if (order.customerName != null && order.customerName!.trim().isNotEmpty) {
       bytes.addAll(gen.text(
         _sanitizeForPrinter('Customer: ${order.customerName}'),
@@ -446,6 +462,9 @@ class ThermalPrinterService implements PrinterService {
     String? receiptFooter,
     String? storeAddress,
     String? storeContact,
+    bool showDateTime = true,
+    bool showCashierName = true,
+    bool showOrderNumber = true,
     String? macAddress,
   }) async {
     // DEBUG — log exactly what was passed
@@ -467,6 +486,9 @@ class ThermalPrinterService implements PrinterService {
           receiptFooter: receiptFooter,
           storeAddress: storeAddress,
           storeContact: storeContact,
+          showDateTime: showDateTime,
+          showCashierName: showCashierName,
+          showOrderNumber: showOrderNumber,
         );
       } catch (e) {
         debugPrint('RECEIPT DATA ERROR: $e');

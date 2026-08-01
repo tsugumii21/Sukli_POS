@@ -17,6 +17,9 @@ class ReceiptHelper {
     String paperSize = '58mm',
     String? storeAddress,
     String? storeContact,
+    bool showDateTime = true,
+    bool showCashierName = true,
+    bool showOrderNumber = true,
   }) async {
     final pdf = pw.Document();
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
@@ -79,20 +82,28 @@ class ReceiptHelper {
               pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
 
               // --- Order Metadata & Cashier ---
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text('OR#: ${OrderNumberHelper.toReceiptShort(order.orderNumber)}',
+              if (showOrderNumber || showDateTime)
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (showOrderNumber)
+                      pw.Text('OR#: ${OrderNumberHelper.toReceiptShort(order.orderNumber)}',
+                          style: pw.TextStyle(fontSize: widthMm == 58 ? 7.5 : 8, fontWeight: pw.FontWeight.bold))
+                    else
+                      pw.SizedBox(),
+                    if (showDateTime)
+                      pw.Text(dateFormat.format(order.orderedAt),
+                          style: pw.TextStyle(fontSize: widthMm == 58 ? 7.5 : 8))
+                    else
+                      pw.SizedBox(),
+                  ],
+                ),
+              if (showCashierName)
+                pw.Align(
+                  alignment: pw.Alignment.centerLeft,
+                  child: pw.Text('Cashier: ${order.cashierName}',
                       style: pw.TextStyle(fontSize: widthMm == 58 ? 7.5 : 8, fontWeight: pw.FontWeight.bold)),
-                  pw.Text(dateFormat.format(order.orderedAt),
-                      style: pw.TextStyle(fontSize: widthMm == 58 ? 7.5 : 8)),
-                ],
-              ),
-              pw.Align(
-                alignment: pw.Alignment.centerLeft,
-                child: pw.Text('Cashier: ${order.cashierName}',
-                    style: pw.TextStyle(fontSize: widthMm == 58 ? 7.5 : 8, fontWeight: pw.FontWeight.bold)),
-              ),
+                ),
               if (order.customerName != null && order.customerName!.trim().isNotEmpty)
                 pw.Align(
                   alignment: pw.Alignment.centerLeft,
@@ -229,6 +240,9 @@ class ReceiptHelper {
     String paperSize = '58mm',
     String? storeAddress,
     String? storeContact,
+    bool showDateTime = true,
+    bool showCashierName = true,
+    bool showOrderNumber = true,
   }) async {
     final pdfBytes = await generateReceiptPdf(
       order: order,
@@ -236,6 +250,9 @@ class ReceiptHelper {
       paperSize: paperSize,
       storeAddress: storeAddress,
       storeContact: storeContact,
+      showDateTime: showDateTime,
+      showCashierName: showCashierName,
+      showOrderNumber: showOrderNumber,
     );
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdfBytes,
