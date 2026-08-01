@@ -111,8 +111,15 @@ class ThermalPrinterService implements PrinterService {
     try {
       final isAlreadyConnected = await isConnected();
       if (isAlreadyConnected) return true;
+
+      // Clean up any stale or hanging Android SPP socket handle before connecting
+      try {
+        await PrintBluetoothThermal.disconnect
+            .timeout(const Duration(seconds: 1), onTimeout: () => false);
+      } catch (_) {}
+
       return await PrintBluetoothThermal.connect(macPrinterAddress: macAddress)
-          .timeout(const Duration(seconds: 4), onTimeout: () => false);
+          .timeout(const Duration(seconds: 6), onTimeout: () => false);
     } catch (e) {
       debugPrint('[PrinterService] Connection failed to $macAddress: $e');
       return false;
@@ -133,7 +140,7 @@ class ThermalPrinterService implements PrinterService {
   Future<bool> isConnected() async {
     try {
       return await PrintBluetoothThermal.connectionStatus
-          .timeout(const Duration(milliseconds: 500), onTimeout: () => false);
+          .timeout(const Duration(milliseconds: 800), onTimeout: () => false);
     } catch (_) {
       return false;
     }
@@ -198,8 +205,8 @@ class ThermalPrinterService implements PrinterService {
 
     // ── Items ─────────────────────────────────────────────────────────────
     final maxLabelLen = is58 ? 14 : 24;
-    final col1Width = is58 ? 7 : 8;
-    final col2Width = is58 ? 5 : 4;
+    final valWidth = is58 ? 5 : 6;
+    final labelWidth = 12 - valWidth;
 
     for (final jsonStr in order.orderItemsJson) {
       final item = jsonDecode(jsonStr) as Map<String, dynamic>;
@@ -214,10 +221,10 @@ class ThermalPrinterService implements PrinterService {
           : label;
 
       bytes.addAll(gen.row([
-        PosColumn(text: '$truncated x$qty', width: col1Width),
+        PosColumn(text: '$qty x $truncated', width: labelWidth),
         PosColumn(
           text: CurrencyFormatter.format(subtotal),
-          width: col2Width,
+          width: valWidth,
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]));
@@ -240,9 +247,6 @@ class ThermalPrinterService implements PrinterService {
     bytes.addAll(gen.hr());
 
     // ── Totals ────────────────────────────────────────────────────────────
-    final labelWidth = is58 ? 6 : 7;
-    final valWidth = is58 ? 6 : 5;
-
     bytes.addAll(gen.row([
       PosColumn(text: 'Subtotal', width: labelWidth),
       PosColumn(
@@ -336,14 +340,7 @@ class ThermalPrinterService implements PrinterService {
     String? macAddress,
   }) async {
     try {
-      if (macAddress != null && macAddress.trim().isNotEmpty) {
-        final connected = await connect(macAddress);
-        if (!connected) return false;
-      } else {
-        final connected = await isConnected();
-        if (!connected) return false;
-      }
-
+      // 1. Build receipt ESC/POS bytes FIRST before touching Bluetooth socket
       final bytes = await buildReceiptBytes(
         order,
         paperSize: paperSize,
@@ -352,6 +349,15 @@ class ThermalPrinterService implements PrinterService {
         receiptHeader: receiptHeader,
         receiptFooter: receiptFooter,
       );
+
+      // 2. Ensure connection to MAC address immediately before sending bytes
+      if (macAddress != null && macAddress.trim().isNotEmpty) {
+        final connected = await connect(macAddress);
+        if (!connected) return false;
+      } else {
+        final connected = await isConnected();
+        if (!connected) return false;
+      }
 
       final success = await PrintBluetoothThermal.writeBytes(bytes);
       return success;
