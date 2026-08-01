@@ -41,6 +41,8 @@ abstract class PrinterService {
     String? storeName,
     String? receiptHeader,
     String? receiptFooter,
+    String? storeAddress,
+    String? storeContact,
   });
 
   /// Sends receipt bytes to the connected Bluetooth thermal printer.
@@ -51,6 +53,8 @@ abstract class PrinterService {
     String? storeName,
     String? receiptHeader,
     String? receiptFooter,
+    String? storeAddress,
+    String? storeContact,
     String? macAddress,
   });
 
@@ -173,6 +177,8 @@ class ThermalPrinterService implements PrinterService {
     String? storeName,
     String? receiptHeader,
     String? receiptFooter,
+    String? storeAddress,
+    String? storeContact,
   }) async {
     final profile = await CapabilityProfile.load();
     final is58 = paperSize.contains('58');
@@ -203,6 +209,28 @@ class ThermalPrinterService implements PrinterService {
         'RECEIPT',
         styles: const PosStyles(align: PosAlign.center, bold: true),
       ));
+    }
+
+    if (storeAddress != null && storeAddress.trim().isNotEmpty) {
+      final cleanAddr = _sanitizeForPrinter(storeAddress);
+      if (cleanAddr.isNotEmpty) {
+        bytes.addAll(gen.text(
+          cleanAddr,
+          styles: const PosStyles(align: PosAlign.center),
+        ));
+      }
+    }
+
+    if (storeContact != null && storeContact.trim().isNotEmpty) {
+      final cleanContact = _sanitizeForPrinter(storeContact);
+      if (cleanContact.isNotEmpty) {
+        bytes.addAll(gen.text(
+          cleanContact.startsWith('Tel:') || cleanContact.startsWith('Contact:')
+              ? cleanContact
+              : 'Contact: $cleanContact',
+          styles: const PosStyles(align: PosAlign.center),
+        ));
+      }
     }
 
     bytes.addAll(gen.text(
@@ -416,6 +444,8 @@ class ThermalPrinterService implements PrinterService {
     String? storeName,
     String? receiptHeader,
     String? receiptFooter,
+    String? storeAddress,
+    String? storeContact,
     String? macAddress,
   }) async {
     // DEBUG — log exactly what was passed
@@ -435,6 +465,8 @@ class ThermalPrinterService implements PrinterService {
           storeName: storeName,
           receiptHeader: receiptHeader,
           receiptFooter: receiptFooter,
+          storeAddress: storeAddress,
+          storeContact: storeContact,
         );
       } catch (e) {
         debugPrint('RECEIPT DATA ERROR: $e');

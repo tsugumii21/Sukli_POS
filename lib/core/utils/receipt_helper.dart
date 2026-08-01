@@ -15,6 +15,8 @@ class ReceiptHelper {
     required OrderCollection order,
     required StoreCollection store,
     String paperSize = '58mm',
+    String? storeAddress,
+    String? storeContact,
   }) async {
     final pdf = pw.Document();
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
@@ -55,6 +57,24 @@ class ReceiptHelper {
                 style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: widthMm == 58 ? 12 : 14),
                 textAlign: pw.TextAlign.center,
               ),
+              if (storeAddress != null && storeAddress.trim().isNotEmpty) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  storeAddress,
+                  style: pw.TextStyle(fontSize: widthMm == 58 ? 7 : 8),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ],
+              if (storeContact != null && storeContact.trim().isNotEmpty) ...[
+                pw.SizedBox(height: 1),
+                pw.Text(
+                  storeContact.startsWith('Tel:') || storeContact.startsWith('Contact:')
+                      ? storeContact
+                      : 'Contact: $storeContact',
+                  style: pw.TextStyle(fontSize: widthMm == 58 ? 7 : 8),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ],
               pw.SizedBox(height: 6),
               pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
 
@@ -207,8 +227,16 @@ class ReceiptHelper {
     required OrderCollection order,
     required StoreCollection store,
     String paperSize = '58mm',
+    String? storeAddress,
+    String? storeContact,
   }) async {
-    final pdfBytes = await generateReceiptPdf(order: order, store: store, paperSize: paperSize);
+    final pdfBytes = await generateReceiptPdf(
+      order: order,
+      store: store,
+      paperSize: paperSize,
+      storeAddress: storeAddress,
+      storeContact: storeContact,
+    );
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdfBytes,
       name: 'Receipt_${order.orderNumber}',
