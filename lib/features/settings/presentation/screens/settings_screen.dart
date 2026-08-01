@@ -762,11 +762,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                         }
                                       },
                                       icon: const Icon(Icons.speed_rounded, size: 18),
-                                      label: const Text('Test Print'),
+                                      label: const FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text('Test Print'),
+                                      ),
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: AppColors.secondaryLight,
                                         side: const BorderSide(color: AppColors.secondaryLight),
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        minimumSize: const Size(0, 48),
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                       ),
                                     ),
@@ -780,11 +784,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                         _showSuccessSnackBar('Printer removed.');
                                       },
                                       icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
-                                      label: const Text('Remove Printer', style: TextStyle(color: Colors.redAccent)),
+                                      label: const FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text('Remove', style: TextStyle(color: Colors.redAccent)),
+                                      ),
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: Colors.redAccent,
                                         side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        minimumSize: const Size(0, 48),
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                       ),
                                     ),
