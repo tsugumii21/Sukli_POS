@@ -689,7 +689,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     children: [
                                       Text(
                                         state.selectedPrinterName ?? 'No Printer Selected',
-                                        style: AppTextStyles.bodyBold(context).copyWith(color: textPrimary),
+                                        style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
@@ -1107,7 +1107,7 @@ class __BluetoothScannerBottomSheetState
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Bluetooth is Turned Off',
-                    style: AppTextStyles.bodyBold(context).copyWith(color: textPrimary),
+                    style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
@@ -1135,7 +1135,7 @@ class __BluetoothScannerBottomSheetState
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'No Paired Bluetooth Printers Found',
-                    style: AppTextStyles.bodyBold(context).copyWith(color: textPrimary),
+                    style: AppTextStyles.bodySemiBold(context).copyWith(color: textPrimary),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(

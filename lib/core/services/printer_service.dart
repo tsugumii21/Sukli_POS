@@ -66,7 +66,7 @@ class ThermalPrinterService implements PrinterService {
   @override
   Future<List<BluetoothInfo>> getPairedDevices() async {
     try {
-      return await PrintBluetoothThermal.pairedBluetoothDevice;
+      return await PrintBluetoothThermal.pairedBluetooths;
     } catch (e) {
       debugPrint('[PrinterService] Failed to fetch paired devices: $e');
       return [];

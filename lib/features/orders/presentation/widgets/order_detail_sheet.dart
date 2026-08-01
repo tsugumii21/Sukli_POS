@@ -9,6 +9,8 @@ import 'package:intl/intl.dart';
 import '../../../../core/services/printer_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
+import '../../../../shared/providers/isar_provider.dart';
+import '../../../../shared/providers/sync_provider.dart';
 import '../../../../shared/providers/store_provider.dart';
 import '../../../../core/utils/receipt_helper.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';

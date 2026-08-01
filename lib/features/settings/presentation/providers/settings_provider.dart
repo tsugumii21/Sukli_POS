@@ -13,6 +13,7 @@ import '../../../../shared/isar_collections/user_collection.dart';
 import '../../../../shared/isar_collections/category_collection.dart';
 import '../../../../shared/isar_collections/menu_item_collection.dart';
 import '../../../../shared/isar_collections/order_collection.dart';
+import '../../../../core/services/printer_service.dart';
 
 /// State object holding all configuration and settings fields.
 class SettingsState {
