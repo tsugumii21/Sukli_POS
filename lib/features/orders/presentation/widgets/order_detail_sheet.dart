@@ -270,6 +270,8 @@ class OrderDetailSheet extends ConsumerWidget {
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
   Future<void> _onReprint(BuildContext context, WidgetRef ref) async {
+    if (!context.mounted) return;
+
     final printer = ref.read(printerServiceProvider);
     final store = ref.read(currentStoreProvider).value;
     final settings = ref.read(settingsProvider);
@@ -318,7 +320,11 @@ class OrderDetailSheet extends ConsumerWidget {
               : SnackBarAction(
                   label: 'Retry',
                   textColor: Colors.white,
-                  onPressed: () => _onReprint(context, ref),
+                  onPressed: () {
+                    if (context.mounted) {
+                      _onReprint(context, ref);
+                    }
+                  },
                 ),
         ),
       );

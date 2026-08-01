@@ -353,13 +353,17 @@ class PaymentSuccessScreen extends ConsumerWidget {
     WidgetRef ref,
     dynamic order,
   ) async {
+    if (!context.mounted) return;
+
     final store = ref.read(currentStoreProvider).value;
     final settings = ref.read(settingsProvider);
 
     if (store == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: Store data not found.')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error: Store data not found.')),
+        );
+      }
       return;
     }
 
@@ -407,7 +411,11 @@ class PaymentSuccessScreen extends ConsumerWidget {
               : SnackBarAction(
                   label: 'Retry',
                   textColor: Colors.white,
-                  onPressed: () => _onPrintReceipt(context, ref, order),
+                  onPressed: () {
+                    if (context.mounted) {
+                      _onPrintReceipt(context, ref, order);
+                    }
+                  },
                 ),
         ),
       );

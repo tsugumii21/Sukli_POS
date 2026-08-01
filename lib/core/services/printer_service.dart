@@ -68,6 +68,20 @@ class ThermalPrinterService implements PrinterService {
 
   static final _dateFormat = DateFormat('MMM dd, yyyy  hh:mm a');
 
+  String _sanitizeForPrinter(String input) {
+    var result = input
+        .replaceAll('₱', 'P')
+        .replaceAll('–', '-')
+        .replaceAll('—', '-')
+        .replaceAll('’', "'")
+        .replaceAll('‘', "'")
+        .replaceAll('“', '"')
+        .replaceAll('”', '"');
+
+    result = result.replaceAll(RegExp(r'[^\x20-\x7E\n]'), '');
+    return result.trim();
+  }
+
   String _formatForPrinter(double amount) {
     return 'P${amount.toStringAsFixed(2)}';
   }
@@ -166,20 +180,30 @@ class ThermalPrinterService implements PrinterService {
     final bytes = <int>[];
 
     final dateStr = _dateFormat.format(order.orderedAt);
-    final headerTitle = receiptHeader?.isNotEmpty == true
+    final rawHeaderTitle = receiptHeader?.isNotEmpty == true
         ? receiptHeader!
         : (storeName?.isNotEmpty == true ? storeName! : AppConstants.appName);
+    final headerTitle = _sanitizeForPrinter(rawHeaderTitle);
 
     // ── Header ────────────────────────────────────────────────────────────
-    bytes.addAll(gen.text(
-      headerTitle.toUpperCase(),
-      styles: PosStyles(
-        align: PosAlign.center,
-        bold: true,
-        height: is58 ? PosTextSize.size1 : PosTextSize.size2,
-        width: is58 ? PosTextSize.size1 : PosTextSize.size2,
-      ),
-    ));
+    try {
+      bytes.addAll(gen.text(
+        headerTitle.toUpperCase(),
+        styles: PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: is58 ? PosTextSize.size1 : PosTextSize.size2,
+          width: is58 ? PosTextSize.size1 : PosTextSize.size2,
+        ),
+      ));
+    } catch (e) {
+      debugPrint('RECEIPT HEADER ERROR: $e');
+      bytes.addAll(gen.text(
+        'RECEIPT',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      ));
+    }
+
     bytes.addAll(gen.text(
       'OFFICIAL RECEIPT',
       styles: const PosStyles(align: PosAlign.center, bold: true),
@@ -192,16 +216,16 @@ class ThermalPrinterService implements PrinterService {
 
     // Custom Order Number with Cashier Initials (e.g. #0043-JD_123)
     bytes.addAll(gen.text(
-      'Order: ${order.orderNumber}',
+      _sanitizeForPrinter('Order: ${order.orderNumber}'),
       styles: const PosStyles(bold: true),
     ));
     bytes.addAll(gen.text(
-      'Cashier: ${order.cashierName}',
+      _sanitizeForPrinter('Cashier: ${order.cashierName}'),
       styles: const PosStyles(bold: true),
     ));
     if (order.customerName != null && order.customerName!.trim().isNotEmpty) {
       bytes.addAll(gen.text(
-        'Customer: ${order.customerName}',
+        _sanitizeForPrinter('Customer: ${order.customerName}'),
         styles: const PosStyles(bold: true),
       ));
     }
@@ -236,14 +260,17 @@ class ThermalPrinterService implements PrinterService {
             ?? (unitPrice * qty);
 
         // Rule 3: Safe string key fallback
-        final name = (item['itemName'] as String?)
+        final rawName = (item['itemName'] as String?)
             ?? (item['productName'] as String?)
             ?? (item['name'] as String?)
             ?? 'Item';
 
-        final variant = (item['variant'] as String?)
+        final rawVariant = (item['variant'] as String?)
             ?? (item['variantName'] as String?)
             ?? '';
+
+        final name = _sanitizeForPrinter(rawName);
+        final variant = _sanitizeForPrinter(rawVariant);
 
         final label = variant.isNotEmpty ? '$name ($variant)' : name;
         final truncated = label.length > maxLabelLen
@@ -261,10 +288,10 @@ class ThermalPrinterService implements PrinterService {
 
         final rawMods = item['modifiers'] ?? item['selectedAddonNames'];
         if (rawMods is List && rawMods.isNotEmpty) {
-          final modsStr = rawMods
+          final modsStr = _sanitizeForPrinter(rawMods
               .map((m) => m?.toString().trim() ?? '')
               .where((s) => s.isNotEmpty)
-              .join(', ');
+              .join(', '));
           if (modsStr.isNotEmpty) {
             bytes.addAll(gen.text(
               '  + $modsStr',
@@ -349,13 +376,24 @@ class ThermalPrinterService implements PrinterService {
     bytes.addAll(gen.hr());
 
     // ── Footer ────────────────────────────────────────────────────────────
-    final footerMsg = receiptFooter?.isNotEmpty == true
+    final rawFooterMsg = receiptFooter?.isNotEmpty == true
         ? receiptFooter!
         : 'Thank you for your order!';
-    bytes.addAll(gen.text(
-      footerMsg,
-      styles: const PosStyles(align: PosAlign.center),
-    ));
+    final footerMsg = _sanitizeForPrinter(rawFooterMsg);
+
+    try {
+      bytes.addAll(gen.text(
+        footerMsg.isNotEmpty ? footerMsg : 'Thank you for your order!',
+        styles: const PosStyles(align: PosAlign.center),
+      ));
+    } catch (e) {
+      debugPrint('RECEIPT FOOTER ERROR: $e');
+      bytes.addAll(gen.text(
+        'Thank you for your order!',
+        styles: const PosStyles(align: PosAlign.center),
+      ));
+    }
+
     bytes.addAll(gen.text(
       'Powered by Sukli POS',
       styles: const PosStyles(align: PosAlign.center),
