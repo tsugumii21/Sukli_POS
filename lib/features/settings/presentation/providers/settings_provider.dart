@@ -170,7 +170,14 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
     final selectedPrinterName = prefs.getString('printer_name');
     final selectedPrinterMac = prefs.getString('printer_mac');
-    final isConnected = await ThermalPrinterService.instance.isConnected();
+    bool isConnected = false;
+    if (selectedPrinterMac != null && selectedPrinterMac.isNotEmpty) {
+      try {
+        isConnected = await ThermalPrinterService.instance.isConnected();
+      } catch (_) {
+        isConnected = false;
+      }
+    }
 
     state = SettingsState(
       storeName: storeName,

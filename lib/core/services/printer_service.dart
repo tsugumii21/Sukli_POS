@@ -66,7 +66,8 @@ class ThermalPrinterService implements PrinterService {
   @override
   Future<List<BluetoothInfo>> getPairedDevices() async {
     try {
-      return await PrintBluetoothThermal.pairedBluetooths;
+      return await PrintBluetoothThermal.pairedBluetooths
+          .timeout(const Duration(seconds: 2), onTimeout: () => []);
     } catch (e) {
       debugPrint('[PrinterService] Failed to fetch paired devices: $e');
       return [];
@@ -76,7 +77,8 @@ class ThermalPrinterService implements PrinterService {
   @override
   Future<bool> isBluetoothEnabled() async {
     try {
-      return await PrintBluetoothThermal.bluetoothEnabled;
+      return await PrintBluetoothThermal.bluetoothEnabled
+          .timeout(const Duration(seconds: 1), onTimeout: () => false);
     } catch (_) {
       return false;
     }
@@ -86,9 +88,10 @@ class ThermalPrinterService implements PrinterService {
   Future<bool> connect(String macAddress) async {
     if (macAddress.trim().isEmpty) return false;
     try {
-      final isAlreadyConnected = await PrintBluetoothThermal.connectionStatus;
+      final isAlreadyConnected = await isConnected();
       if (isAlreadyConnected) return true;
-      return await PrintBluetoothThermal.connect(macPrinterAddress: macAddress);
+      return await PrintBluetoothThermal.connect(macPrinterAddress: macAddress)
+          .timeout(const Duration(seconds: 4), onTimeout: () => false);
     } catch (e) {
       debugPrint('[PrinterService] Connection failed to $macAddress: $e');
       return false;
@@ -98,7 +101,8 @@ class ThermalPrinterService implements PrinterService {
   @override
   Future<bool> disconnect() async {
     try {
-      return await PrintBluetoothThermal.disconnect;
+      return await PrintBluetoothThermal.disconnect
+          .timeout(const Duration(seconds: 2), onTimeout: () => false);
     } catch (_) {
       return false;
     }
@@ -107,7 +111,8 @@ class ThermalPrinterService implements PrinterService {
   @override
   Future<bool> isConnected() async {
     try {
-      return await PrintBluetoothThermal.connectionStatus;
+      return await PrintBluetoothThermal.connectionStatus
+          .timeout(const Duration(milliseconds: 500), onTimeout: () => false);
     } catch (_) {
       return false;
     }
