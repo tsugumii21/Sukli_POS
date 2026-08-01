@@ -374,14 +374,21 @@ class PaymentSuccessScreen extends ConsumerWidget {
           receiptFooter: settings.receiptFooter,
           macAddress: settings.selectedPrinterMac,
         );
+        if (!context.mounted) return;
         if (success) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Receipt sent to Bluetooth thermal printer!')),
-            );
-          }
-          return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Receipt sent to Bluetooth thermal printer!')),
+          );
+        } else {
+          final printerName = settings.selectedPrinterName ?? 'Bluetooth Printer';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not connect to $printerName. Please make sure printer is turned ON.'),
+              backgroundColor: AppColors.errorLight,
+            ),
+          );
         }
+        return;
       }
 
       await ReceiptHelper.printReceipt(

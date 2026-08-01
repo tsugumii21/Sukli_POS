@@ -285,8 +285,8 @@ class OrderDetailSheet extends ConsumerWidget {
           receiptFooter: settings.receiptFooter,
           macAddress: settings.selectedPrinterMac,
         );
+        if (!context.mounted) return;
         if (success) {
-          if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Receipt printed via Bluetooth thermal printer.', style: AppTextStyles.body(context)),
@@ -295,8 +295,18 @@ class OrderDetailSheet extends ConsumerWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
           );
-          return;
+        } else {
+          final printerName = settings.selectedPrinterName ?? 'Bluetooth Printer';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not connect to $printerName. Make sure printer is turned ON.', style: AppTextStyles.body(context)),
+              backgroundColor: AppColors.errorLight,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          );
         }
+        return;
       }
 
       if (store != null) {
