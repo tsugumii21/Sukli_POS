@@ -215,12 +215,33 @@ class ThermalPrinterService implements PrinterService {
         if (decoded is! Map) continue;
         final item = Map<String, dynamic>.from(decoded);
 
-        final name = (item['itemName'] ?? item['productName'] ?? item['name'] ?? 'Item').toString();
-        final qty = (item['quantity'] as num?)?.toInt() ?? 1;
-        final variant = item['variantName']?.toString();
-        final subtotal = ((item['subtotal'] ?? item['totalPrice'] ?? 0) as num).toDouble();
+        // Rule 1: Safe quantity parsing
+        final qty = (item['quantity'] as num?)?.toInt()
+            ?? (item['qty'] as num?)?.toInt()
+            ?? 1;
 
-        final label = (variant != null && variant.isNotEmpty) ? '$name ($variant)' : name;
+        // Rule 2: Safe price parsing
+        final unitPrice = (item['unitPrice'] as num?)?.toDouble()
+            ?? (item['unit_price'] as num?)?.toDouble()
+            ?? (item['price'] as num?)?.toDouble()
+            ?? 0.0;
+
+        final subtotal = (item['subtotal'] as num?)?.toDouble()
+            ?? (item['totalPrice'] as num?)?.toDouble()
+            ?? (item['total_price'] as num?)?.toDouble()
+            ?? (unitPrice * qty);
+
+        // Rule 3: Safe string key fallback
+        final name = (item['itemName'] as String?)
+            ?? (item['productName'] as String?)
+            ?? (item['name'] as String?)
+            ?? 'Item';
+
+        final variant = (item['variant'] as String?)
+            ?? (item['variantName'] as String?)
+            ?? '';
+
+        final label = variant.isNotEmpty ? '$name ($variant)' : name;
         final truncated = label.length > maxLabelLen
             ? '${label.substring(0, maxLabelLen - 3)}...'
             : label;
@@ -248,7 +269,9 @@ class ThermalPrinterService implements PrinterService {
           }
         }
       } catch (e) {
-        debugPrint('[PrinterService] Failed to parse item row: $e');
+        // Rule 4: Log real error, continue next item
+        debugPrint('RECEIPT BUILD ERROR on item "$jsonStr": $e');
+        continue;
       }
     }
 
@@ -348,46 +371,57 @@ class ThermalPrinterService implements PrinterService {
     String? macAddress,
   }) async {
     try {
-      // 1. Build receipt ESC/POS bytes FIRST before touching Bluetooth socket
-      final bytes = await buildReceiptBytes(
-        order,
-        paperSize: paperSize,
-        autoCut: autoCut,
-        storeName: storeName,
-        receiptHeader: receiptHeader,
-        receiptFooter: receiptFooter,
-      );
-
-      // 2. Ensure connection to MAC address immediately before sending bytes
-      bool connected = false;
-      if (macAddress != null && macAddress.trim().isNotEmpty) {
-        connected = await connect(macAddress);
-      } else {
-        connected = await isConnected();
+      // Step 1: Build bytes FIRST (before opening socket). Rule 5: Catch data errors
+      List<int> bytes;
+      try {
+        bytes = await buildReceiptBytes(
+          order,
+          paperSize: paperSize,
+          autoCut: autoCut,
+          storeName: storeName,
+          receiptHeader: receiptHeader,
+          receiptFooter: receiptFooter,
+        );
+      } catch (e) {
+        debugPrint('RECEIPT DATA ERROR: $e');
+        rethrow;
       }
 
-      if (!connected) {
-        debugPrint('[PrinterService] Could not establish Bluetooth connection to $macAddress');
+      // Step 2: Connect and transmit
+      try {
+        bool connected = false;
+        if (macAddress != null && macAddress.trim().isNotEmpty) {
+          connected = await connect(macAddress);
+        } else {
+          connected = await isConnected();
+        }
+
+        if (!connected) {
+          debugPrint('[PrinterService] Could not establish Bluetooth connection to $macAddress');
+          return false;
+        }
+
+        // Attempt write
+        var success = await PrintBluetoothThermal.writeBytes(bytes);
+
+        // Auto-retry once with socket reset if first write attempt failed
+        if (!success && macAddress != null && macAddress.trim().isNotEmpty) {
+          debugPrint('[PrinterService] Initial write failed. Attempting socket reset & reconnect...');
+          await disconnect();
+          await Future.delayed(const Duration(milliseconds: 500));
+          final reconnected = await connect(macAddress);
+          if (reconnected) {
+            success = await PrintBluetoothThermal.writeBytes(bytes);
+          }
+        }
+
+        return success;
+      } catch (e) {
+        debugPrint('PRINTER CONNECTION ERROR: $e');
         return false;
       }
-
-      // 3. Attempt write
-      var success = await PrintBluetoothThermal.writeBytes(bytes);
-
-      // 4. Auto-retry once with socket reset if first write attempt failed
-      if (!success && macAddress != null && macAddress.trim().isNotEmpty) {
-        debugPrint('[PrinterService] Initial write failed. Attempting socket reset & reconnect...');
-        await disconnect();
-        await Future.delayed(const Duration(milliseconds: 500));
-        final reconnected = await connect(macAddress);
-        if (reconnected) {
-          success = await PrintBluetoothThermal.writeBytes(bytes);
-        }
-      }
-
-      return success;
     } catch (e) {
-      debugPrint('[PrinterService] Print failed with exception: $e');
+      debugPrint('PRINT RECEIPT UNEXPECTED ERROR: $e');
       return false;
     }
   }

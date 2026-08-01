@@ -296,13 +296,17 @@ class OrderDetailSheet extends ConsumerWidget {
             ),
           );
         } else {
-          final printerName = settings.selectedPrinterName ?? 'Bluetooth Printer';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Could not connect to $printerName. Make sure printer is turned ON.', style: AppTextStyles.body(context)),
+              content: Text('Print failed. Check that the printer is turned on and paired.', style: AppTextStyles.body(context).copyWith(color: Colors.white)),
               backgroundColor: AppColors.errorLight,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              action: SnackBarAction(
+                label: 'Retry',
+                textColor: Colors.white,
+                onPressed: () => _onReprint(context, ref),
+              ),
             ),
           );
         }

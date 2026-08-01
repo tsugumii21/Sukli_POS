@@ -380,11 +380,16 @@ class PaymentSuccessScreen extends ConsumerWidget {
             const SnackBar(content: Text('Receipt sent to Bluetooth thermal printer!')),
           );
         } else {
-          final printerName = settings.selectedPrinterName ?? 'Bluetooth Printer';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Could not connect to $printerName. Please make sure printer is turned ON.'),
+              content: const Text('Print failed. Check that the printer is turned on and paired.'),
               backgroundColor: AppColors.errorLight,
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: 'Retry',
+                textColor: Colors.white,
+                onPressed: () => _onPrintReceipt(context, ref, order),
+              ),
             ),
           );
         }
