@@ -1032,6 +1032,7 @@ class __BluetoothScannerBottomSheetState
   Future<void> _scanDevices() async {
     setState(() => _isLoading = true);
     final printerService = ref.read(printerServiceProvider);
+    await printerService.requestBluetoothPermissions();
     final enabled = await printerService.isBluetoothEnabled();
     List<BluetoothInfo> list = [];
     if (enabled) {

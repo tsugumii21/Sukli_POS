@@ -6,12 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
+import 'package:permission_handler/permission_handler.dart';
+
 import '../constants/app_constants.dart';
 import '../utils/currency_formatter.dart';
 import '../../shared/isar_collections/order_collection.dart';
 
 /// Abstract contract for thermal receipt printing.
 abstract class PrinterService {
+  /// Requests necessary Bluetooth runtime permissions (Nearby Devices / Location).
+  Future<bool> requestBluetoothPermissions();
+
   /// Returns a list of paired Bluetooth devices on the phone.
   Future<List<BluetoothInfo>> getPairedDevices();
 
@@ -62,6 +67,22 @@ class ThermalPrinterService implements PrinterService {
   static final ThermalPrinterService instance = ThermalPrinterService._();
 
   static final _dateFormat = DateFormat('MMM dd, yyyy  hh:mm a');
+
+  @override
+  Future<bool> requestBluetoothPermissions() async {
+    try {
+      final statuses = await [
+        Permission.bluetoothConnect,
+        Permission.bluetoothScan,
+      ].request();
+
+      final connectOk = statuses[Permission.bluetoothConnect]?.isGranted ?? true;
+      final scanOk = statuses[Permission.bluetoothScan]?.isGranted ?? true;
+      return connectOk && scanOk;
+    } catch (_) {
+      return false;
+    }
+  }
 
   @override
   Future<List<BluetoothInfo>> getPairedDevices() async {
