@@ -208,39 +208,58 @@ class ThermalPrinterService implements PrinterService {
     final valWidth = is58 ? 5 : 6;
     final labelWidth = 12 - valWidth;
 
-    for (final jsonStr in order.orderItemsJson) {
-      final item = jsonDecode(jsonStr) as Map<String, dynamic>;
-      final name = (item['itemName'] as String?) ?? '';
-      final qty = (item['quantity'] as int?) ?? 1;
-      final variant = item['variantName'] as String?;
-      final subtotal = ((item['subtotal'] as num?) ?? 0).toDouble();
-
-      final label = variant != null ? '$name ($variant)' : name;
-      final truncated = label.length > maxLabelLen
-          ? '${label.substring(0, maxLabelLen - 3)}...'
-          : label;
-
-      bytes.addAll(gen.row([
-        PosColumn(text: '$qty x $truncated', width: labelWidth),
-        PosColumn(
-          text: CurrencyFormatter.format(subtotal),
-          width: valWidth,
-          styles: const PosStyles(align: PosAlign.right),
-        ),
-      ]));
-
-      final rawMods = item['modifiers'];
-      if (rawMods is List && rawMods.isNotEmpty) {
-        final modsStr = rawMods
-            .map((m) => m?.toString().trim() ?? '')
-            .where((s) => s.isNotEmpty)
-            .join(', ');
-        if (modsStr.isNotEmpty) {
-          bytes.addAll(gen.text(
-            '  + $modsStr',
-            styles: const PosStyles(align: PosAlign.left),
-          ));
+    for (final rawItem in order.orderItemsJson) {
+      try {
+        Map<String, dynamic> item;
+        if (rawItem is Map<String, dynamic>) {
+          item = rawItem;
+        } else if (rawItem is Map) {
+          item = Map<String, dynamic>.from(rawItem);
+        } else if (rawItem is String && rawItem.trim().isNotEmpty) {
+          final decoded = jsonDecode(rawItem);
+          if (decoded is Map) {
+            item = Map<String, dynamic>.from(decoded);
+          } else {
+            continue;
+          }
+        } else {
+          continue;
         }
+
+        final name = (item['itemName'] ?? item['productName'] ?? item['name'] ?? 'Item').toString();
+        final qty = (item['quantity'] as num?)?.toInt() ?? 1;
+        final variant = item['variantName']?.toString();
+        final subtotal = ((item['subtotal'] ?? item['totalPrice'] ?? 0) as num).toDouble();
+
+        final label = (variant != null && variant.isNotEmpty) ? '$name ($variant)' : name;
+        final truncated = label.length > maxLabelLen
+            ? '${label.substring(0, maxLabelLen - 3)}...'
+            : label;
+
+        bytes.addAll(gen.row([
+          PosColumn(text: '$qty x $truncated', width: labelWidth),
+          PosColumn(
+            text: CurrencyFormatter.format(subtotal),
+            width: valWidth,
+            styles: const PosStyles(align: PosAlign.right),
+          ),
+        ]));
+
+        final rawMods = item['modifiers'] ?? item['selectedAddonNames'];
+        if (rawMods is List && rawMods.isNotEmpty) {
+          final modsStr = rawMods
+              .map((m) => m?.toString().trim() ?? '')
+              .where((s) => s.isNotEmpty)
+              .join(', ');
+          if (modsStr.isNotEmpty) {
+            bytes.addAll(gen.text(
+              '  + $modsStr',
+              styles: const PosStyles(align: PosAlign.left),
+            ));
+          }
+        }
+      } catch (e) {
+        debugPrint('[PrinterService] Failed to parse item row: $e');
       }
     }
 
@@ -351,18 +370,35 @@ class ThermalPrinterService implements PrinterService {
       );
 
       // 2. Ensure connection to MAC address immediately before sending bytes
+      bool connected = false;
       if (macAddress != null && macAddress.trim().isNotEmpty) {
-        final connected = await connect(macAddress);
-        if (!connected) return false;
+        connected = await connect(macAddress);
       } else {
-        final connected = await isConnected();
-        if (!connected) return false;
+        connected = await isConnected();
       }
 
-      final success = await PrintBluetoothThermal.writeBytes(bytes);
+      if (!connected) {
+        debugPrint('[PrinterService] Could not establish Bluetooth connection to $macAddress');
+        return false;
+      }
+
+      // 3. Attempt write
+      var success = await PrintBluetoothThermal.writeBytes(bytes);
+
+      // 4. Auto-retry once with socket reset if first write attempt failed
+      if (!success && macAddress != null && macAddress.trim().isNotEmpty) {
+        debugPrint('[PrinterService] Initial write failed. Attempting socket reset & reconnect...');
+        await disconnect();
+        await Future.delayed(const Duration(milliseconds: 500));
+        final reconnected = await connect(macAddress);
+        if (reconnected) {
+          success = await PrintBluetoothThermal.writeBytes(bytes);
+        }
+      }
+
       return success;
     } catch (e) {
-      debugPrint('[PrinterService] Print failed: $e');
+      debugPrint('[PrinterService] Print failed with exception: $e');
       return false;
     }
   }
