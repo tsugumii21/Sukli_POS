@@ -154,7 +154,7 @@ class ReceiptHelper {
                 style: pw.TextStyle(fontSize: widthMm == 58 ? 6.5 : 7),
                 textAlign: pw.TextAlign.center,
               ),
-              pw.SizedBox(height: 16),
+              pw.SizedBox(height: 6),
             ],
           );
         },

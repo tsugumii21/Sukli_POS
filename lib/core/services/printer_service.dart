@@ -246,7 +246,6 @@ class ThermalPrinterService implements PrinterService {
       'OFFICIAL RECEIPT',
       styles: const PosStyles(align: PosAlign.center, bold: true),
     ));
-    bytes.addAll(gen.hr());
 
     if (showDateTime) {
       bytes.addAll(gen.text(
@@ -353,7 +352,7 @@ class ThermalPrinterService implements PrinterService {
 
     bytes.addAll(gen.hr());
 
-    // ── Totals ────────────────────────────────────────────────────────────
+    // ── Totals & Payment ──────────────────────────────────────────────────
     try {
       bytes.addAll(gen.row([
         PosColumn(text: 'Subtotal', width: labelWidth),
@@ -388,9 +387,6 @@ class ThermalPrinterService implements PrinterService {
         ),
       ]));
 
-      bytes.addAll(gen.hr());
-
-      // ── Payment ───────────────────────────────────────────────────────────
       bytes.addAll(
         gen.text('Payment: ${order.paymentMethod.toUpperCase()}'),
       );
@@ -443,7 +439,7 @@ class ThermalPrinterService implements PrinterService {
       'Powered by Sukli POS',
       styles: const PosStyles(align: PosAlign.center),
     ));
-    bytes.addAll(gen.feed(3));
+    bytes.addAll(gen.feed(1));
 
     if (autoCut) {
       bytes.addAll(gen.cut());
