@@ -68,6 +68,10 @@ class ThermalPrinterService implements PrinterService {
 
   static final _dateFormat = DateFormat('MMM dd, yyyy  hh:mm a');
 
+  String _formatForPrinter(double amount) {
+    return 'P${amount.toStringAsFixed(2)}';
+  }
+
   @override
   Future<bool> requestBluetoothPermissions() async {
     try {
@@ -249,7 +253,7 @@ class ThermalPrinterService implements PrinterService {
         bytes.addAll(gen.row([
           PosColumn(text: '$qty x $truncated', width: labelWidth),
           PosColumn(
-            text: CurrencyFormatter.format(subtotal),
+            text: _formatForPrinter(subtotal),
             width: valWidth,
             styles: const PosStyles(align: PosAlign.right),
           ),
@@ -278,63 +282,68 @@ class ThermalPrinterService implements PrinterService {
     bytes.addAll(gen.hr());
 
     // ── Totals ────────────────────────────────────────────────────────────
-    bytes.addAll(gen.row([
-      PosColumn(text: 'Subtotal', width: labelWidth),
-      PosColumn(
-        text: CurrencyFormatter.format(order.subtotal),
-        width: valWidth,
-        styles: const PosStyles(align: PosAlign.right),
-      ),
-    ]));
-
-    if (order.discountAmount > 0) {
+    try {
       bytes.addAll(gen.row([
-        PosColumn(text: 'Discount', width: labelWidth),
+        PosColumn(text: 'Subtotal', width: labelWidth),
         PosColumn(
-          text: '-${CurrencyFormatter.format(order.discountAmount)}',
+          text: _formatForPrinter(order.subtotal),
           width: valWidth,
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]));
-    }
 
-    bytes.addAll(gen.row([
-      PosColumn(
-        text: 'TOTAL',
-        width: labelWidth,
-        styles: const PosStyles(bold: true),
-      ),
-      PosColumn(
-        text: CurrencyFormatter.format(order.totalAmount),
-        width: valWidth,
-        styles: const PosStyles(align: PosAlign.right, bold: true),
-      ),
-    ]));
+      if (order.discountAmount > 0) {
+        bytes.addAll(gen.row([
+          PosColumn(text: 'Discount', width: labelWidth),
+          PosColumn(
+            text: '-${_formatForPrinter(order.discountAmount)}',
+            width: valWidth,
+            styles: const PosStyles(align: PosAlign.right),
+          ),
+        ]));
+      }
 
-    bytes.addAll(gen.hr());
-
-    // ── Payment ───────────────────────────────────────────────────────────
-    bytes.addAll(
-      gen.text('Payment: ${order.paymentMethod.toUpperCase()}'),
-    );
-    bytes.addAll(gen.row([
-      PosColumn(text: 'Tendered', width: labelWidth),
-      PosColumn(
-        text: CurrencyFormatter.format(order.amountTendered),
-        width: valWidth,
-        styles: const PosStyles(align: PosAlign.right),
-      ),
-    ]));
-
-    if (order.changeAmount > 0) {
       bytes.addAll(gen.row([
-        PosColumn(text: 'Change', width: labelWidth),
         PosColumn(
-          text: CurrencyFormatter.format(order.changeAmount),
+          text: 'TOTAL',
+          width: labelWidth,
+          styles: const PosStyles(bold: true),
+        ),
+        PosColumn(
+          text: _formatForPrinter(order.totalAmount),
+          width: valWidth,
+          styles: const PosStyles(align: PosAlign.right, bold: true),
+        ),
+      ]));
+
+      bytes.addAll(gen.hr());
+
+      // ── Payment ───────────────────────────────────────────────────────────
+      bytes.addAll(
+        gen.text('Payment: ${order.paymentMethod.toUpperCase()}'),
+      );
+      bytes.addAll(gen.row([
+        PosColumn(text: 'Tendered', width: labelWidth),
+        PosColumn(
+          text: _formatForPrinter(order.amountTendered),
           width: valWidth,
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]));
+
+      if (order.changeAmount > 0) {
+        bytes.addAll(gen.row([
+          PosColumn(text: 'Change', width: labelWidth),
+          PosColumn(
+            text: _formatForPrinter(order.changeAmount),
+            width: valWidth,
+            styles: const PosStyles(align: PosAlign.right),
+          ),
+        ]));
+      }
+    } catch (e) {
+      debugPrint('RECEIPT TOTALS ERROR: $e');
+      bytes.addAll(gen.text('TOTAL: ${_formatForPrinter(order.totalAmount)}'));
     }
 
     bytes.addAll(gen.hr());
