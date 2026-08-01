@@ -208,23 +208,12 @@ class ThermalPrinterService implements PrinterService {
     final valWidth = is58 ? 5 : 6;
     final labelWidth = 12 - valWidth;
 
-    for (final rawItem in order.orderItemsJson) {
+    for (final jsonStr in order.orderItemsJson) {
       try {
-        Map<String, dynamic> item;
-        if (rawItem is Map<String, dynamic>) {
-          item = rawItem;
-        } else if (rawItem is Map) {
-          item = Map<String, dynamic>.from(rawItem);
-        } else if (rawItem is String && rawItem.trim().isNotEmpty) {
-          final decoded = jsonDecode(rawItem);
-          if (decoded is Map) {
-            item = Map<String, dynamic>.from(decoded);
-          } else {
-            continue;
-          }
-        } else {
-          continue;
-        }
+        if (jsonStr.trim().isEmpty) continue;
+        final decoded = jsonDecode(jsonStr);
+        if (decoded is! Map) continue;
+        final item = Map<String, dynamic>.from(decoded);
 
         final name = (item['itemName'] ?? item['productName'] ?? item['name'] ?? 'Item').toString();
         final qty = (item['quantity'] as num?)?.toInt() ?? 1;
