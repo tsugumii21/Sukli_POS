@@ -274,44 +274,54 @@ class OrderDetailSheet extends ConsumerWidget {
     final store = ref.read(currentStoreProvider).value;
     final settings = ref.read(settingsProvider);
 
-    try {
-      if (settings.selectedPrinterMac != null && settings.selectedPrinterMac!.isNotEmpty) {
-        final success = await printer.printReceipt(
-          order,
-          paperSize: settings.paperSize,
-          autoCut: settings.autoCut,
-          storeName: settings.storeName,
-          receiptHeader: settings.receiptHeader,
-          receiptFooter: settings.receiptFooter,
-          macAddress: settings.selectedPrinterMac,
+    final macAddress = settings.selectedPrinterMac;
+
+    if (macAddress == null || macAddress.trim().isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No printer selected. Go to Settings → Bluetooth Printer.',
+                style: AppTextStyles.body(context).copyWith(color: Colors.white)),
+            backgroundColor: AppColors.warningLight,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
-        if (!context.mounted) return;
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Receipt printed via Bluetooth thermal printer.', style: AppTextStyles.body(context)),
-              backgroundColor: const Color(0xFF2E7D32),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Print failed. Check that the printer is turned on and paired.', style: AppTextStyles.body(context).copyWith(color: Colors.white)),
-              backgroundColor: AppColors.errorLight,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              action: SnackBarAction(
-                label: 'Retry',
-                textColor: Colors.white,
-                onPressed: () => _onReprint(context, ref),
-              ),
-            ),
-          );
-        }
-        return;
       }
+      return;
+    }
+
+    try {
+      final success = await printer.printReceipt(
+        order,
+        macAddress: macAddress,
+        storeName: store?.name ?? settings.storeName,
+        receiptHeader: settings.receiptHeader,
+        receiptFooter: settings.receiptFooter,
+        paperSize: settings.paperSize,
+        autoCut: settings.autoCut,
+      );
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Receipt printed successfully!'
+                : 'Print failed. Check that the printer is turned on and paired.',
+            style: AppTextStyles.body(context).copyWith(color: Colors.white),
+          ),
+          backgroundColor: success ? AppColors.successLight : AppColors.errorLight,
+          behavior: SnackBarBehavior.floating,
+          action: success
+              ? null
+              : SnackBarAction(
+                  label: 'Retry',
+                  textColor: Colors.white,
+                  onPressed: () => _onReprint(context, ref),
+                ),
+        ),
+      );
 
       if (store != null) {
         await ReceiptHelper.printReceipt(

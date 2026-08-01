@@ -370,6 +370,12 @@ class ThermalPrinterService implements PrinterService {
     String? receiptFooter,
     String? macAddress,
   }) async {
+    // DEBUG — log exactly what was passed
+    debugPrint('[PrinterService] printReceipt called');
+    debugPrint('[PrinterService] macAddress: ${macAddress ?? "NULL - not passed!"}');
+    debugPrint('[PrinterService] orderNumber: ${order.orderNumber}');
+    debugPrint('[PrinterService] itemCount: ${order.orderItemsJson.length}');
+
     try {
       // Step 1: Build bytes FIRST (before opening socket). Rule 5: Catch data errors
       List<int> bytes;
@@ -391,13 +397,16 @@ class ThermalPrinterService implements PrinterService {
       try {
         bool connected = false;
         if (macAddress != null && macAddress.trim().isNotEmpty) {
+          // MAC provided — actively connect
           connected = await connect(macAddress);
         } else {
+          // No MAC provided — check if already connected
           connected = await isConnected();
+          debugPrint('[PrinterService] WARNING: printReceipt called without macAddress. isConnected=$connected');
         }
 
         if (!connected) {
-          debugPrint('[PrinterService] Could not establish Bluetooth connection to $macAddress');
+          debugPrint('[PrinterService] FAILED: No connection. macAddress was: $macAddress');
           return false;
         }
 
