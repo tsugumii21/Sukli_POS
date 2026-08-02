@@ -972,7 +972,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ],
                         ),
                       ),
-                    ).animate().fadeIn(delay: 300.ms, duration: 300.ms).slideY(begin: 0.04, end: 0),
+                    const SizedBox(height: AppSpacing.lg),
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            'Sukli POS v1.0.0',
+                            style: AppTextStyles.captionMedium(context).copyWith(color: textSecondary),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Copyright © 2026 Sukli POS. All rights reserved.',
+                            style: AppTextStyles.captionSecondary(context).copyWith(fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xl),
                   ],
                 ),

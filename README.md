@@ -131,4 +131,5 @@ lib/
 
 ## 📄 Copyright & License
 
-Copyright © 2026 Sukli POS. All rights reserved.
+Copyright © 2026 Sukli POS. All rights reserved.  
+Developed for Philippine Micro, Small, and Medium Enterprises (MSMEs).
