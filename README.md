@@ -17,12 +17,64 @@ Offline-first Point-of-Sale (POS) system tailored for Philippine Micro, Small, a
 
 ## 🌟 Key Features
 
-*   **Offline-First Architecture**: Powered by **Isar Database**, the app runs 100% offline. Purchases, menu updates, and cashier reports can be processed without an active internet connection.
-*   **Automatic Cloud Synchronization**: Powered by **Supabase**. Sync queue manager detects network status changes via `connectivity_plus` and pushes queued changes when an active connection is restored.
-*   **Role-Based Access Control**: Separate dashboard experiences for **Admin** and **Cashier** roles.
-*   **Menu & Inventory Management**: Manage categories, item details, stock counts, and upload store logos.
-*   **Sales Reports (PDF & Excel)**: Generate complete sales reports. Excel files feature interactive charts (Pie chart for payment breakdown, clustered column chart for revenue by cashier) using Syncfusion.
-*   **Receipt Printing**: Built-in printer service for thermal receipt printer integration.
+* **Offline-First Architecture**: Powered by **Isar Database**, the app runs 100% offline. Purchases, menu updates, and cashier reports can be processed without an active internet connection.
+* **Automatic Cloud Synchronization**: Powered by **Supabase**. Sync queue manager detects network status changes via `connectivity_plus` and pushes queued changes when an active connection is restored.
+* **Role-Based Access Control**: Separate dashboard experiences for **Admin** and **Cashier** roles with PIN/password login.
+* **Menu & Inventory Management**: Manage categories, item details, stock counts, variants, modifiers, and store branding.
+* **Bluetooth Thermal Receipt Printing**: Full ESC/POS thermal printing support over Bluetooth:
+  - **Codepage Character Sanitizer**: Automatic text sanitization converts `₱` $\rightarrow$ `P`, smart quotes, dashes, and strips non-printable characters to prevent thermal printer crashes on emojis (`😊`).
+  - **100% Customizable Layout**: Toggle store header, store address, contact number, date & time, cashier name, short order ID, footer messages, paper size (58mm/80mm roll), and hardware auto-cut commands.
+  - **Paper-Saving Compact Design**: Optimized compact height and streamlined section dividers save 30%–50% paper on every print job.
+* **Sales Reports (PDF & Excel)**: Generate complete sales reports. Excel files feature pre-rendered chart visualizations using Syncfusion.
+* **Void & Refund Workflows**: Cashier and admin authorization workflows for item voids and transaction refunds.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (v3.19.0 or higher)
+- Android SDK (API level 21+) / Android Studio or VS Code
+- A [Supabase](https://supabase.com) project instance
+
+### Required Environment Variables
+
+Create a `.env` file in the root of `sukli_pos` (or configure `lib/core/constants/supabase_constants.dart`):
+
+```env
+SUPABASE_URL=https://your-supabase-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+### Local Setup & Installation
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/tsugumii21/Sukli_POS.git
+   cd Sukli_POS/sukli_pos
+   ```
+
+2. **Install Dependencies**:
+   ```bash
+   flutter pub get
+   ```
+
+3. **Run Code Generation** (for Isar & Riverpod providers if needed):
+   ```bash
+   dart run build_runner build --delete-conflicting-outputs
+   ```
+
+4. **Run the App**:
+   ```bash
+   # Connect an Android device or launch an emulator
+   flutter run
+   ```
+
+5. **Run Automated Tests**:
+   ```bash
+   flutter test
+   ```
 
 ---
 
@@ -41,7 +93,7 @@ graph TD
         QuickActions --> Menu[Manage Store Menu & Inventory]
         QuickActions --> Settings[Configure Store & Printers]
         QuickActions --> Reports[Export PDF/Excel Sales Reports]
-        AdminDash --> RecentActAdmin[View Recent Orders with Full Code: #0029-5FG6]
+        AdminDash --> RecentActAdmin[View Recent Orders with Full Code: #0043-JD_123]
     end
     
     subgraph Cashier Flow
@@ -49,31 +101,16 @@ graph TD
         CashierDash --> CartManage[Manage Active Cart Items]
         CartManage --> Checkout{Checkout Cart}
         Checkout -->|Cash / GCash / Maya| ReceiptPrint[Print Thermal Receipt]
-        ReceiptPrint --> SuccessScreen[Payment Success Screen showing Sequence: #0029]
-        CashierDash --> RecentActCashier[View Recent Orders showing Sequence: #0029]
+        ReceiptPrint --> SuccessScreen[Payment Success Screen showing Sequence: #0043]
+        CashierDash --> RecentActCashier[View Recent Orders showing Sequence: #0043]
     end
 ```
-
-### 1. Cashier Userflow
-1.  **Login**: Cashier enters credentials.
-2.  **Dashboard**: Sees the product catalog, category filters, and an active cart panel.
-3.  **Cart Management**: Adds items to the cart, edits quantities, or deletes items.
-4.  **Checkout**: Enters payment amount and selects payment method (Cash, GCash, or Maya).
-5.  **Success**: Sees the success screen with the sequence order number (e.g. `#0029`). If configured, a physical thermal receipt is printed.
-6.  **Recent Orders**: Cashier can view their recent transaction history showing sequence numbers (e.g. `#0029`).
-
-### 2. Admin Userflow
-1.  **Login**: Administrator enters credentials.
-2.  **Dashboard**: Sees daily sales summaries, total transaction counts, pending sync items, and quick action grids.
-3.  **Activity Monitoring**: Monitors recent activity showing full order numbers combined with cashier unique codes (e.g. `#0029-5FG6`) for tracking transaction origin.
-4.  **Management Console**: Admin accesses quick links to manage users, add/edit menu items, and customize store printer profiles.
-5.  **Analytics & Reports**: Admin generates sales reports for custom dates and downloads them as PDF or Excel files with pre-rendered data charts.
 
 ---
 
 ## 🛠️ Architecture & Project Structure
 
-The project uses a structured **Feature-First** architecture combined with **Riverpod** for robust state management.
+The project follows a **Feature-First** architecture combined with **Riverpod** for robust, reactive state management.
 
 ```
 lib/
@@ -86,11 +123,9 @@ lib/
         ├── menu/          # Product and category forms & management
         ├── orders/        # Order history lists and details
         ├── reports/       # Excel and PDF exporters, reports screen
-        ├── settings/      # Store settings, receipt uploader
+        ├── settings/      # Store settings, receipt customizer, Bluetooth printer setup
         └── void_refund/   # Void and refund processing screens
 ```
-
----
 
 ---
 
