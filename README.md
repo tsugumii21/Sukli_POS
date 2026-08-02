@@ -30,54 +30,6 @@ Offline-first Point-of-Sale (POS) system tailored for Philippine Micro, Small, a
 
 ---
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (v3.19.0 or higher)
-- Android SDK (API level 21+) / Android Studio or VS Code
-- A [Supabase](https://supabase.com) project instance
-
-### Required Environment Variables
-
-Create a `.env` file in the root of `sukli_pos` (or configure `lib/core/constants/supabase_constants.dart`):
-
-```env
-SUPABASE_URL=https://your-supabase-project.supabase.co
-SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-
-### Local Setup & Installation
-
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/tsugumii21/Sukli_POS.git
-   cd Sukli_POS/sukli_pos
-   ```
-
-2. **Install Dependencies**:
-   ```bash
-   flutter pub get
-   ```
-
-3. **Run Code Generation** (for Isar & Riverpod providers if needed):
-   ```bash
-   dart run build_runner build --delete-conflicting-outputs
-   ```
-
-4. **Run the App**:
-   ```bash
-   # Connect an Android device or launch an emulator
-   flutter run
-   ```
-
-5. **Run Automated Tests**:
-   ```bash
-   flutter test
-   ```
-
----
-
 ## 🔄 User Flow
 
 ```mermaid
