@@ -109,7 +109,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // 1. If Admin is the active role:
       if (activeRole == ActiveRole.admin) {
         if (!isAdminLoggedIn) {
-          if (path != RouteConstants.adminLogin) {
+          if (path != RouteConstants.adminLogin && path != RouteConstants.verifyEmail) {
             return RouteConstants.adminLogin;
           }
           return null;

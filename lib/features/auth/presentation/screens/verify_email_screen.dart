@@ -88,14 +88,30 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     setState(() { _isLoading = true; _errorMessage = null; });
 
     try {
-      final response = await Supabase.instance.client.auth.verifyOTP(
-        email: widget.email,
-        token: code,
-        type: OtpType.signup,
-      );
+      AuthResponse response;
+      try {
+        response = await Supabase.instance.client.auth.verifyOTP(
+          email: widget.email,
+          token: code,
+          type: OtpType.signup,
+        );
+      } on AuthException catch (_) {
+        // Fallback to OtpType.email if signup type fails
+        response = await Supabase.instance.client.auth.verifyOTP(
+          email: widget.email,
+          token: code,
+          type: OtpType.email,
+        );
+      }
 
       if (response.user != null) {
         if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Email verified successfully! Please log in.'),
+              backgroundColor: AppColors.successLight,
+            ),
+          );
           context.go(RouteConstants.adminLogin);
         }
       } else {
