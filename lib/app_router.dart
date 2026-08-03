@@ -77,8 +77,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final path = state.matchedLocation;
 
-      // Skip redirect on splash screen
-      if (path == RouteConstants.splash) return null;
+      // Skip redirect on splash screen and verify email screen
+      if (path == RouteConstants.splash || path == RouteConstants.verifyEmail) {
+        return null;
+      }
 
       // Get current auth states
       final adminState = ref.read(adminAuthProvider);

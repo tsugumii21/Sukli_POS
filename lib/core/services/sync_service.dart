@@ -188,6 +188,28 @@ class SyncService {
           payload = jsonDecode(item.payloadJson) as Map<String, dynamic>;
 
           if (item.operation == 'insert') {
+            if (item.tableName == SupabaseConstants.usersTable) {
+              final email = payload['email'] as String?;
+              if (email != null && email.isNotEmpty) {
+                try {
+                  final existing = await _supabase.client
+                      .from(SupabaseConstants.usersTable)
+                      .select('sync_id, email')
+                      .eq('email', email)
+                      .maybeSingle();
+
+                  if (existing != null && existing['sync_id'] != payload['sync_id']) {
+                    await _supabase.client
+                        .from(SupabaseConstants.usersTable)
+                        .delete()
+                        .eq('email', email);
+                    debugPrint('SYNC: Removed stale user record for $email before upsert');
+                  }
+                } catch (err) {
+                  debugPrint('SYNC: Warning while checking existing user email: $err');
+                }
+              }
+            }
             await _supabase.upsertRecord(item.tableName, payload);
           } else if (item.operation == 'update') {
             // Use a targeted UPDATE (not upsert) so partial payloads
