@@ -972,6 +972,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ],
                         ),
                       ),
+                    ).animate().fadeIn(delay: 300.ms, duration: 300.ms).slideY(begin: 0.04, end: 0),
                     const SizedBox(height: AppSpacing.lg),
                     Center(
                       child: Column(
