@@ -72,6 +72,31 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
             }
           },
         ),
+        actions: [
+          if (s.isGenerated)
+            IconButton(
+              icon: Icon(Icons.refresh_rounded, color: accent, size: 22),
+              tooltip: 'Re-generate Report',
+              onPressed: s.isLoading
+                  ? null
+                  : () {
+                      HapticFeedback.lightImpact();
+                      ref.read(endOfDayProvider.notifier).generateReport();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Report re-generated with latest data',
+                              style: AppTextStyles.bodySemiBold(context)
+                                  .copyWith(color: Colors.white)),
+                          backgroundColor: AppColors.successLight,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: AppRadius.mediumBR),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+            ),
+        ],
       ),
       body: SafeArea(
         child: s.isGenerated
@@ -345,6 +370,28 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(color: barBg, boxShadow: AppShadow.level3),
       child: Row(children: [
+        // Re-generate
+        _actionBtn(
+          ctx,
+          Icons.refresh_rounded,
+          'Re-gen',
+          () {
+            ref.read(endOfDayProvider.notifier).generateReport();
+            ScaffoldMessenger.of(ctx).showSnackBar(
+              SnackBar(
+                content: Text('Report re-generated with latest data',
+                    style: AppTextStyles.bodySemiBold(ctx)
+                        .copyWith(color: Colors.white)),
+                backgroundColor: AppColors.successLight,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.mediumBR),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: AppSpacing.xs),
         // Copy
         _actionBtn(ctx, Icons.copy_rounded, 'Copy', () => _copyReport(ctx, s)),
         const SizedBox(width: AppSpacing.xs),
@@ -514,22 +561,16 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
     }
     buf.writeln();
 
-
-
     // Voids & Refunds
     buf.writeln('── Voids & Refunds ──');
-    buf.writeln(
-        'Voids: ${s.voidRefund.voidCount} (${CurrencyFormatter.format(s.voidRefund.voidTotal)})');
-    buf.writeln(
-        'Refunds: ${s.voidRefund.refundCount} (${CurrencyFormatter.format(s.voidRefund.refundTotal)})');
-    buf.writeln(
-        'Total Loss: ${CurrencyFormatter.format(s.voidRefund.totalLoss)}');
+    buf.writeln('Voids: ${s.voidRefund.voidCount}x — ${CurrencyFormatter.format(s.voidRefund.voidTotal)}');
+    buf.writeln('Refunds: ${s.voidRefund.refundCount}x — ${CurrencyFormatter.format(s.voidRefund.refundTotal)}');
+    buf.writeln('Total Loss: ${CurrencyFormatter.format(s.voidRefund.totalLoss)}');
     buf.writeln();
 
     // Cash Reconciliation
     buf.writeln('── Cash Reconciliation ──');
-    buf.writeln(
-        'Expected: ${CurrencyFormatter.format(s.cashRecon.expectedCash)}');
+    buf.writeln('Expected Cash: ${CurrencyFormatter.format(s.cashRecon.expectedCash)}');
     if (s.cashRecon.actualCash != null) {
       buf.writeln(
           'Actual: ${CurrencyFormatter.format(s.cashRecon.actualCash!)}');
@@ -544,36 +585,156 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
 
   // ── Save & Close ──────────────────────────────────────────────────────
   Future<void> _saveAndClose(BuildContext ctx) async {
+    final s = ref.read(endOfDayProvider);
     final confirmed = await showDialog<bool>(
       context: ctx,
-      builder: (c) => AlertDialog(
-        backgroundColor: Theme.of(c).brightness == Brightness.dark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        title: Text('Close Day?', style: AppTextStyles.h3(c).copyWith(color: AppColors.textPrimary(c))),
-        content: Text(
-            'This will mark today as closed. You can still view the report afterwards.',
-            style: AppTextStyles.body(c).copyWith(color: AppColors.textSecondary(c))),
-        actions: [
-          TextButton(
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                Navigator.pop(c, false);
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.textSecondary(c),
-              ),
-              child: Text('Cancel', style: AppTextStyles.body(c))),
-          ElevatedButton(
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                Navigator.pop(c, true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent(c),
-                foregroundColor: Colors.white,
-              ),
-              child: Text('Close Day', style: AppTextStyles.bodySemiBold(c).copyWith(color: Colors.white))),
-        ],
-      ),
+      builder: (c) {
+        final isDark = Theme.of(c).brightness == Brightness.dark;
+        final bg = isDark ? AppColors.cardDark : AppColors.cardLight;
+        final textPrimary =
+            isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+        final textSec =
+            isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+        final accent = isDark ? AppColors.accentDark : AppColors.accentLight;
+
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: bg,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top Icon Badge
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.lock_clock_rounded,
+                    size: 36,
+                    color: accent,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Close Day?',
+                  style: AppTextStyles.h2(c).copyWith(color: textPrimary),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'This will mark today as closed. You can still view and export the report afterwards.',
+                  style: AppTextStyles.captionSecondary(c).copyWith(
+                    color: textSec,
+                    height: 1.35,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Quick Summary Card
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: AppSpacing.sm + 4),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.surfaceDark
+                        : AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Column(
+                        children: [
+                          Text('Total Sales',
+                              style: AppTextStyles.captionSecondary(c)),
+                          const SizedBox(height: 2),
+                          Text(
+                            CurrencyFormatter.format(s.totalSales),
+                            style: AppTextStyles.bodySemiBold(c)
+                                .copyWith(color: accent),
+                          ),
+                        ],
+                      ),
+                      Container(
+                          height: 24,
+                          width: 1,
+                          color: textSec.withValues(alpha: 0.2)),
+                      Column(
+                        children: [
+                          Text('Orders',
+                              style: AppTextStyles.captionSecondary(c)),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${s.orderCount}',
+                            style: AppTextStyles.bodySemiBold(c)
+                                .copyWith(color: textPrimary),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Actions
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pop(c, false);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 48),
+                          side: BorderSide(
+                              color: textSec.withValues(alpha: 0.3)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: AppTextStyles.bodyMedium(c)
+                              .copyWith(color: textSec),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pop(c, true);
+                        },
+                        icon: const Icon(Icons.check_circle_rounded,
+                            size: 18, color: Colors.white),
+                        label: Text(
+                          'Close Day',
+                          style: AppTextStyles.bodySemiBold(c)
+                              .copyWith(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accent,
+                          minimumSize: const Size(0, 48),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
     if (confirmed != true) return;
 
