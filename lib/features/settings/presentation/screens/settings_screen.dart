@@ -978,7 +978,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: Column(
                         children: [
                           Text(
-                            'Sukli POS v1.0.0 (Offline-First)',
+                            'Sukli POS v1.0.0',
                             style: AppTextStyles.captionMedium(context).copyWith(color: textSecondary),
                           ),
                           const SizedBox(height: 4),
