@@ -1,6 +1,9 @@
 # Miscellaneous
 *.class
 *.log
+*.txt
+*.py
+script*.py
 *.pyc
 *.swp
 .DS_Store
@@ -11,6 +14,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+android/build/
 
 # Environment, API Credentials & Key Files
 .env
