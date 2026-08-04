@@ -72,31 +72,6 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
             }
           },
         ),
-        actions: [
-          if (s.isGenerated)
-            IconButton(
-              icon: Icon(Icons.refresh_rounded, color: accent, size: 22),
-              tooltip: 'Re-generate Report',
-              onPressed: s.isLoading
-                  ? null
-                  : () {
-                      HapticFeedback.lightImpact();
-                      ref.read(endOfDayProvider.notifier).generateReport();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Report re-generated with latest data',
-                              style: AppTextStyles.bodySemiBold(context)
-                                  .copyWith(color: Colors.white)),
-                          backgroundColor: AppColors.successLight,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: AppRadius.mediumBR),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
-            ),
-        ],
       ),
       body: SafeArea(
         child: s.isGenerated
@@ -375,11 +350,17 @@ class _EndOfDayScreenState extends ConsumerState<EndOfDayScreen> {
           ctx,
           Icons.refresh_rounded,
           'Re-gen',
-          () {
-            ref.read(endOfDayProvider.notifier).generateReport();
+          () async {
+            final prefs = await SharedPreferences.getInstance();
+            final key =
+                'eod_closed_${DateFormat('yyyy-MM-dd').format(DateTime.now())}';
+            await prefs.remove(key);
+            await ref.read(endOfDayProvider.notifier).regenerateReport();
+            if (!ctx.mounted) return;
             ScaffoldMessenger.of(ctx).showSnackBar(
               SnackBar(
-                content: Text('Report re-generated with latest data',
+                content: Text(
+                    'Report re-generated! You can save & close the day again.',
                     style: AppTextStyles.bodySemiBold(ctx)
                         .copyWith(color: Colors.white)),
                 backgroundColor: AppColors.successLight,

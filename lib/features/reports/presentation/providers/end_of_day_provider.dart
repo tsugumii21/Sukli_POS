@@ -345,6 +345,12 @@ class EndOfDayNotifier extends Notifier<EndOfDayState> {
   void closeDayConfirmed() {
     state = state.copyWith(isDayClosed: true);
   }
+
+  /// Re-generate the report and re-enable day close action.
+  Future<void> regenerateReport() async {
+    await generateReport();
+    state = state.copyWith(isDayClosed: false);
+  }
 }
 
 /// Helper for aggregating payment counts.
