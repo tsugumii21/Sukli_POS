@@ -978,13 +978,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: Column(
                         children: [
                           Text(
-                            'Sukli POS v1.0.0',
+                            'Sukli POS v1.0.0 (Offline-First)',
                             style: AppTextStyles.captionMedium(context).copyWith(color: textSecondary),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Copyright © 2026 Sukli POS. All rights reserved.',
-                            style: AppTextStyles.captionSecondary(context).copyWith(fontSize: 11),
+                            'Copyright © 2026 Sukli POS. All Rights Reserved.',
+                            style: AppTextStyles.captionSecondary(context).copyWith(fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Proprietary & Confidential Software. Reverse engineering or cloning is strictly prohibited.',
+                            style: AppTextStyles.captionSecondary(context).copyWith(fontSize: 9),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),

@@ -12,40 +12,59 @@
 .swiftpm/
 migrate_working_dir/
 
-# Environment
+# Environment, API Credentials & Key Files
 .env
-.env.development
-.env.staging
-.env.production
+.env*
+*.env
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+*.keystore
+key.properties
+google-services.json
+GoogleService-Info.plist
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
+# Local Databases, Caching & Data Snapshots
+*.isar
+*.isar.lock
+*.db
+*.sqlite
+*.sqlite3
+*.sql
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# Build Binaries & Compiled Executables
+/build/
+/coverage/
+android/app/debug
+android/app/profile
+android/app/release
+*.apk
+*.aab
+*.ipa
 
-# Flutter/Dart/Pub related
+# Generated User Manuals, Guides & PDF Exports
+user_guide/
+*.pdf
+bin/*.pdf
+Sukli_POS_User_Guide.pdf
+
+# Flutter / Dart Internal Cache & Dependencies
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
-/coverage/
 
-# Symbolication related
+# Symbolication & Code Obfuscation Maps
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# IDE & Editor Project Files
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/

@@ -81,7 +81,18 @@ lib/
 
 ---
 
-## 📄 Copyright & License
+---
 
-Copyright © 2026 Sukli POS. All rights reserved.  
-Developed for Philippine Micro, Small, and Medium Enterprises (MSMEs).
+## 🔒 Copyright & Proprietary License Notice
+
+![Proprietary](https://img.shields.io/badge/License-Proprietary%20%26%20Confidential-red.style=flat)
+![Copyright](https://img.shields.io/badge/Copyright-2026%20Sukli%20POS-blue.style=flat)
+
+**Copyright © 2026 Sukli POS. All Rights Reserved.**
+
+This repository and application software are **Proprietary & Confidential**.  
+- **Unauthorized Copying**: No part of this repository (source code, database schemas, visual UI designs, branding assets, or documentation) may be copied, cloned, downloaded, mirrored, or redistributed.
+- **Anti-Reverse Engineering**: Decompilation, disassembly, reverse engineering, or extraction of binaries/source code is strictly prohibited.
+- **Commercial Use**: Sublicensing, white-labeling, or resale without prior written permission is strictly forbidden.
+
+Refer to the full [LICENSE](file:///r:/Code/Sukli%20POS/sukli_pos/LICENSE) for legal terms.
